@@ -1,0 +1,79 @@
+<!-- --------------KILOMETRAŽA----------------- -->
+<div class="span-2 flex flex-col gap-3 ">
+  <h1 class="w-full text-center">Kilometraža</h1>
+
+  @if (mode === 'single') {
+    <div class="relative w-full -mt-2">
+      <input
+        type="text"
+        placeholder="Kilometraža"
+        [value]="selectedKilometrage"
+        class="w-full border border-(--border-color)  pl-4 pr-10 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-(--color-navbar) focus:border-(--color-navbar) cursor-pointer"
+      />
+    </div>
+  } @else {
+    <!-- KILOMETRAŽA OD -->
+    <div class="flex gap-3">
+      <div class="relative w-full">
+        <div class="flex -mt-2">
+          <input
+            type="text"
+            placeholder="Od (km)"
+            [value]="selectedKilometrageMIN"
+            (focus)="focusOutside($event)"
+            class="w-full border-2 border-(--border-color)  pl-4 pr-10 py-1 text-sm  focus:outline-none focus:ring-2 focus:ring-(--color-navbar) focus:border-(--color-navbar)"
+          />
+          <button (click)="toggleDropdownMIN()" type="button" class="-ml-9 px-2 text-(--border-color) bg-(--color-navbar) cursor-pointer ">
+            <fa-icon [icon]="faChevronDown"></fa-icon>
+          </button>
+        </div>
+
+        <!-- Dropdown Menu -->
+        @if (dropdowns[dropdownKeyMin]) {
+          <div class="absolute z-10 mt-1 w-full bg-(--color-surface) border border-(--border-color)  shadow-lg max-h-60 overflow-y-auto">
+            @for (option of Kilometrages; track $index) {
+              <button
+                type="button"
+                (click)="selectKilometrageMIN(option)"
+                class="w-full text-left px-4 py-2 text-sm  hover:bg-(--color-accent-soft) hover:text-(--color-navbar) "
+              >
+                {{ option.label }}
+              </button>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- KILOMETRAŽA DO -->
+      <div class="relative w-full">
+        <div class="flex -mt-2">
+          <input
+            type="text"
+            placeholder="Do (km)"
+            [value]="selectedKilometrageMAX"
+            (focus)="focusOutside($event)"
+            class="w-full border-2 border-(--border-color)  pl-4 pr-10 py-1 text-sm  focus:outline-none focus:ring-2 focus:ring-(--color-navbar) focus:border-(--color-navbar)"
+          />
+          <button (click)="toggleDropdownMAX()" type="button" class="-ml-9 px-2 text-(--border-color) bg-(--color-navbar) cursor-pointer ">
+            <fa-icon [icon]="faChevronDown"></fa-icon>
+          </button>
+        </div>
+
+        <!-- Dropdown Menu -->
+        @if (dropdowns[dropdownKeyMax]) {
+          <div class="absolute z-10 mt-1 w-full bg-(--color-surface) border border-(--border-color)  shadow-lg max-h-60 overflow-y-auto">
+            @for (option of Kilometrages; track $index) {
+              <button
+                type="button"
+                (click)="selectKilometrageMAX(option)"
+                class="w-full text-left px-4 py-2 text-sm  hover:bg-(--color-accent-soft) hover:text-(--color-navbar) "
+              >
+                {{ option.label }}
+              </button>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  }
+</div>

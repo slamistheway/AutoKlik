@@ -1,0 +1,80 @@
+<!-- --------------ENGINE SIZE----------------- -->
+<div class="span-2 flex flex-col gap-3 ">
+  <h1 class="w-full text-center">Obujam motora</h1>
+
+  @if (mode === 'single') {
+    <div class="relative w-full -mt-2">
+      <input
+        type="text"
+        placeholder="Obujam motora"
+        [value]="selectedEngineSize"
+        class="w-full border border-[var(--border-color)]  pl-4 pr-10 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-navbar)] focus:border-[var(--color-navbar)] cursor-pointer"
+      />
+    </div>
+  } @else {
+    <!-- OBUJAM OD -->
+    <div class="flex gap-3">
+      <div class="relative w-full">
+        <div class="flex -mt-2">
+          <input
+            type="text"
+            placeholder="Od (cc)"
+            [value]="selectedEngineSizeMIN"
+            (focus)="focusOutside($event)"
+            class="w-full border-2 border-(--border-color)  pl-4 pr-10 py-1 text-sm  focus:outline-none focus:ring-2 focus:ring-[var(--color-navbar)] focus:border-[var(--color-navbar)]"
+          />
+          <button (click)="toggleDropdownMIN()" type="button" class="-ml-9 px-2 text-(--border-color) bg-(--color-navbar) cursor-pointer ">
+            <fa-icon [icon]="faChevronDown"></fa-icon>
+          </button>
+        </div>
+
+
+        <!-- Dropdown Menu -->
+        @if (dropdowns[dropdownKeyMin]) {
+          <div class="absolute z-10 mt-1 w-full bg-[var(--color-surface)] border border-[var(--border-color)]  shadow-lg max-h-60 overflow-y-auto">
+            @for (option of engineSizes; track $index) {
+              <button
+                type="button"
+                (click)="selectEngineSizeMIN(option)"
+                class="w-full text-left px-4 py-2 text-sm  hover:bg-[var(--color-accent-soft)] hover:text-[var(--color-navbar)] "
+              >
+                {{ option.label }}
+              </button>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- OBUJAM DO -->
+      <div class="relative w-full">
+        <div class="flex -mt-2">
+          <input
+            type="text"
+            placeholder="Do (cc)"
+            [value]="selectedEngineSizeMAX"
+            (focus)="focusOutside($event)"
+            class="w-full border-2 border-(--border-color)  pl-4 pr-10 py-1 text-sm  focus:outline-none focus:ring-2 focus:ring-[var(--color-navbar)] focus:border-[var(--color-navbar)]"
+          />
+          <button (click)="toggleDropdownMAX()" type="button" class="-ml-9 px-2 text-(--border-color) bg-(--color-navbar) cursor-pointer ">
+            <fa-icon [icon]="faChevronDown"></fa-icon>
+          </button>
+        </div>
+
+        <!-- Dropdown Menu -->
+        @if (dropdowns[dropdownKeyMax]) {
+          <div class="absolute z-10 mt-1 w-full bg-[var(--color-surface)] border border-[var(--border-color)] rounded-lg shadow-lg max-h-60 overflow-y-auto">
+            @for (option of engineSizes; track $index) {
+              <button
+                type="button"
+                (click)="selectEngineSizeMAX(option)"
+                class="w-full text-left px-4 py-2 text-sm  hover:bg-[var(--color-accent-soft)] hover:text-[var(--color-navbar)] "
+              >
+                {{ option.label }}
+              </button>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  }
+</div>

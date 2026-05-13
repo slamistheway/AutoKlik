@@ -1,0 +1,22 @@
+[
+  {
+    "brand": "Yamaha",
+    "models": ["MT-07", "R1", "Tracer 9"]
+  },
+  {
+    "brand": "Honda",
+    "models": ["CB500F", "Africa Twin", "Hornet 750"]
+  },
+  {
+    "brand": "Kawasaki",
+    "models": ["Ninja 650", "Z900", "Versys 650"]
+  },
+  {
+    "brand": "Suzuki",
+    "models": ["GSX-R750", "V-Strom 650", "SV650"]
+  },
+  {
+    "brand": "BMW Motorrad",
+    "models": ["R 1250 GS", "S 1000 RR", "F 900 R"]
+  }
+]

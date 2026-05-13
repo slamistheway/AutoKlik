@@ -1,0 +1,161 @@
+<header>
+  <app-navbar></app-navbar>
+</header>
+
+@if (currentUser$ | async; as user) {
+  <div class="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4">
+    <div class="max-w-7xl w-full space-y-8">
+      <div class="flex bg-[var(--color-accent-soft)] shadow rounded-lg p-6 space-y-4 gap-4">
+
+        <aside>
+          <app-my-profile-aside></app-my-profile-aside>
+        </aside>
+
+        <div class="border-4 flex-1 p-6 bg-white rounded-lg shadow-md space-y-6">
+          <div class="flex items-center justify-between gap-4">
+            <div>
+              <h1 class="text-2xl font-bold text-gray-900">Spremljeni oglasi</h1>
+              <p class="text-sm text-gray-600">Prikaz oglasa za {{ user.username }}</p>
+            </div>
+          </div>
+
+          @if (isLoading$ | async) {
+            <div class="rounded-lg border border-dashed border-gray-300 bg-gray-50 px-4 py-6 text-center text-sm text-gray-600">
+              Učitavanje oglasa...
+            </div>
+          }
+          @else {
+            @if (errorMessage$ | async; as errorMessage) {
+              <div class="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+                {{ errorMessage }}
+              </div>
+            }
+
+            @if (mySavedAds$ | async; as ads) {
+              @if (ads.length > 0) {
+                @if (totalPages > 0) {
+                  <div class="flex justify-center items-center mt-2 gap-1">
+                    <button
+                      type="button"
+                      class="border-2 aspect-square w-10 disabled:opacity-50"
+                      (click)="goToPreviousPage()"
+                      [disabled]="currentPage <= 1"
+                    >&larr;</button>
+
+                    @for (page of pageNumbers; track page) {
+                      <button
+                        type="button"
+                        class="border-2 aspect-square w-10"
+                        [ngClass]="currentPage === page ? 'bg-[var(--color-navbar)] text-white' : ''"
+                        (click)="goToPage(page)"
+                      >{{ page }}</button>
+                    }
+
+                    <button
+                      type="button"
+                      class="border-2 aspect-square w-10 disabled:opacity-50"
+                      (click)="goToNextPage()"
+                      [disabled]="currentPage >= totalPages"
+                    >&rarr;</button>
+                  </div>
+                }
+
+                @for (mySavedAd of pagedAds; track mySavedAd.ad_id) {
+                <article class="rounded-lg border border-gray-200 bg-white shadow-md hover:shadow-lg transition-shadow duration-300 flex overflow-hidden">
+                  <!-- Image Container - Left Side -->
+                  <a [routerLink]="['/ad', mySavedAd.ad_id]" class="block overflow-hidden bg-gray-100 shrink-0 w-48 h-40">
+                    <img
+                      [src]="getAdImageUrl(mySavedAd.images)"
+                      [alt]="mySavedAd.title"
+                      class="h-full w-full object-cover"
+                    />
+                  </a>
+
+                  <!-- Content Container - Right Side -->
+                  <div class="p-4 space-y-3 flex-1 flex flex-col">
+                      <span class="inline-flex items-center rounded-full text-xs font-medium text-gray-700 whitespace-nowrap">
+                        {{ getCategoryLabel(mySavedAd.category) }} > {{ getSubcategoryLabel(mySavedAd.subcategory) }}
+                      </span>
+
+                    <!-- Header with Title and ID -->
+                    <div class="flex items-start justify-between gap-3">
+                      <div class="flex-1 min-w-0">
+                        <a [routerLink]="['/ad', mySavedAd.ad_id]" class="group">
+                          <h2 class="text-base font-bold text-gray-900 group-hover:text-[var(--color-navbar)]  duration-200 line-clamp-2 underline">
+                            {{ mySavedAd.title }}
+                          </h2>
+                        </a>
+                        <p class="text-xs text-gray-500 mt-0.5">
+                          {{ mySavedAd.brand }} {{ mySavedAd.model }}
+                        </p>
+                        <p class="text-xs text-gray-500 mt-0.5">
+                          Godište: {{ mySavedAd.year }}
+                        </p>
+                      </div>
+
+
+                      @if (saveAdButton$ | async) {
+                        <button
+                          type="button"
+                          (click)="toggleSaveAd(mySavedAd.ad_id);"
+                          [class]="'px-4 py-2 rounded-lg font-medium transition-all duration-200 shrink-0 ' +
+                            (isAdSaved(mySavedAd.ad_id)
+                              ? 'bg-[var(--color-navbar)] text-white hover:bg-[var(--color-navbar-hover)]'
+                              : 'border border-gray-300 text-gray-700 hover:bg-gray-50')"
+                        >
+                          {{ isAdSaved(mySavedAd.ad_id) ? '❤️' : '🤍' }}
+                        </button>
+                      }
+
+
+
+                    </div>
+
+
+                    <!-- Tags/Categories -->
+                    <div class="flex flex-wrap items-center gap-1.5 pt-2 border-t border-gray-100">
+                        <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs text-gray-600 whitespace-nowrap">
+                          Objavljeno: {{ mySavedAd.created_at | date:'dd.MM.yyyy' }}
+                        </span>
+                    </div>
+                  </div>
+                </article>
+              }
+              } @else if (!(errorMessage$ | async)) {
+                <div class="rounded-lg border border-dashed border-gray-300 bg-gray-50 px-4 py-6 text-center text-sm text-gray-600">
+                  Nemate spremljenih oglasa.
+                </div>
+              }
+            }
+          }
+        </div>
+
+      </div>
+    </div>
+  </div>
+}
+
+
+
+<!-- LOG BOX -->
+@if (saveToasts$ | async; as toasts) {
+  @if (toasts.length > 0) {
+    <div class="fixed bottom-4 left-1/2 -translate-x-1/2 z-1000 w-full max-w-md px-4 space-y-2 pointer-events-none">
+      @for (toast of toasts; track toast.id) {
+        <div
+          class="rounded-lg px-4 py-3 text-sm font-medium shadow-lg"
+          [ngClass]="getToastCSS(toast.type)"
+        >
+          {{ toast.message }}
+        </div>
+      }
+    </div>
+  }
+}
+
+
+
+
+<footer>
+  <app-footer></app-footer>
+</footer>

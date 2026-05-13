@@ -1,0 +1,139 @@
+<header>
+  <app-navbar></app-navbar>
+</header>
+
+@if (currentUser$ | async; as currentUser) {
+  <div class="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4">
+    <div class="max-w-7xl w-full space-y-8">
+      <div class="flex bg-[var(--color-accent-soft)] shadow rounded-lg p-6 space-y-4 gap-4">
+
+        <aside>
+          <app-my-profile-aside></app-my-profile-aside>
+        </aside>
+
+        <div class="border-4 flex-1 p-6 bg-white rounded-lg shadow-md space-y-6">
+          <div class="flex items-center justify-between gap-4">
+            <div>
+              <h1 class="text-2xl font-bold text-gray-900">Moji Oglasi</h1>
+              <p class="text-sm text-gray-600">Prikaz oglasa za {{ currentUser.username }}</p>
+            </div>
+            <div class="rounded-full bg-[var(--color-accent-soft)] px-3 py-1 text-xs font-semibold text-[var(--color-navbar)]">
+              ID korisnika: {{ currentUser.id }}
+            </div>
+          </div>
+
+          @if (isLoading$ | async) {
+            <div class="rounded-lg border border-dashed border-gray-300 bg-gray-50 px-4 py-6 text-center text-sm text-gray-600">
+              Učitavanje oglasa...
+            </div>
+          } @else {
+            @if (errorMessage$ | async; as errorMessage) {
+               <div class="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+                 {{ errorMessage }}
+               </div>
+             }
+
+             @if (myAds$ | async; as ads) {
+               @if (ads.length > 0) {
+                @if (totalPages > 0) {
+                  <div class="flex justify-center items-center mt-2 gap-1">
+                    <button
+                      type="button"
+                      class="border-2 aspect-square w-10 disabled:opacity-50"
+                      (click)="goToPreviousPage()"
+                      [disabled]="currentPage <= 1"
+                    >&larr;</button>
+
+                    @for (page of pageNumbers; track page) {
+                      <button
+                        type="button"
+                        class="border-2 aspect-square w-10"
+                        [ngClass]="currentPage === page ? 'bg-[var(--color-navbar)] text-white' : ''"
+                        (click)="goToPage(page)"
+                      >{{ page }}</button>
+                    }
+
+                    <button
+                      type="button"
+                      class="border-2 aspect-square w-10 disabled:opacity-50"
+                      (click)="goToNextPage()"
+                      [disabled]="currentPage >= totalPages"
+                    >&rarr;</button>
+                  </div>
+                }
+
+                <div class="grid gap-4">
+                  @for (ad of pagedAds; track ad.id) {
+                    <article class="rounded-lg border border-gray-200 bg-white shadow-md hover:shadow-lg transition-shadow duration-300 flex overflow-hidden">
+                      <!-- Image Container - Left Side -->
+                      <a [routerLink]="['/ad', ad.id]" class="block overflow-hidden bg-gray-100 shrink-0 w-48 h-40">
+                        <img
+                          [src]="getAdImageUrl(ad.images)"
+                          [alt]="ad.title"
+                          class="h-full w-full object-cover"
+                        />
+                      </a>
+
+                      <!-- Content Container - Right Side -->
+                      <div class="p-4 space-y-1 flex-1 flex flex-col">
+                       <span class="inline-flex items-center rounded-full text-xs font-medium text-gray-700 whitespace-nowrap">
+                          {{ getCategoryLabel(ad.category) }} > {{ getSubcategoryLabel(ad.subcategory) }}
+                        </span>
+
+                        <!-- Header with Title and ID -->
+                        <div class="flex items-start justify-between gap-3">
+                          <div class="flex-1 min-w-0">
+                            <a [routerLink]="['/ad', ad.id]" class="group">
+                              <h2 class="text-base font-bold text-gray-900 group-hover:text-[var(--color-navbar)]  duration-200 line-clamp-2 underline">
+                                {{ ad.title }}
+                              </h2>
+                            </a>
+                            <p class="text-xs text-gray-500 mt-0.5">
+                              {{ ad.brand }} {{ ad.model }}
+                            </p>
+                            <p class="text-xs text-gray-500 mt-0.5">
+                              Godište: {{ ad.year }}
+                            </p>
+                          </div>
+
+                          <button
+                            type="button"
+                            (click)="confirmDelete(ad.id, currentUser.id)">
+                            Delete
+                          </button>
+                        </div>
+
+                        <!-- Tags/Categories -->
+                        <div class="flex flex-wrap items-center gap-1.5 pt-2 border-t border-gray-100">
+                          <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs text-gray-600 whitespace-nowrap">
+                            Objavljeno: {{ ad.created_at | date:'dd.MM.yyyy' }}
+                          </span>
+                        </div>
+                      </div>
+
+                    </article>
+                  }
+                </div>
+              } @else if (!(errorMessage$ | async)) {
+                 <div class="rounded-lg border border-dashed border-gray-300 bg-gray-50 px-4 py-6 text-center text-sm text-gray-600">
+                   Još nemate objavljenih oglasa.
+                 </div>
+               }
+             }
+           }
+        </div>
+      </div>
+    </div>
+  </div>
+} @else {
+  <div class="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
+    <div class="max-w-xl rounded-lg bg-white p-8 text-center shadow">
+      <h1 class="text-2xl font-bold text-gray-900">Morate biti prijavljeni</h1>
+      <p class="mt-2 text-sm text-gray-600">Prijavite se kako biste vidjeli svoje oglase.</p>
+    </div>
+  </div>
+}
+
+<footer>
+  <app-footer></app-footer>
+</footer>

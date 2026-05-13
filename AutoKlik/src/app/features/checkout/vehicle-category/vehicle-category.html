@@ -1,0 +1,83 @@
+<header>
+  <app-navbar></app-navbar>
+</header>
+
+
+<div class="min-h-screen bg-gray-50 py-8 px-4 ">
+  <div class="max-w-5xl mx-auto space-y-6">
+    <h2 class="text-center text-3xl font-extrabold text-gray-900">
+      Create Ad
+    </h2>
+
+    <app-checkout-stepper
+      [currentStep]="currentStep"
+      [clickableSteps]="getClickableSteps()"
+      (stepSelected)="onStepSelected($event)"
+    ></app-checkout-stepper>
+
+    <form #adForm="ngForm" (ngSubmit)="onSubmit(adForm)" class="space-y-4">
+      <!-- Step 1: Kategorija -->
+      <label class="block text-sm font-medium text-gray-700 mb-2">Kategorija vozila</label>
+      <div class="flex flex-wrap gap-3">
+        @for (cat of Categories; track cat) {
+          <button type="button"
+                  (click)="adFormModel.category = cat.value; adFormModel.subcategory = ''"
+                  [ngClass]="{
+                    'bg-red-600 text-white': adFormModel.category === cat.value,
+                    'bg-gray-200 text-gray-800': adFormModel.category !== cat.value
+                  }"
+                  class="px-4 py-2 rounded-md font-medium border border-gray-300 focus:outline-none">
+            {{ cat.label }}
+          </button>
+        }
+      </div>
+      @if (!adFormModel.category && adForm.submitted) {
+        <div class="text-red-600 text-xs mt-2">Odaberite kategoriju.</div>
+      }
+
+
+
+      @if (adFormModel.category) {
+        <label class="block text-sm font-medium text-gray-700 mb-2">Podkategorija vozila</label>
+        <div class="flex flex-wrap gap-3">
+          @for (sub_cat of SubCategories[adFormModel.category] ?? []; track sub_cat.id) {
+            <button type="button"
+                    (click)="adFormModel.subcategory = sub_cat.value"
+                    [ngClass]="{
+                      'bg-red-600 text-white': adFormModel.subcategory === sub_cat.value,
+                      'bg-gray-200 text-gray-800': adFormModel.subcategory !== sub_cat.value
+                    }"
+                    class="px-4 py-2 rounded-md font-medium border border-gray-300 focus:outline-none">
+              {{ sub_cat.label }}
+            </button>
+          }
+        </div>
+        @if (!adFormModel.subcategory && adForm.submitted) {
+          <div class="text-red-600 text-xs mt-2">Odaberite kategoriju.</div>
+        }
+      }
+
+      <!-- Navigacija koraka -->
+      <div class="flex justify-end items-center pt-4">
+        <button
+          type="submit"
+          [disabled]="!adFormModel.subcategory"
+          class="px-4 py-2 rounded-md bg-[var(--color-navbar)] text-white hover:bg-[var(--color-navbar-hover)] disabled:opacity-50"
+        >
+          Dalje na detalje
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+
+
+
+
+
+
+<footer>
+  <app-footer></app-footer>
+</footer>

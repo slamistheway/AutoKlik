@@ -1,0 +1,32 @@
+<!-- BROJ VRATA -->
+<div class="span-1 flex flex-col gap-3">
+  <h1 class="w-full text-center">Broj Vrata</h1>
+  <div class="relative">
+    <button
+      type="button"
+      (click)="toggleDropdown()"
+      class="w-full border-2 border-[var(--border-color)] -mt-2 px-3 py-1 text-sm  focus:outline-none focus:ring-2 focus:ring-[var(--color-navbar)] focus:border-[var(--color-navbar)] flex items-center justify-between">
+                    <span>
+                      {{ selectedDoorNumber || 'Broj Vrata' }}
+                    </span>
+      <span class="flex items-center gap-2">
+                      <fa-icon [icon]="faChevronDown"></fa-icon>
+                    </span>
+    </button>
+
+    <!-- Dropdown Menu -->
+    @if (dropdowns[dropdownKey]) {
+      <div class="absolute z-10 mt-1 w-full bg-[var(--color-surface)] border border-[var(--border-color)] rounded-lg shadow-lg max-h-60 overflow-y-auto">
+        @for (door of DoorNumbers; track $index) {
+          <button
+            type="button"
+            (click)="selectDoorNumber(door)"
+            class="w-full text-left px-4 py-2 text-sm  hover:bg-[var(--color-accent-soft)] hover:text-[var(--color-navbar)] "
+          >
+            {{ door.label }}
+          </button>
+        }
+      </div>
+    }
+  </div>
+</div>

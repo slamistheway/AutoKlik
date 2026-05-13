@@ -1,0 +1,485 @@
+<header>
+  <app-navbar></app-navbar>
+</header>
+
+
+<main class="main-content bg-[var(--color-accent-soft)] py-10 font-semibold ng-view autoscroll">
+  <section class="max-w-7xl mx-auto px-4">
+    <div class="bg-[var(--color-accent-soft)] border-2 border-[var(--border-color)] rounded-xl shadow-sm px-12 py-6">
+      <div class="flex items-center mb-5">
+        <div class="relative w-full">
+          <input
+            id="search"
+            type="text"
+            (focus)="hideAllDropdowns()"
+            [value]="searchText"
+            (input)="onSearchTextChange($event)"
+            [placeholder]="t('searchPlaceholder')"
+            class="w-full border-2 border-[var(--border-color)] pl-4 pr-12 py-2.5 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--color-navbar)] focus:border-[var(--color-navbar)]"
+          />
+          <button
+            type="button"
+            class="absolute inset-y-0 right-1 my-1 px-3 rounded-md text-gray-600 hover:bg-[var(--color-accent-soft)] hover:text-[var(--color-navbar)]"
+            aria-label="Search"
+          >
+            <fa-icon [icon]="faSearch"></fa-icon>
+          </button>
+        </div>
+      </div>
+
+      <div class="border-4 border-[var(--border-color)] p-6">
+        <p class="text-center font-medium  mb-3">{{ t('filtersTitle') }}</p>
+
+
+        <!-- VRSTE VOZILA / IKONE -->
+        <div class="flex flex-wrap justify-center gap-3 mb-5">
+          <button
+            (click)="onVeichleTypeClick('car')"
+            type="button"
+            class="border-2 rounded-lg h-10 w-10 flex items-center justify-center "
+            [ngClass]="
+              carSelected
+                ? 'border-[var(--color-navbar)] text-[var(--color-navbar)] bg-[var(--color-accent-soft)]'
+                : 'border-[var(--border-color)] text-gray-600 hover:border-[var(--color-navbar)] hover:text-[var(--color-navbar)]'
+            " aria-label="Car"
+          >
+            <fa-icon [icon]="faCar"></fa-icon>
+          </button>
+
+
+          <button
+            (click)="onVeichleTypeClick('motorcycle')"
+            type="button"
+            class="border-2 rounded-lg h-10 w-10 flex items-center justify-center "
+            [ngClass]="
+              motorcycleSelected
+                ? 'border-[var(--color-navbar)] text-[var(--color-navbar)] bg-[var(--color-accent-soft)]'
+                : 'border-[var(--border-color)] text-gray-600 hover:border-[var(--color-navbar)] hover:text-[var(--color-navbar)]'
+            " aria-label="Motorcycle"
+          >
+            <fa-icon [icon]="faMotorcycle"></fa-icon>
+          </button>
+
+
+          <button
+            (click)="onVeichleTypeClick('van')"
+            type="button"
+            class="border-2 rounded-lg h-10 w-10 flex items-center justify-center "
+            [ngClass]="
+              vanSelected
+                ? 'border-[var(--color-navbar)] text-[var(--color-navbar)] bg-[var(--color-accent-soft)]'
+                : 'border-[var(--border-color)] text-gray-600 hover:border-[var(--color-navbar)] hover:text-[var(--color-navbar)]'
+            " aria-label="Van"
+          >
+            <fa-icon [icon]="faShuttleVan"></fa-icon>
+          </button>
+
+          <button
+            (click)="onVeichleTypeClick('other')"
+            type="button"
+            class="border-2 rounded-lg h-10 w-10 flex items-center justify-center "
+            [ngClass]="
+              otherSelected
+                ? 'border-[var(--color-navbar)] text-[var(--color-navbar)] bg-[var(--color-accent-soft)]'
+                : 'border-[var(--border-color)] text-gray-600 hover:border-[var(--color-navbar)] hover:text-[var(--color-navbar)]'
+            " aria-label="Other"
+          >
+            <fa-icon [icon]="faEllipsis"></fa-icon>
+          </button>
+        </div>
+
+
+
+        <!-- -----------FILTERI----------- -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <!-- BRAND -->
+          <app-filter-brands
+            [selectedBrands]="selectedBrands"
+            [selectedVehicle_type]="selectedVehicle_type"
+            [dropdowns]="dropdowns"
+            [dropdownKey]="'brand'"
+            (brandsChange)="onBrandsChange($event)"
+          ></app-filter-brands>
+
+          <!-- MODEL -->
+          <app-filter-models
+            [selectedBrands]="selectedBrands"
+            [selectedVehicle_type]="selectedVehicle_type"
+            [selectedModels]="selectedModels"
+            [dropdownKey]="'model'"
+            [dropdowns]="dropdowns"
+            (modelsChange)="onModelsChange($event)"
+          ></app-filter-models>
+
+          <!-- SNAGA MOTORA -->
+          <app-filter-enginePower
+            [selectedEnginePowerMIN]="selectedEnginePowerMIN"
+            [selectedEnginePowerMAX]="selectedEnginePowerMAX"
+            [dropdownKeyMin]="'enginePowerMin'"
+            [dropdownKeyMax]="'enginePowerMax'"
+            [dropdowns]="dropdowns"
+            (enginePowerMINChange)="onEnginePowerMINChange($event)"
+            (enginePowerMAXChange)="onEnginePowerMAXChange($event)"
+          ></app-filter-enginePower>
+
+          <!-- VELICINA MOTORA -->
+          <app-filter-engineSize
+            [selectedEngineSizeMIN]="selectedEngineSizeMIN"
+            [selectedEngineSizeMAX]="selectedEngineSizeMAX"
+            [dropdownKeyMin]="'engineSizeMin'"
+            [dropdownKeyMax]="'engineSizeMax'"
+            [dropdowns]="dropdowns"
+            (engineSizeMINChange)="onEngineSizeMINChange($event)"
+            (engineSizeMAXChange)="onEngineSizeMAXChange($event)"
+          ></app-filter-engineSize>
+
+
+          <!-- KATEGORIJA / DRIVING LICENCE -->
+          @if (selectedVehicle_type == "motorcycle") {
+            <app-filter-drivingLicence
+              [selectedDrivingLicence]="selectedDrivingLicence"
+              [dropdownKey]="'drivingLicence'"
+              [dropdowns]="dropdowns"
+              (drivingLicenceChange)="onDrivingLicenceChange($event)"
+            ></app-filter-drivingLicence>
+          }
+
+          <!-- PRICE -->
+          <app-filter-prices
+            [selectedPriceMIN]="selectedPriceMIN"
+            [selectedPriceMAX]="selectedPriceMAX"
+            [dropdownKeyMin]="'priceMin'"
+            [dropdownKeyMax]="'priceMax'"
+            [dropdowns]="dropdowns"
+            (priceMINChange)="onPriceMINChange($event)"
+            (priceMAXChange)="onPriceMAXChange($event)"
+          ></app-filter-prices>
+
+          <!-- YEAR -->
+          <app-filter-years
+            [selectedYearMIN]="selectedYearMIN"
+            [selectedYearMAX]="selectedYearMAX"
+            [dropdownKeyMin]="'yearMin'"
+            [dropdownKeyMax]="'yearMax'"
+            [dropdowns]="dropdowns"
+            (yearMINChange)="onYearMINChange($event)"
+            (yearMAXChange)="onYearMAXChange($event)">
+          </app-filter-years>
+
+          <!-- KILOMETRAŽA -->
+          <app-filter-kilometrage
+            [selectedKilometrageMIN]="selectedKilometrageMIN"
+            [selectedKilometrageMAX]="selectedKilometrageMAX"
+            [dropdownKeyMin]="'kilometrageMin'"
+            [dropdownKeyMax]="'kilometrageMax'"
+            [dropdowns]="dropdowns"
+            (kilometrageMINChange)="onKilometrageMINChange($event)"
+            (kilometrageMAXChange)="onKilometrageMAXChange($event)">
+          </app-filter-kilometrage>
+
+          <!-- STANJE -->
+          <app-filter-condition
+            [selectedCondition]="selectedCondition"
+            [dropdownKey]="'condition'"
+            [dropdowns]="dropdowns"
+            (conditionChange)="onConditionChange($event)"
+          ></app-filter-condition>
+
+          <!-- ŽUPANIJA -->
+          <app-filter-county
+            [selectedCounties]="selectedCounties"
+            [dropdownKey]="'county'"
+            [dropdowns]="dropdowns"
+            (countyChange)="onCountyChange($event)"
+          ></app-filter-county>
+
+        </div>
+
+
+
+        <div class="flex justify-end w-full mr-3 mt-3">
+          <button class="border-4 border-[var(--border-color)] p-1" type="button"
+                  (click)="toggleMoreFilters()"
+                  (focus)="hideAllDropdowns()">
+            {{ t('showMoreFilters') }}
+          </button>
+        </div>
+
+        <!-- -----------VIŠE FILTERA----------- -->
+        @if (showMoreFilters) {
+          <div
+            id="more-filters"
+            class="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-5 border-2"
+          >
+
+            <!-- BUY OR LEASE -->
+            <app-filter-buyorleasetype
+              [selectedBuyOrLease]="selectedBuyOrLease"
+              [dropdownKey]="'buyOrLease'"
+              [dropdowns]="dropdowns"
+              (buyOrLeaseChange)="onBuyOrLeaseChange($event)">
+            </app-filter-buyorleasetype>
+
+            <!-- SELLER TYPE -->
+            <app-filter-sellerType
+              [selectedSellerType]="selectedSellerType"
+              [dropdownKey]="'sellerType'"
+              [dropdowns]="dropdowns"
+              (sellerTypeChange)="onSellerTypeChange($event)"
+            ></app-filter-sellerType>
+
+
+            @if (!(selectedVehicle_type == 'other')) {
+              <!-- GORIVO -->
+              <app-filter-gasType
+                [selectedGasType]="selectedGasType"
+                [dropdownKey]="'gasType'"
+                [dropdowns]="dropdowns"
+                (gasTypeChange)="onGasTypeChange($event)"
+              ></app-filter-gasType>
+
+              <!-- MJENJAC -->
+              <app-filter-gearType
+                [selectedGearType]="selectedGearType"
+                [dropdownKey]="'gearType'"
+                [dropdowns]="dropdowns"
+                (gearTypeChange)="onGearShiftChange($event)">
+              </app-filter-gearType>
+
+              <!-- COLOR -->
+              <app-filter-color
+                [selectedColors]="selectedColors"
+                [dropdownKey]="'color'"
+                [dropdowns]="dropdowns"
+                (colorChange)="onColorChange($event)">
+              </app-filter-color>
+            }
+
+
+            @if (selectedVehicle_type !== 'motorcycle' && selectedVehicle_type !== 'other'){
+              <!-- BROJ VRATA -->
+              <app-filter-doorNumber
+                [selectedDoorNumber]="selectedDoorNumber"
+                [dropdownKey]="'doorNumber'"
+                [dropdowns]="dropdowns"
+                (doorNumberChange)="onDoorNumberChange($event)">
+              </app-filter-doorNumber>
+            }
+
+
+            @if (selectedVehicle_type == "van") {
+              <!-- MASA -->
+              <app-filter-weight
+                [selectedWeightMIN]="selectedWeightMIN"
+                [selectedWeightMAX]="selectedWeightMAX"
+                [dropdownKeyMin]="'weightMin'"
+                [dropdownKeyMax]="'weightMax'"
+                [dropdowns]="dropdowns"
+                (weightMINChange)="onWeightMINChange($event)"
+                (weightMAXChange)="onWeightMAXChange($event)">
+              </app-filter-weight>
+
+
+              <!-- TERET -->
+              <app-filter-payload
+                [selectedPayloadMIN]="selectedPayloadMIN"
+                [selectedPayloadMAX]="selectedPayloadMAX"
+                [dropdownKeyMin]="'payloadMin'"
+                [dropdownKeyMax]="'payloadMax'"
+                [dropdowns]="dropdowns"
+                (payloadMINChange)="onPayloadMINChange($event)"
+                (payloadMAXChange)="onPayloadMAXChange($event)">
+              </app-filter-payload>
+
+              <!-- OBUJAM TERETNOG PROSTORA -->
+              <app-filter-volume
+                [selectedVolumeMIN]="selectedVolumeMIN"
+                [selectedVolumeMAX]="selectedVolumeMAX"
+                [dropdownKeyMin]="'volumeMin'"
+                [dropdownKeyMax]="'volumeMax'"
+                [dropdowns]="dropdowns"
+                (volumeMINChange)="onVolumeMINChange($event)"
+                (volumeMAXChange)="onVolumeMAXChange($event)">
+              </app-filter-volume>
+            }
+
+
+          </div>
+        }
+
+        <!-- -----------VIŠE FILTERA----------- -->
+        <div class="flex justify-end w-full mr-3 mt-3 gap-2">
+          <button class="border-4 border-[var(--border-color)] p-1" type="button" (click)="clearFilters()" (focus)="hideAllDropdowns()">
+            {{ t('clearFilters') }}
+          </button>
+          <button class="border-4 border-[var(--border-color)] p-1" type="button" (click)="search()" (focus)="hideAllDropdowns()">
+            {{ t('searchButton') }}
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+
+
+  <section class="max-w-7xl mx-auto px-4">
+    <div class="bg-[var(--color-accent-soft)] border border-gray-200 rounded-xl shadow-sm px-12 py-6">
+      <h1 class="text-center">{{ t('featuredTitle') }}</h1>
+
+
+      <div class="border-4 flex-1 p-6 bg-white rounded-lg shadow-md space-y-6">
+        <div class="flex items-center justify-between gap-4">
+          <h1 class="text-2xl font-bold text-gray-900">{{ t('adsTitle') }}</h1>
+        </div>
+
+        @if (isLoading$ | async) {
+          <div class="rounded-lg border border-dashed border-gray-300 bg-gray-50 px-4 py-6 text-center text-sm text-gray-600">
+            {{ t('loadingAds') }}
+          </div>
+        } @else {
+          @if (errorMessage$ | async; as errorMessage) {
+            <div class="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+              {{ errorMessage }}
+            </div>
+          }
+
+          @if (PublicAds$ | async; as ads) {
+            @if (ads.length > 0) {
+
+              @if (totalPages > 0) {
+                <div class="flex justify-center items-center mt-2 gap-1">
+                  <button
+                    type="button"
+                    class="border-2 aspect-square w-10 disabled:opacity-50"
+                    (click)="goToPreviousPage()"
+                    (focus)="hideAllDropdowns()"
+                    [disabled]="currentPage <= 1"
+                  >&larr;</button>
+
+                  @for (page of pageNumbers; track page) {
+                    <button
+                      type="button"
+                      class="border-2 aspect-square w-10"
+                      [ngClass]="currentPage === page ? 'bg-[var(--color-navbar)] text-white' : ''"
+                      (click)="goToPage(page)"
+                    >{{ page }}</button>
+                  }
+
+                  <button
+                    type="button"
+                    class="border-2 aspect-square w-10 disabled:opacity-50"
+                    (click)="goToNextPage()"
+                    [disabled]="currentPage >= totalPages"
+                  >&rarr;</button>
+                </div>
+              }
+
+              <div class="grid gap-4">
+                @for (ad of pagedAds; track ad.id) {
+                  <article class="rounded-lg border border-gray-200 bg-white shadow-md hover:shadow-lg transition-shadow duration-300 flex overflow-hidden">
+                    <!-- Image Container - Left Side -->
+                    <a [routerLink]="['/ad', ad.id]" class="block overflow-hidden bg-gray-100 shrink-0 w-48 h-40">
+                      <img
+                        [src]="getAdImageUrl(ad.images)"
+                        [alt]="ad.title"
+                        class="h-full w-full object-cover"
+                      />
+                    </a>
+
+                    <!-- Content Container - Right Side -->
+                    <div class="p-4 space-y-3 flex-1 flex flex-col">
+                      <span class="inline-flex items-center rounded-full text-xs font-medium text-gray-700 whitespace-nowrap">
+                        {{ getCategoryLabel(ad.category) }} > {{ getSubcategoryLabel(ad.subcategory) }}
+                      </span>
+
+                      <!-- Header with Title and ID -->
+                      <div class="flex items-start justify-between gap-3">
+                        <div class="flex-1 min-w-0">
+                          <a [routerLink]="['/ad', ad.id]" class="group">
+                            <h2 class="text-base font-bold text-gray-900 group-hover:text-[var(--color-navbar)]  duration-200 line-clamp-2 underline">
+                              {{ ad.title }}
+                            </h2>
+                          </a>
+                          <p class="text-xs text-gray-500 mt-0.5">
+                            {{ ad.brand }} {{ ad.model }}
+                          </p>
+                          <p class="text-xs text-gray-500 mt-0.5">
+                            Godište: {{ ad.year }}
+                          </p>
+                        </div>
+
+
+                        @if (saveAdButton$ | async) {
+                          <button
+                            (click)="toggleSaveAd(ad.id)"
+                            (focus)="hideAllDropdowns()"
+                            [disabled]="isAdSaving(ad.id)"
+                            [class]="'px-4 py-2 rounded-lg font-medium transition-all duration-200 shrink-0 ' +
+                            (isAdSaved(ad.id)
+                              ? 'bg-[var(--color-navbar)] text-white hover:bg-[var(--color-navbar-hover)]'
+                              : 'border border-gray-300 text-gray-700 hover:bg-gray-50')"
+                          >
+                            {{ isAdSaving(ad.id) ? t('savingAd') : (isAdSaved(ad.id) ? ('❤️ ' + t('savedAd')) : ('🤍 ' + t('saveAd'))) }}
+                          </button>
+                        }
+
+
+                      </div>
+
+
+                      <!-- Tags/Categories -->
+                      <div class="flex flex-wrap items-center gap-1.5 pt-2 border-t border-gray-100">
+                        <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs text-gray-600 whitespace-nowrap">
+                          {{ t('publishedOn') }} {{ ad.created_at | date:'dd.MM.yyyy' }}
+                        </span>
+                      </div>
+                    </div>
+                  </article>
+                }
+              </div>
+
+
+
+
+            }
+            @else if (!(errorMessage$ | async)) {
+              <div class="rounded-lg border border-dashed border-gray-300 bg-gray-50 px-4 py-6 text-center text-sm text-gray-600">
+                {{ t('noAdsFound') }}
+              </div>
+            }
+          }
+        }
+      </div>
+
+
+
+    </div>
+  </section>
+
+
+  <!-- CONSOLE LOG BOX -->
+  @if (saveToasts$ | async; as toasts) {
+    @if (toasts.length > 0) {
+      <div class="fixed bottom-4 left-1/2 -translate-x-1/2 z-1000 w-full max-w-md px-4 space-y-2 pointer-events-none">
+        @for (toast of toasts; track toast.id) {
+          <div
+            class="rounded-lg px-4 py-3 text-sm font-medium shadow-lg"
+            [ngClass]="getToastCSS(toast.type)"
+          >
+            {{ toast.message }}
+          </div>
+        }
+      </div>
+    }
+  }
+
+
+
+
+</main>
+
+
+<footer class="bg-[var(--color-text)] text-[var(--color-accent-soft)]">
+  <app-footer></app-footer>
+</footer>

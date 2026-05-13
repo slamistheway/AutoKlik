@@ -1,0 +1,78 @@
+<!-- ----------------------------------- MARKA -------------------------------------- -->
+<div class="span-1 flex flex-col gap-3">
+  <h1 class="w-full text-center">{{ title }}</h1>
+    <div class="relative">
+      <button
+        type="button"
+        (click)="toggleDropdown()"
+        class="w-full border-2 border-[var(--border-color)] -mt-2 px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-navbar)] focus:border-[var(--color-navbar)] flex items-center justify-between"
+      >
+        @if (isSingleMode) {
+          <span>{{ selectedBrands[0] || placeholder }}</span>
+        }
+        @else {
+          <span class="flex flex-wrap gap-1">
+            @if (selectedBrands.length === 0) {
+              {{ placeholder }}
+            }
+            @else {
+              @for (brand of selectedBrands; track $index) {
+                <span class="flex items-center gap-1 bg-(--color-selectedListItem) text-[var(--color-text)]  px-2 py-0.5 text-xs">
+                  <span>{{ brand }}</span>
+                  <button
+                    type="button"
+                    (click)="removeSelectedBrand(brand, $event)"
+                  >
+                    &#x2715;
+                  </button>
+                </span>
+              }
+            }
+          </span>
+        }
+
+        <span class="flex items-center gap-2">
+          <fa-icon [icon]="faChevronDown"></fa-icon>
+        </span>
+      </button>
+
+      @if (dropdowns[dropdownKey]) {
+        <div class="absolute p-3 z-10 mt-1 w-full bg-[var(--color-surface)] border border-[var(--border-color)]  shadow-lg max-h-60 overflow-y-auto">
+          <div class="relative w-full mb-2">
+            <fa-icon
+              [icon]="faSearch"
+              class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+            ></fa-icon>
+
+            <input
+              type="text"
+              placeholder="Pretrazi marku"
+              [value]="brandSearchTerm"
+              (input)="onBrandSearchInput($event)"
+              class="w-full border-2 rounded-2xl pl-10 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--color-navbar)] focus:border-[var(--color-navbar)]"
+            />
+          </div>
+
+          @for (brand of filteredBrands; track $index) {
+            <button
+              type="button"
+              (click)="selectBrand(brand)"
+              class="flex items-center w-full gap-2 px-4 py-2 text-sm hover:bg-[var(--color-accent-soft)] hover:text-[var(--color-navbar)]  cursor-pointer"
+            >
+              @if (!isSingleMode) {
+                <input type="checkbox" [checked]="selectedBrands.includes(brand.label)">
+              }
+              <span>{{ brand.label }}</span>
+            </button>
+          }
+
+          @if (filteredBrands.length === 0) {
+            <p class="px-2 py-2 text-sm text-gray-500">
+              Nema rezultata za pretragu.
+            </p>
+          }
+        </div>
+      }
+    </div>
+</div>
+

@@ -1,0 +1,22 @@
+[
+  {
+    "brand": "Mercedes-Benz",
+    "models": ["Sprinter", "Vito", "Citan"]
+  },
+  {
+    "brand": "Ford",
+    "models": ["Transit", "Transit Custom", "Tourneo Custom"]
+  },
+  {
+    "brand": "Volkswagen",
+    "models": ["Transporter T6", "Crafter", "Caddy"]
+  },
+  {
+    "brand": "Renault",
+    "models": ["Trafic", "Master", "Kangoo"]
+  },
+  {
+    "brand": "Peugeot",
+    "models": ["Boxer", "Expert", "Partner"]
+  }
+]

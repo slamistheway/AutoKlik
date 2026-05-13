@@ -1,0 +1,276 @@
+<header>
+  <app-navbar></app-navbar>
+</header>
+
+@if (currentUser$ | async; as user) {
+  <div
+    class="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4">
+    <div class="max-w-7xl w-full space-y-8">
+      <div class="flex bg-[var(--color-accent-soft)] shadow rounded-lg p-6 space-y-4 gap-4">
+
+        <aside>
+          <app-my-profile-aside></app-my-profile-aside>
+        </aside>
+
+        <div class="border-4 flex-1 bg-white rounded-lg shadow-md space-y-6">
+          <ng-container [ngSwitch]="activeTab">
+
+            <div class="flex w-full bg-gray-100 ">
+              <button
+                type="button"
+                (click)="onSettingsTabClick('moji_podaci')"
+                [ngClass]="current_tab === 'moji_podaci' ? 'bg-white' : 'bg-gray-100'"
+                class="flex-1 py-2 shadow hover:bg-gray-200 transition"
+              >
+                Moji podaci
+              </button>
+              <button
+                type="button"
+                (click)="onSettingsTabClick('upravljanje_racunom')"
+                [ngClass]="current_tab === 'upravljanje_racunom' ? 'bg-white' : 'bg-gray-100'"
+                class="flex-1 py-2 shadow hover:bg-gray-200 transition"
+              >
+                Upravljanje računom
+              </button>
+            </div>
+
+
+            @switch (activeTab) {
+              @case ('postavke') {
+                <div class="px-6">
+                  <h2 class="text-xl font-semibold text-gray-800">Postavke profila</h2>
+
+                  @if (current_tab == 'moji_podaci') {
+                    <!-- Profile Picture -->
+                    <div class="flex flex-col gap-4 border-4">
+                      <label class="font-medium text-gray-700">Profilna slika</label>
+                      <div class="flex items-center gap-4">
+                        <div class="relative w-24 h-24">
+                          <button
+                            type="button"
+                            (click)="openPfpPicker(pfpInput)"
+                            [disabled]="isSaving"
+                            class="relative w-24 h-24 cursor-pointer disabled:opacity-60"
+                          >
+                            <div class="w-24 h-24 overflow-hidden bg-gray-200 rounded-full">
+                              <img
+                                [src]="(profileImageUrl$ | async) || 'http://localhost:3000/default-pfp.jpg'"
+                                alt="Profile preview"
+                                class="w-full h-full object-cover"
+                              >
+                            </div>
+                            <span
+                              class="absolute -bottom-1 -right-1 h-8 w-8 flex items-center justify-center rounded-full bg-blue-600 text-white shadow hover:bg-blue-700"
+                            >
+                            <fa-icon [icon]="faPen" aria-hidden="true"></fa-icon>
+                          </span>
+                          </button>
+
+                          <input
+                            #pfpInput
+                            id="pfpInput"
+                            type="file"
+                            accept="image/*"
+                            class="hidden"
+                            (change)="onFileSelected($event)"
+                          >
+                        </div>
+                      </div>
+                    </div>
+
+
+                    <!-- Profile Form -->
+                    <form (ngSubmit)="saveProfile()" class="space-y-4">
+                      <!-- Username Row -->
+                      <div class="py-3 border-b space-y-2">
+                        <label class="block font-medium text-gray-700">Korisničko ime</label>
+                        <span class="text-gray-900">{{ user.username }}</span>
+                      </div>
+
+                      <!-- Email Row -->
+                      <div class="py-3 border-b space-y-2">
+                        <label class="block font-medium text-gray-700">Email</label>
+                        <span class="text-gray-900">{{ user.email }}</span>
+                      </div>
+
+                      <!-- First Name Row -->
+                      <div class="py-3 border-b space-y-2">
+                        <label class="block font-medium text-gray-700" for="firstName">Ime</label>
+                        <div class="flex items-center gap-2">
+                          <input
+                            id="firstName"
+                            name="firstName"
+                            type="text"
+                            [(ngModel)]="firstName"
+                            [readonly]="!isEditing('firstName') || isSaving"
+                            [ngClass]="isEditing('firstName') ? 'bg-white border-blue-400' : 'bg-gray-100 border-gray-300 cursor-not-allowed'"
+                            class="w-full rounded-md border px-3 py-2"
+                          >
+                          <button
+                            type="button"
+                            (click)="toggleEdit('firstName')"
+                            [disabled]="isSaving"
+                            class="h-10 w-10 shrink-0 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 disabled:opacity-60"
+                            aria-label="Uredi ime"
+                          >
+                            <fa-icon [icon]="faPen"></fa-icon>
+                          </button>
+                        </div>
+                      </div>
+
+                      <!-- Last Name Row -->
+                      <div class="py-3 border-b space-y-2">
+                        <label class="block font-medium text-gray-700" for="lastName">Prezime</label>
+                        <div class="flex items-center gap-2">
+                          <input
+                            id="lastName"
+                            name="lastName"
+                            type="text"
+                            [(ngModel)]="lastName"
+                            [readonly]="!isEditing('lastName') || isSaving"
+                            [ngClass]="isEditing('lastName') ? 'bg-white border-blue-400' : 'bg-gray-100 border-gray-300 cursor-not-allowed'"
+                            class="w-full rounded-md border px-3 py-2"
+                          >
+                          <button
+                            type="button"
+                            (click)="toggleEdit('lastName')"
+                            [disabled]="isSaving"
+                            class="h-10 w-10 shrink-0 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 disabled:opacity-60"
+                            aria-label="Uredi prezime"
+                          >
+                            <fa-icon [icon]="faPen"></fa-icon>
+                          </button>
+                        </div>
+                      </div>
+
+                      <!-- Phone Row -->
+                      <div class="py-3 border-b space-y-2">
+                        <label class="block font-medium text-gray-700" for="phone">Telefon</label>
+                        <div class="flex items-center gap-2">
+                          <input
+                            id="phone"
+                            name="phone"
+                            type="text"
+                            [(ngModel)]="phone"
+                            [readonly]="!isEditing('phone') || isSaving"
+                            [ngClass]="isEditing('phone') ? 'bg-white border-blue-400' : 'bg-gray-100 border-gray-300 cursor-not-allowed'"
+                            class="w-full rounded-md border px-3 py-2"
+                          >
+                          <button
+                            type="button"
+                            (click)="toggleEdit('phone')"
+                            [disabled]="isSaving"
+                            class="h-10 w-10 shrink-0 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 disabled:opacity-60"
+                            aria-label="Uredi telefon"
+                          >
+                            <fa-icon [icon]="faPen"></fa-icon>
+                          </button>
+                        </div>
+                      </div>
+
+                      <!-- City Row -->
+                      <div class="py-3 border-b space-y-2">
+                        <label class="block font-medium text-gray-700" for="city">Grad</label>
+                        <div class="flex items-center gap-2">
+                          <input
+                            id="city"
+                            name="city"
+                            type="text"
+                            [(ngModel)]="city"
+                            [readonly]="!isEditing('city') || isSaving"
+                            [ngClass]="isEditing('city') ? 'bg-white border-blue-400' : 'bg-gray-100 border-gray-300 cursor-not-allowed'"
+                            class="w-full rounded-md border px-3 py-2"
+                          >
+                          <button
+                            type="button"
+                            (click)="toggleEdit('city')"
+                            [disabled]="isSaving"
+                            class="h-10 w-10 shrink-0 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 disabled:opacity-60"
+                            aria-label="Uredi grad"
+                          >
+                            <fa-icon [icon]="faPen"></fa-icon>
+                          </button>
+                        </div>
+                      </div>
+
+                      <!-- Country Row -->
+                      <div class="py-3 border-b space-y-2">
+                        <label class="block font-medium text-gray-700" for="country">Država</label>
+                        <div class="flex items-center gap-2">
+                          <input
+                            id="country"
+                            name="country"
+                            type="text"
+                            [(ngModel)]="country"
+                            [readonly]="!isEditing('country') || isSaving"
+                            [ngClass]="isEditing('country') ? 'bg-white border-blue-400' : 'bg-gray-100 border-gray-300 cursor-not-allowed'"
+                            class="w-full rounded-md border px-3 py-2"
+                          >
+                          <button
+                            type="button"
+                            (click)="toggleEdit('country')"
+                            [disabled]="isSaving"
+                            class="h-10 w-10 shrink-0 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 disabled:opacity-60"
+                            aria-label="Uredi državu"
+                          >
+                            <fa-icon [icon]="faPen"></fa-icon>
+                          </button>
+                        </div>
+                      </div>
+
+                      <div class="pt-2">
+                        <button
+                          type="submit"
+                          [disabled]="isSaving"
+                          class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700  text-sm font-medium disabled:opacity-60"
+                        >
+                          {{ isSaving ? 'Spremanje...' : 'Spremi promjene' }}
+                        </button>
+                      </div>
+
+                      <!-- Success/Error Message -->
+                      @if (saveMessage) {
+                        <div
+                          [ngClass]="saveMessage.includes('uspjesno') ? 'bg-red-100 text-red-800' : 'bg-red-100 text-red-800'"
+                          class="p-4 rounded-md mt-4">
+                          {{ saveMessage }}
+                        </div>
+                      }
+                    </form>
+                  }
+                  @if (current_tab == 'upravljanje_racunom') {
+                    <div class="mt-8 pt-6">
+                      <button
+                        type="button"
+                        (click)="deleteAccount()"
+                        [disabled]="isDeleting || isSaving"
+                        class="mt-3 px-4 py-2 rounded-md bg-red-600 text-white text-sm font-medium hover:bg-red-700 disabled:opacity-60"
+                      >
+                        {{ isDeleting ? 'Brisanje računa...' : 'Izbriši račun' }}
+                      </button>
+
+                      @if (deleteMessage) {
+                        <div
+                          [ngClass]="deleteMessage.includes('uspješno') ? 'bg-red-100 text-red-800' : 'bg-red-100 text-red-800'"
+                          class="p-4 rounded-md mt-4"
+                        >
+                          {{ deleteMessage }}
+                        </div>
+                      }
+                    </div>
+                }
+
+                </div>
+              }
+            }
+          </ng-container>
+        </div>
+      </div>
+
+    </div>
+  </div>
+}
+
+<footer>
+  <app-footer></app-footer>
+</footer>

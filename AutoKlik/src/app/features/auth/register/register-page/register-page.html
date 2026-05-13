@@ -1,0 +1,89 @@
+<header>
+  <app-navbar></app-navbar>
+</header>
+
+<div class="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-md w-full space-y-8">
+    <div>
+      <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
+        Registriraj se na AutoKlik
+      </h2>
+      <p class="mt-2 text-center text-sm text-gray-600">
+        Već imaš račun?
+        <a routerLink="/login" class="font-medium text-blue-600 hover:text-blue-500">
+          Prijavi se ovdje
+        </a>
+      </p>
+    </div>
+
+    <form #registerForm="ngForm" class="mt-8 space-y-6" (ngSubmit)="register(registerForm)">
+      <div class="rounded-md shadow-sm space-y-4">
+
+        <div>
+          <label for="korisniko-ime" class="block text-sm font-medium  mb-1">Korisničko ime</label>
+          <input
+            id="korisniko-ime"
+            name="username"
+            type="username"
+            [(ngModel)]="username"
+            autocomplete="username"
+            required
+            class="appearance-none relative block w-full px-3 py-2 border border-[var(--border-color)] placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-[var(--border-color)]lue-500 sm:text-sm"
+            placeholder="Unesi korisničko ime"
+          >
+        </div>
+
+
+        <div>
+          <label for="email-address" class="block text-sm font-medium  mb-1">Email adresa</label>
+          <input
+            id="email-address"
+            name="email"
+            type="email"
+            [(ngModel)]="email"
+            autocomplete="email"
+            required
+            class="appearance-none relative block w-full px-3 py-2 border border-[var(--border-color)] placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-[var(--border-color)]lue-500 sm:text-sm"
+            placeholder="Unesi email adresu"
+          >
+        </div>
+
+        <div>
+          <label for="password" class="block text-sm font-medium  mb-1">Lozinka</label>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            [(ngModel)]="password"
+            autocomplete="new-password"
+            required
+            class="appearance-none relative block w-full px-3 py-2 border border-[var(--border-color)] placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-[var(--border-color)]lue-500 sm:text-sm"
+            placeholder="Unesi lozinku"
+          >
+        </div>
+      </div>
+
+      @if (errorMessage$ | async; as errorMessage) {
+        <div class="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {{ errorMessage }}
+        </div>
+      }
+      @if (successMessage$ | async; as successMessage) {
+        <div class="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {{ successMessage }}
+        </div>
+      }
+
+
+      <div>
+        <button
+          type="submit"
+          [disabled]="registerForm.invalid || isSubmitting"
+          class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 enabled:hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-300 disabled:cursor-not-allowed"
+        >
+          {{ isSubmitting ? 'Registracija u tijeku...' : 'Registriraj se' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

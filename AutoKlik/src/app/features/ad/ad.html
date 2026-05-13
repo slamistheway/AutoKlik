@@ -1,0 +1,150 @@
+<header>
+  <app-navbar></app-navbar>
+</header>
+
+<div class="min-h-screen bg-gray-50 py-8 px-4">
+  <div class="max-w-4xl mx-auto">
+    @if (errorMessage$ | async; as errorMessage) {
+      @if (errorMessage) {
+      <div class="rounded-lg border border-red-200 bg-white px-6 py-5 text-red-700">
+        {{ errorMessage }}
+      </div>
+      }
+    } @else if (publicAd$ | async; as publicAd) {
+      <div class="rounded-lg border border-gray-200 bg-white px-6 py-6 space-y-4">
+        <div class="space-y-4">
+          <p class="text-sm text-gray-700 mt-2">{{ getCategoryLabel(publicAd.category) }} > {{ getSubcategoryLabel(publicAd.subcategory) }}</p>
+
+          <div class="relative w-full overflow-hidden rounded-lg border border-gray-200 bg-gray-100" style="aspect-ratio: 16 / 9;">
+            <img
+              [src]="currentAdImage"
+              [alt]="publicAd.title"
+              class="h-full w-full object-cover"
+            >
+
+            @if (hasMultipleImages()) {
+              <button
+                type="button"
+                (click)="previousImage()"
+                class="absolute left-0 top-0 h-full rounded-none bg-black/35 px-4 text-white hover:bg-black/50 flex items-center justify-center"
+                aria-label="Previous image"
+              >
+                &larr;
+              </button>
+
+              <button
+                type="button"
+                (click)="nextImage()"
+                class="absolute right-0 top-0 h-full rounded-none bg-black/35 px-4 text-white hover:bg-black/50 flex items-center justify-center"
+                aria-label="Next image"
+              >
+                &rarr;
+              </button>
+            }
+          </div>
+
+          @if ((publicAd.images?.length ?? 0) > 1) {
+            <div class="grid grid-cols-4 gap-2">
+              @for (image of publicAd.images; track $index) {
+                <button
+                  type="button"
+                  (click)="currentImageIndex = $index"
+                  class="overflow-hidden rounded-md border bg-gray-100"
+                  [ngClass]="currentImageIndex === $index ? 'border-[var(--color-navbar)] ring-2 ring-[var(--color-navbar)]' : 'border-gray-200'"
+                >
+                  <img
+                    [src]="getAdImageUrl(image)"
+                    [alt]="publicAd.title + ' slika ' + ($index + 1)"
+                    class="h-20 w-full object-cover"
+                  >
+                </button>
+              }
+            </div>
+          }
+
+          <div class="flex items-start justify-between gap-4 pt-2">
+            <div>
+              <h1 class="text-2xl font-bold text-gray-900">{{ publicAd.title }}</h1>
+              <p class="text-sm text-gray-600 mt-1">{{ publicAd.brand }} {{ publicAd.model }} / {{ publicAd.year }}</p>
+              <div class="rounded-full bg-[var(--color-accent-soft)] px-3 py-1 text-xs font-semibold text-[var(--color-navbar)]">
+                Objavio: {{ getPublisherLabel(publicAd) }}
+              </div>
+              <div class="rounded-full bg-[var(--color-accent-soft)] px-3 py-1 mt-2 text-xs font-semibold text-[var(--color-navbar)]">
+                Objavljeno: {{ (publicAd.created_at | date:'dd.MM.yyyy ')  }}
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <button
+                type="button"
+                (click)="null"
+                class="px-4 py-2 rounded-lg font-medium border border-gray-300 text-gray-700 hover:bg-gray-50"
+              >
+                Posalji poruku
+              </button>
+
+
+
+              @if ((saveAdButton$ | async) && !(publicAd.user_id === 0)) {
+                <button
+                  (click)="toggleSaveAd()"
+                  [disabled]="isSaving$ | async"
+                  [class]="'px-4 py-2 rounded-lg font-medium transition-all duration-200 shrink-0 ' +
+                  ((isSaved$ | async)
+                    ? 'bg-[var(--color-navbar)] text-white hover:bg-[var(--color-navbar-hover)]'
+                    : 'border border-gray-300 text-gray-700 hover:bg-gray-50')"
+                >
+                  {{ (isSaving$ | async) ? 'Spremanje...' : ((isSaved$ | async) ? '❤️ Spremljeno' : ' Spremi') }}
+                </button>
+              }
+
+              @if (currentUser$ | async; as currentUser){
+                @if (currentUser.id == publicAd.user_id) {
+                  <button
+                    type="button"
+                    (click)="confirmDelete(publicAd.id)">
+                    Delete
+                  </button>
+                }
+              }
+
+
+
+            </div>
+          </div>
+        </div>
+
+
+        <div class="pt-2 border-t border-gray-100">
+          <p class="text-sm text-gray-800 whitespace-pre-line">{{ publicAd.description }}</p>
+        </div>
+      </div>
+    } @else {
+      <div class="rounded-lg border border-gray-200 bg-white px-6 py-5 text-gray-700">
+        Ucitavanje oglasa...
+      </div>
+    }
+  </div>
+</div>
+
+
+<!-- CONSOLE LOG BOX -->
+@if (saveAdToasts | async; as toasts) {
+  @if (toasts.length > 0) {
+    <div class="fixed bottom-4 left-1/2 -translate-x-1/2 z-1000 w-full max-w-md px-4 space-y-2 pointer-events-none">
+      @for (toast of toasts; track toast.id) {
+        <div
+          class="rounded-lg px-4 py-3 text-sm font-medium shadow-lg"
+          [ngClass]="getToastCSS(toast.type)"
+        >
+          {{ toast.message }}
+        </div>
+      }
+    </div>
+  }
+}
+
+
+<footer>
+  <app-footer></app-footer>
+</footer>

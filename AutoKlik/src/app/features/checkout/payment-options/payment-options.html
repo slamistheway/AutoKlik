@@ -1,0 +1,60 @@
+<header>
+  <app-navbar></app-navbar>
+</header>
+
+<div class="min-h-screen bg-gray-50 py-8 px-4">
+  <div class="max-w-5xl mx-auto space-y-6">
+    <h2 class="text-center text-3xl font-extrabold text-gray-900">Create Ad</h2>
+
+    <app-checkout-stepper
+      [currentStep]="currentStep"
+      [clickableSteps]="getClickableSteps()"
+      (stepSelected)="onStepSelected($event)"
+    ></app-checkout-stepper>
+
+    <div class="rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700">
+      Odabrana kategorija: <span class="font-semibold">{{ categoryLabel }}</span> > <span class="font-semibold">{{ subcategoryLabel }}</span>
+    </div>
+
+    <form #adForm="ngForm" (ngSubmit)="onSubmit(adForm)" class="space-y-4 rounded-lg border border-gray-200 bg-white p-6">
+      <div>
+        <h3 class="text-lg font-semibold text-gray-900">Placanje</h3>
+        <p class="text-sm text-gray-600">Svi oglasi su besplatni.</p>
+      </div>
+
+
+      <div class="flex justify-between items-center pt-4">
+        <button
+          type="button"
+          (click)="goToDetails()"
+          class="px-4 py-2 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300"
+        >
+          Nazad na detalje
+        </button>
+
+        <button
+          type="submit"
+          class="px-4 py-2 rounded-md bg-[var(--color-navbar)] text-white hover:bg-[var(--color-navbar-hover)] disabled:opacity-50"
+        >
+          {{ isSubmitting ? 'Spremanje...' : 'Kupi oglas' }}
+        </button>
+      </div>
+
+      @if (submitError) {
+        <div class="rounded-md bg-red-50 text-red-700 px-3 py-2 text-sm">
+          {{ submitError }}
+        </div>
+      }
+
+      @if (submitSuccess) {
+        <div class="rounded-md bg-red-50 text-red-700 px-3 py-2 text-sm">
+          {{ submitSuccess }}
+        </div>
+      }
+    </form>
+  </div>
+</div>
+
+<footer>
+  <app-footer></app-footer>
+</footer>
