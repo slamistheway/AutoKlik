@@ -82,35 +82,57 @@ export class AdController {
     return this.adService.fetchSavedAds(Number(req.user?.id));
   }
 
+  /*-------------------------------------------SELECTING---------------------------------------------*/
+  /*-------------------------------------------SELECTING---------------------------------------------*/
+  /*-------------------------------------------SELECTING---------------------------------------------*/
+  /*-------------------------------------------SELECTING---------------------------------------------*/
   @UseGuards(OptionalJwtAuthGuard)
   @Get('all')
   findAllAds(
-    @Req() req: any,
-    @Query()
-    query: {
-      category?: string;
-      subcategory?: string;
-      brands?: string;
-      models?: string;
-      yearMin?: string;
-      yearMax?: string;
-      search?: string;
-      limit?: string;
-      offset?: string;
-    },
+      @Req() req: any,
+      @Query()
+      query: {
+        category?: string;
+        subcategory?: string;
+        brands?: string;
+        models?: string;
+        yearMin?: string;
+        yearMax?: string;
+        search?: string;
+        limit?: string;
+        offset?: string;
+      },
   ) {
     const limit = Math.min(this.parsePositiveInt(query.limit, 5), 50);
     const offset = this.parseNonNegativeInt(query.offset, 0);
 
-    return this.adService.findAllAds(req.user?.id, query.category, query, { limit, offset });
-  }
+    const filters = {
+      category: query.category,
+      subcategory: query.subcategory,
+      brands: query.brands,
+      models: query.models,
+      yearMin: query.yearMin,
+      yearMax: query.yearMax,
+      search: query.search,
+    };
 
+    return this.adService.findAllAds(req.user?.id, filters, { limit, offset });
+  }
 
 
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.adService.findOne(+id);
   }
+
+
+
+
+
+
+
+
+
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateAdDto: UpdateAdDto) {
@@ -124,20 +146,25 @@ export class AdController {
 
 
 
-  /*-------------------------CRUD---------------------------*/
-  /*SAVE AD*/
+  /*--------------------------SAVING ADS FOR USERS---------------------------------*/
   @UseGuards(JwtAuthGuard)
   @Post('save/:adId')
   saveAd(@Param('adId') adId: string, @Req() req: any) {
     return this.adService.saveAd(Number(req.user?.id), +adId);
   }
-  /*UNSAVE AD*/
   @UseGuards(JwtAuthGuard)
   @Delete('save/:adId')
   unsaveAd(@Param('adId') adId: string, @Req() req: any) {
     return this.adService.unsaveAd(Number(req.user?.id), +adId);
   }
+  @UseGuards(JwtAuthGuard)
+  @Get('saved/:adId')
+  checkIfSaved(@Param('adId') adId: string, @Req() req: any) {
+    return this.adService.checkIfSaved(Number(req.user?.id), +adId);
+  }
 
+
+  /*--------------------------CRUD---------------------------------*/
   /*DELETE AD*/
   @UseGuards(JwtAuthGuard)
   @Delete('delete/:adId')
@@ -145,10 +172,5 @@ export class AdController {
     return this.adService.deleteAd(+adId, Number(req.user?.id));
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Get('saved/:adId')
-  checkIfSaved(@Param('adId') adId: string, @Req() req: any) {
-    return this.adService.checkIfSaved(Number(req.user?.id), +adId);
-  }
 
 }

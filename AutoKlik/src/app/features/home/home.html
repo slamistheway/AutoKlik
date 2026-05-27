@@ -16,29 +16,30 @@
             <input
               type="text"
               [value]="searchText"
+                  (input)="searchText = $any($event.target).value"
               (keyup.enter)="search_cars()"
-              placeholder="Što tražite?"
+              placeholder="Što tražiš?"
               class="flex-1 rounded-full border border-gray-300 px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-navbar)]"
             />
             <button
               type="button"
               (click)="search_cars()"
-              class="rounded-full bg-[var(--color-navbar)] px-5 py-3 text-sm font-bold text-white transition hover:bg-[var(--color-navbar-hover)]">
-              Pretraži
+              class="rounded-full bg-(--color-navbar) px-5 py-3 text-sm font-bold text-white transition hover:bg-(--color-navbar-hover)">
+                Traži
             </button>
           </div>
         </div>
 
-        <div class="grid gap-4 bg-[var(--color-surface-muted)] p-6 sm:grid-cols-2 lg:p-8">
+        <div class="grid gap-4 bg-(--color-surface-muted) p-6 sm:grid-cols-2 lg:p-8">
           <a routerLink="/cars" class="group text-center rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
-            <div class="flex h-14 w-14 mx-auto items-center justify-center rounded-2xl bg-[var(--color-accent-soft)] text-[var(--color-navbar)]">
+            <div class="flex h-14 w-14 mx-auto items-center justify-center rounded-2xl bg-(--color-accent-soft) text-(--color-navbar)">
               <fa-icon [icon]="faCar" class="text-2xl"></fa-icon>
             </div>
             <h2 class="mt-4 text-lg font-bold text-gray-900">Automobili</h2>
           </a>
 
           <a routerLink="/cars" class="group text-center rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
-            <div class="flex h-14 w-14 mx-auto items-center justify-center rounded-2xl bg-[var(--color-accent-soft)] text-[var(--color-navbar)]">
+            <div class="flex h-14 w-14 mx-auto items-center justify-center rounded-2xl bg-(--color-accent-soft) text-(--color-navbar)">
               <fa-icon [icon]="faMotorcycle" class="text-2xl"></fa-icon>
             </div>
             <h2 class="mt-4 text-lg font-bold text-gray-900">Motori</h2>

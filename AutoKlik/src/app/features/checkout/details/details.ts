@@ -432,20 +432,6 @@ export class Details {
     this.syncDetailsDraft();
   }
 
-  onMileageChange(value: string | number): void {
-    this.adFormModel.mileage = value === '' ? null : Number(value);
-    this.syncDetailsDraft();
-  }
-
-  onFieldChange(): void {
-    this.syncDetailsDraft();
-  }
-
-  onOptionalFieldChange(field: 'gearType' | 'color', value: string): void {
-    this.adFormModel[field] = value ? value : null;
-    this.syncDetailsDraft();
-  }
-
   onImagesSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     const files = input.files;

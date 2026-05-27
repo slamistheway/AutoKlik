@@ -3,9 +3,4 @@ export interface CurrentUser {
   username: string;
   email: string;
   pfp: string;
-  firstName?: string;
-  lastName?: string;
-  phone?: string;
-  city?: string;
-  country?: string;
 }

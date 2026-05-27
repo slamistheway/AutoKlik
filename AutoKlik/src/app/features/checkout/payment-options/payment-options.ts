@@ -9,7 +9,7 @@ import { CheckoutStepper } from '../checkout-stepper/checkout-stepper';
 import { CheckoutStateService } from '../checkout-state.service';
 import { Observable, of } from 'rxjs';
 import {CurrentUser} from '../../../models/current-user.model';
-import {Auth} from '../../auth/auth';
+import { Auth } from '../../../core/services/auth';
 import {getCategoryLabel, getSubcategoryLabel} from '../../../shared/functions/shared-functions';
 
 
@@ -160,7 +160,7 @@ export class PaymentOptions implements OnInit {
 
     this.auth.loadUser();
 
-    this.currentUser$ = this.auth.user$;
+    this.currentUser$ = this.auth.currentUser$;
     this.currentUser$.subscribe((user) => {
       this.currentUser = user;
     });
@@ -196,8 +196,8 @@ export class PaymentOptions implements OnInit {
   onSubmit(form: NgForm): void {
     this.submitError = '';
     this.submitSuccess = '';
-
     const token = localStorage.getItem('sessionApiToken');
+
     if (!token) {
       this.submitError = 'You must be logged in to create an ad.';
       return;
@@ -206,7 +206,6 @@ export class PaymentOptions implements OnInit {
       this.submitError = 'User data is not loaded yet.';
       return;
     }
-
 
     const payload = new FormData();
     payload.append('user_id', String(this.currentUser.id));
@@ -221,31 +220,16 @@ export class PaymentOptions implements OnInit {
     payload.append('county', this.adFormModel.county.trim());
     payload.append('sellerType', this.adFormModel.sellerType);
     payload.append('buyOrLease', this.adFormModel.buyOrLease);
-    if (this.adFormModel.gearType) {
-      payload.append('gearType', this.adFormModel.gearType);
-    }
-    if (this.adFormModel.color) {
-      payload.append('color', this.adFormModel.color);
-    }
-    if (this.adFormModel.doorNumber !== null) {
-      payload.append('doorNumber', String(this.adFormModel.doorNumber));
-    }
-    if (this.adFormModel.drivingLicence) {
-      payload.append('drivingLicence', this.adFormModel.drivingLicence);
-    }
-    if (this.adFormModel.weight !== null) {
-      payload.append('weight', String(this.adFormModel.weight));
-    }
-    if (this.adFormModel.payload !== null) {
-      payload.append('payload', String(this.adFormModel.payload));
-    }
-    if (this.adFormModel.volume !== null) {
-      payload.append('volume', String(this.adFormModel.volume));
-    }
+    payload.append('gearType', this.adFormModel.gearType || '');
+    payload.append('color', this.adFormModel.color || '');
+    payload.append('doorNumber', String(this.adFormModel.doorNumber));
+    payload.append('drivingLicence', this.adFormModel.drivingLicence);
+    payload.append('weight', String(this.adFormModel.weight));
+    payload.append('payload', String(this.adFormModel.payload));
+    payload.append('volume', String(this.adFormModel.volume));
     payload.append('title', this.adFormModel.title.trim());
     payload.append('description', this.adFormModel.description.trim());
     payload.append('year', String(this.adFormModel.year ? Number(this.adFormModel.year) : 0));
-
     this.adFormModel.images.forEach((image) => payload.append('images', image, image.name));
 
     const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });

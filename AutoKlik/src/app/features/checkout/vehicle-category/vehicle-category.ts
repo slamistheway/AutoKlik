@@ -31,14 +31,14 @@ export class VehicleCategory {
   };
 
   Categories: Kategorija[] = [
-    { label: 'Osobni automobil', value: 'car' },
+    { label: 'Osobni automobili', value: 'cars' },
     { label: 'Motocikl', value: 'motorcycle' },
     { label: 'Kombi', value: 'van' },
     { label: 'Ostalo', value: 'other' }
   ];
 
   SubCategories: Record<string, Podkategorija[]> = {
-    car: [{ id: 'personal_car', label: 'Osobni automobili', value: 'personal_car' }],
+    cars: [{ id: 'personal_cars', label: 'Osobni automobili', value: 'personal_cars' }],
     motorcycle: [
       { id: 'sports_motorcycle', label: 'Sportski motori', value: 'sports_motorcycle' },
       { id: 'road_motorcycle', label: 'Cestovni motori', value: 'road_motorcycle' },

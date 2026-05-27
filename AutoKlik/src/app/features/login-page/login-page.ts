@@ -4,13 +4,13 @@ import {Router, RouterLink} from '@angular/router';
 import {FormsModule, NgForm} from '@angular/forms';
 import {finalize} from 'rxjs/operators';
 import {CommonModule} from '@angular/common';
-import {NavbarComponent} from '../../../../shared/layout/navbar/navbar';
-import {Footer} from '../../../../shared/layout/footer/footer';
+import {NavbarComponent} from '../../shared/layout/navbar/navbar';
+import {Footer} from '../../shared/layout/footer/footer';
 import {Subject} from 'rxjs';
 
 
 @Component({
-  selector: 'app-login-page',
+  selector: 'app-login-page-page',
   imports: [CommonModule, FormsModule, NavbarComponent, RouterLink, Footer],
   templateUrl: './login-page.html',
 })
@@ -21,17 +21,18 @@ export class LoginPage {
   errorMessage$ = new Subject<string>();
   successMessage$ = new Subject<string>();
 
-
-  constructor(private http: HttpClient, private router: Router) {}
+  constructor(
+    private http: HttpClient,
+    private router: Router
+  ) {}
 
   login(form: NgForm) {
     if (form.invalid || this.isSubmitting) {
-      form.control.markAllAsTouched();
+      this.errorMessage$.next('Forma nije validna.');
       return;
     }
 
     const identifier = this.identifier.trim();
-
     if (!identifier) {
       this.errorMessage$.next('Unesite email ili korisničko ime.');
       return;
@@ -41,8 +42,7 @@ export class LoginPage {
     this.errorMessage$.next('');
     this.successMessage$.next('');
 
-    this.http
-      .post<{ message?: string; token?: string }>('http://localhost:3000/auth/login', {
+    this.http.post<{ message?: string; token?: string }>('http://localhost:3000/login', {
         identifier: identifier,
         password: this.password,
       })
@@ -57,10 +57,11 @@ export class LoginPage {
 
 
           if (res.token) {
+            console.log('Received token:', res.token);
             localStorage.setItem('sessionApiToken', res.token);
+            console.log('Token stored in localStorage. Current localStorage:', localStorage);
+            this.router.navigate(['/']);
           }
-
-          this.router.navigate(['/home']);
         },
         error: (err) => {
           this.errorMessage$.next(err.error.message ?? 'Prijava nije uspjela.');

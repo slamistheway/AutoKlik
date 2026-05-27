@@ -17,18 +17,6 @@
           <li><a routerLink="/" class="text-(--color-footerLink-text) hover:text-(--color-footerLinkHover-text) ">Dijelovi i oprema</a></li>
         </ul>
 
-        @if (currentLanguage$ | async; as language) {
-          <div>
-            <button
-              type="button"
-              (click)="toggleLanguage()"
-              class="mt-2  inline-flex items-center gap-2  border border-white/20 text-(--color-footerLink-text) bg-white/5 px-2 py-2 text-sm font-semibold transition-colors hover:border-(--color-navbar) hover:bg-white hover:text-(--color-footer)"
-            >
-              <span>Lanugage: </span>
-              <img [src]="getLanguageFlagUrl(language)" alt="Language" class="h-4 w-6 object-cover">
-            </button>
-          </div>
-        }
 
       </div>
 

@@ -5,7 +5,7 @@ import {MyProfileAside} from '../../shared/layout/my-profile-aside/my-profile-as
 import {CommonModule} from '@angular/common';
 import {Observable, of} from 'rxjs';
 import {CurrentUser} from '../../models/current-user.model';
-import {Auth} from '../auth/auth';
+import { Auth } from '../../core/services/auth';
 import {getProfileImageUrl} from '../../shared/functions/shared-functions';
 
 
@@ -24,7 +24,7 @@ export class MyProfile implements OnInit {
   ngOnInit(): void {
     this.auth.loadUser();
 
-    this.currentUser$ = this.auth.user$;
+    this.currentUser$ = this.auth.currentUser$;
   }
 
 

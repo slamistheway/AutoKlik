@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { Observable, of } from 'rxjs';
 import { RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { Auth } from '../../../features/auth/auth';
+import { Auth } from '../../../core/services/auth';
 import { CurrentUser } from '../../../models/current-user.model';
 import { getProfileImageUrl } from '../../functions/shared-functions';
 
@@ -31,7 +31,7 @@ export class NavbarComponent implements OnInit {
     console.log(localStorage);
 
     this.auth.loadUser();
-    this.currentUser$ = this.auth.user$;
+    this.currentUser$ = this.auth.currentUser$;
   }
 
 

@@ -1,21 +1,27 @@
 import {
     BadRequestException,
-    Inject,
     Injectable, Logger,
     NotFoundException,
 } from '@nestjs/common';
-import { Pool } from 'pg';
 import { CreateAdDto } from './dto/create-ad.dto';
 import { UpdateAdDto } from './dto/update-ad.dto';
-import {AuthService} from "../auth/auth.service";
+import { InjectRepository } from '@nestjs/typeorm';
+import { Brackets, DataSource, In, QueryFailedError, Repository } from 'typeorm';
+import { Ad } from './entities/ad.entity';
+import { AdImage } from './entities/ad-image.entity';
+import { SavedAd } from './entities/saved-ad.entity';
 
 
 @Injectable()
 export class AdService {
-    private readonly logger = new Logger(AuthService.name);
+    private readonly logger = new Logger(AdService.name);
 
-
-    constructor(@Inject('DATABASE_POOL') private readonly pool: Pool) {}
+    constructor(
+        @InjectRepository(Ad) private readonly adsRepo: Repository<Ad>,
+        @InjectRepository(AdImage) private readonly adImagesRepo: Repository<AdImage>,
+        @InjectRepository(SavedAd) private readonly savedAdsRepo: Repository<SavedAd>,
+        private readonly dataSource: DataSource,
+    ) {}
 
     private normalizeImages(images: string[]): string[] {
         return images
@@ -23,32 +29,27 @@ export class AdService {
             .filter((image): image is string => image.length > 0);
     }
 
-    private buildAdSelectQuery() {
-        return `
-            SELECT
-                ads.id,
-                ads.user_id,
-                users.username AS seller_username,
-                ads.category,
-                ads.subcategory,
-                ads.brand,
-                ads.model,
-                ads.title,
-                ads.description,
-                ads.year,
-                COALESCE(
-                    (
-                        SELECT JSON_AGG(ad_images.image_url ORDER BY ad_images.created_at)
-                        FROM ad_images
-                        WHERE ad_images.ad_id = ads.id
-                    ),
-                    '[]'::json
-                ) AS images,
-                ads.created_at,
-                ads.updated_at
-            FROM ads
-            JOIN users ON users.id = ads.user_id
-        `;
+    private mapAdForApi(ad: Ad): any {
+        const images = (ad.images ?? [])
+            .slice()
+            .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+            .map((img) => img.imageUrl);
+
+        return {
+            id: ad.id,
+            user_id: ad.userId,
+            seller_username: ad.user?.username ?? '',
+            category: ad.category,
+            subcategory: ad.subcategory,
+            brand: ad.brand,
+            model: ad.model,
+            title: ad.title,
+            description: ad.description,
+            year: ad.year,
+            images,
+            created_at: ad.createdAt,
+            updated_at: ad.updatedAt,
+        };
     }
 
     private normalizeCsvValues(value?: string): string[] {
@@ -70,6 +71,7 @@ export class AdService {
         const parsed = Number(value);
         return Number.isInteger(parsed) ? parsed : null;
     }
+
 
     private buildFiltersQuery(filters: {
         category?: string;
@@ -133,6 +135,91 @@ export class AdService {
         };
     }
 
+    private buildAdSelectQuery() {
+        return `
+            SELECT
+                ads.id,
+                ads.user_id,
+                users.username AS seller_username,
+                ads.category,
+                ads.subcategory,
+                ads.brand,
+                ads.model,
+                ads.title,
+                ads.description,
+                ads.year,
+                COALESCE(
+                    (
+                        SELECT JSON_AGG(ad_images.image_url ORDER BY ad_images.created_at)
+                        FROM ad_images
+                        WHERE ad_images.ad_id = ads.id
+                    ),
+                    '[]'::json
+                ) AS images,
+                ads.created_at,
+                ads.updated_at
+            FROM ads
+            JOIN users ON users.id = ads.user_id
+        `;
+    }
+
+    private applyFilters(
+        qb: ReturnType<Repository<Ad>['createQueryBuilder']>,
+        filters: {
+            category?: string;
+            subcategory?: string;
+            brands?: string;
+            models?: string;
+            yearMin?: string;
+            yearMax?: string;
+            search?: string;
+        },
+    ): void {
+        const category = filters.category?.trim();
+        if (category) {
+            qb.andWhere('ads.category = :category', { category });
+        }
+
+        const subcategory = filters.subcategory?.trim();
+        if (subcategory) {
+            qb.andWhere('ads.subcategory = :subcategory', { subcategory });
+        }
+
+        const brands = this.normalizeCsvValues(filters.brands);
+        if (brands.length > 0) {
+            qb.andWhere('ads.brand IN (:...brands)', { brands });
+        }
+
+        const models = this.normalizeCsvValues(filters.models);
+        if (models.length > 0) {
+            qb.andWhere('ads.model IN (:...models)', { models });
+        }
+
+        const yearMin = this.toValidYear(filters.yearMin);
+        if (yearMin !== null) {
+            qb.andWhere('ads.year >= :yearMin', { yearMin });
+        }
+
+        const yearMax = this.toValidYear(filters.yearMax);
+        if (yearMax !== null) {
+            qb.andWhere('ads.year <= :yearMax', { yearMax });
+        }
+
+        const search = filters.search?.trim();
+        if (search) {
+            const token = `%${search}%`;
+            qb.andWhere(
+                new Brackets((inner) => {
+                    inner
+                        .where('ads.title ILIKE :token', { token })
+                        .orWhere('ads.description ILIKE :token', { token })
+                        .orWhere('ads.brand ILIKE :token', { token })
+                        .orWhere('ads.model ILIKE :token', { token });
+                }),
+            );
+        }
+    }
+
     /*-------------------------------------------CRUD---------------------------------------------*/
     /*-------------------------------------------CRUD---------------------------------------------*/
     /*-------------------------------------------CRUD---------------------------------------------*/
@@ -142,13 +229,8 @@ export class AdService {
             throw new BadRequestException('Invalid ad ID or user ID.');
         }
 
-        const result = await this.pool.query(
-            `DELETE FROM ads
-             WHERE id = $1 AND user_id = $2`,
-            [adId, userId],
-        );
-
-        if (result.rowCount === 0) {
+        const result = await this.adsRepo.delete({ id: adId, userId });
+        if (!result.affected) {
             throw new NotFoundException('Ad not found or you do not have permission to delete it.');
         }
 
@@ -172,52 +254,47 @@ export class AdService {
             throw new BadRequestException('Required ad fields are missing.');
         }
 
-        const client = await this.pool.connect();
+        const createdAd = await this.dataSource.transaction(async (manager) => {
+            const adsRepo = manager.getRepository(Ad);
+            const imagesRepo = manager.getRepository(AdImage);
 
-        try {
-            await client.query('BEGIN');
+            const ad = adsRepo.create({
+                userId: user_id,
+                category,
+                subcategory,
+                brand,
+                model,
+                title: title ?? null,
+                description: description ?? null,
+                year: typeof year === 'number' ? year : null,
+            });
 
-            const result = await client.query(
-                `INSERT INTO ads (
-                    user_id,
-                    category,
-                    subcategory,
-                    brand,
-                    model,
-                    title,
-                    description,
-                    year
-                )
-                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-                 RETURNING id, user_id, category, subcategory, brand, model, title, description, year, created_at, updated_at`,
-                [user_id, category, subcategory, brand, model, title, description, year],
-            );
+            const savedAd = await adsRepo.save(ad);
 
-            const createdAd = result.rows[0];
-
-            for (const imageUrl of normalizedImages) {
-                await client.query(
-                    `INSERT INTO ad_images (ad_id, image_url)
-                     VALUES ($1, $2)`,
-                    [createdAd.id, imageUrl],
+            if (normalizedImages.length > 0) {
+                await imagesRepo.insert(
+                    normalizedImages.map((imageUrl) => ({
+                        adId: savedAd.id,
+                        imageUrl,
+                    })),
                 );
             }
 
-            await client.query('COMMIT');
+            return savedAd;
+        });
 
-            return {
-                message: 'Ad created successfully.',
-                ad: {
-                    ...createdAd,
-                    images: normalizedImages,
-                },
-            };
-        } catch (error) {
-            await client.query('ROLLBACK');
-            throw error;
-        } finally {
-            client.release();
-        }
+        const adWithRelations = await this.adsRepo.findOne({
+            where: { id: createdAd.id },
+            relations: { user: true, images: true },
+        });
+
+        return {
+            message: 'Ad created successfully.',
+            ad: {
+                ...(adWithRelations ? this.mapAdForApi(adWithRelations) : { id: createdAd.id, user_id }),
+                images: normalizedImages,
+            },
+        };
     }
 
 
@@ -228,7 +305,7 @@ export class AdService {
     /*-------------------------------------------SELECTING---------------------------------------------*/
     async findAllAds(
         userId?: number | string,
-        categoryOrFilters: string | {
+        filters: {
             category?: string;
             subcategory?: string;
             brands?: string;
@@ -236,116 +313,99 @@ export class AdService {
             yearMin?: string;
             yearMax?: string;
             search?: string;
-        } = {},
-        filtersOrPagination: {
-            category?: string;
-            subcategory?: string;
-            brands?: string;
-            models?: string;
-            yearMin?: string;
-            yearMax?: string;
-            search?: string;
-        } | {
-            limit?: number;
-            offset?: number;
         } = {},
         pagination: {
             limit?: number;
             offset?: number;
         } = {},
     ) {
-        const hasExplicitCategory = typeof categoryOrFilters === 'string';
-        const category = hasExplicitCategory ? categoryOrFilters : categoryOrFilters.category;
-        const filters = (hasExplicitCategory ? filtersOrPagination : categoryOrFilters) as {
-            category?: string;
-            subcategory?: string;
-            brands?: string;
-            models?: string;
-            yearMin?: string;
-            yearMax?: string;
-            search?: string;
-        };
-        const resolvedPagination = (hasExplicitCategory ? pagination : filtersOrPagination) as {
-            limit?: number;
-            offset?: number;
-        };
-
         const normalizedUserId = Number(userId);
-        this.logger.debug("normalizedUserId za homapage:" + normalizedUserId);
+        this.logger.debug('normalizedUserId za homapage:' + normalizedUserId);
 
-        const safeLimit = Number.isInteger(resolvedPagination.limit) && Number(resolvedPagination.limit) > 0
-            ? Math.min(Number(resolvedPagination.limit), 50)
+        const safeLimit = Number.isInteger(pagination.limit) && Number(pagination.limit) > 0
+            ? Math.min(Number(pagination.limit), 50)
             : 5;
-        const safeOffset = Number.isInteger(resolvedPagination.offset) && Number(resolvedPagination.offset) >= 0
-            ? Number(resolvedPagination.offset)
+        const safeOffset = Number.isInteger(pagination.offset) && Number(pagination.offset) >= 0
+            ? Number(pagination.offset)
             : 0;
 
-        const hasUserId =
-            normalizedUserId !== null &&
-            Number.isFinite(normalizedUserId) &&
-            normalizedUserId > 0;
+        const hasUserId = Number.isFinite(normalizedUserId) && normalizedUserId > 0;
 
-        const { whereClause, params } = this.buildFiltersQuery({
-            ...filters,
-            category: category?.trim() || filters.category,
-        });
+        // 1) totalCount (no images join to avoid duplicates)
+        const countQb = this.adsRepo.createQueryBuilder('ads');
+        this.applyFilters(countQb, filters);
+        const totalCount = await countQb.getCount();
 
-        const countResult = await this.pool.query(
-            `SELECT COUNT(*)::int AS total_count
-             FROM ads
-             JOIN users ON users.id = ads.user_id
-             ${whereClause}`,
-            params,
-        );
-
-        const totalCount = Number(countResult.rows[0]?.total_count ?? 0);
-
-        const selectParams = [...params, safeLimit, safeOffset];
-        const limitPlaceholder = `$${params.length + 1}`;
-        const offsetPlaceholder = `$${params.length + 2}`;
-
-        const result = await this.pool.query(
-            `${this.buildAdSelectQuery()}
-         ${whereClause}
-         ORDER BY ads.created_at DESC
-         LIMIT ${limitPlaceholder}
-         OFFSET ${offsetPlaceholder}`,
-            selectParams,
-        );
-
-        if (!hasUserId) {
-            this.logger.debug(hasUserId)
-            this.logger.debug(`No valid user ID provided, returning ads without saved status.`);
+        if (totalCount === 0) {
             return {
-                items: result.rows.map((ad) => ({
-                ...ad,
-                is_saved: false,
-                })),
+                items: [],
+                totalCount: 0,
+                limit: safeLimit,
+                offset: safeOffset,
+            };
+        }
+
+        // 2) page IDs first (stable pagination without duplicates from images joins)
+        const idsQb = this.adsRepo
+            .createQueryBuilder('ads')
+            .select('ads.id', 'id')
+            .distinct(true);
+        this.applyFilters(idsQb, filters);
+        idsQb
+            .orderBy('ads.createdAt', 'DESC')
+            .addOrderBy('ads.id', 'DESC')
+            .skip(safeOffset)
+            .take(safeLimit);
+
+        const idRows = await idsQb.getRawMany<{ id: number | string }>();
+        const adIds = idRows
+            .map((row) => Number(row.id))
+            .filter((id) => Number.isFinite(id) && id > 0);
+
+        if (adIds.length === 0) {
+            return {
+                items: [],
                 totalCount,
                 limit: safeLimit,
                 offset: safeOffset,
             };
         }
 
-        const savedResult = await this.pool.query(
-            `SELECT ad_id FROM saved_ads WHERE user_id = $1`,
-            [normalizedUserId],
-        );
+        // 3) load full entities with relations for the selected page
+        const ads = await this.adsRepo
+            .createQueryBuilder('ads')
+            .leftJoinAndSelect('ads.user', 'users')
+            .leftJoinAndSelect('ads.images', 'images')
+            .where('ads.id IN (:...adIds)', { adIds })
+            .orderBy('ads.createdAt', 'DESC')
+            .addOrderBy('ads.id', 'DESC')
+            .addOrderBy('images.createdAt', 'ASC')
+            .getMany();
 
-        const savedAdIds = new Set<number>(
-            savedResult.rows.map((row: { ad_id: number | string }) => Number(row.ad_id)),
-        );
+        // 4) compute saved status (optional user)
+        let savedAdIds = new Set<number>();
+        if (hasUserId) {
+            const savedRows = await this.savedAdsRepo.find({
+                select: { adId: true },
+                where: {
+                    userId: normalizedUserId,
+                    adId: In(adIds),
+                },
+            });
+            savedAdIds = new Set(savedRows.map((row) => row.adId));
+        }
 
         return {
-            items: result.rows.map((ad) => ({
-                ...ad,
-                is_saved: savedAdIds.has(Number(ad.id)),
+            items: ads.map((ad) => ({
+                ...this.mapAdForApi(ad),
+                is_saved: hasUserId ? savedAdIds.has(ad.id) : false,
             })),
             totalCount,
             limit: safeLimit,
             offset: safeOffset,
         };
     }
+
 
 
     async fetchSavedAds(userId: number | string) {
@@ -356,37 +416,37 @@ export class AdService {
             throw new BadRequestException('User id is required.');
         }
 
-        const result = await this.pool.query(
-            `SELECT
-                 saved_ads.ad_id AS ad_id,
-                 ads.user_id,
-                 ads.category,
-                 ads.subcategory,
-                 ads.brand,
-                 ads.model,
-                 ads.title,
-                 ads.description,
-                 ads.year,
-                 COALESCE(
-                     (
-                         SELECT JSON_AGG(ad_images.image_url ORDER BY ad_images.created_at)
-                         FROM ad_images
-                         WHERE ad_images.ad_id = ads.id
-                     ),
-                     '[]'::json
-                 ) AS images,
-                 ads.created_at,
-                 ads.updated_at,
-                 saved_ads.created_at AS saved_at
-             FROM saved_ads
-                      JOIN ads ON saved_ads.ad_id = ads.id
-             WHERE saved_ads.user_id = $1
-             ORDER BY saved_ads.created_at DESC;`,
-            [normalizedUserId],
-        );
+        const saved = await this.savedAdsRepo.find({
+            where: { userId: normalizedUserId },
+            relations: { ad: { images: true, user: true } },
+            order: { createdAt: 'DESC' },
+        });
 
+        return saved
+            .filter((row) => Boolean(row.ad))
+            .map((row) => {
+                const ad = row.ad;
+                const images = (ad.images ?? [])
+                    .slice()
+                    .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+                    .map((img) => img.imageUrl);
 
-        return result.rows;
+                return {
+                    ad_id: ad.id,
+                    user_id: ad.userId,
+                    category: ad.category,
+                    subcategory: ad.subcategory,
+                    brand: ad.brand,
+                    model: ad.model,
+                    title: ad.title,
+                    description: ad.description,
+                    year: ad.year,
+                    images,
+                    created_at: ad.createdAt,
+                    updated_at: ad.updatedAt,
+                    saved_at: row.createdAt,
+                };
+            });
     }
 
 
@@ -397,14 +457,13 @@ export class AdService {
             throw new BadRequestException('User id is required.');
         }
 
-        const result = await this.pool.query(
-            `${this.buildAdSelectQuery()}
-             WHERE ads.user_id = $1
-             ORDER BY ads.created_at DESC`,
-            [normalizedUserId],
-        );
+        const ads = await this.adsRepo.find({
+            where: { userId: normalizedUserId },
+            relations: { user: true, images: true },
+            order: { createdAt: 'DESC' },
+        });
 
-        return result.rows;
+        return ads.map((ad) => this.mapAdForApi(ad));
     }
 
 
@@ -413,17 +472,16 @@ export class AdService {
 
 
     async findOne(id: number) {
-        const result = await this.pool.query(
-            `${this.buildAdSelectQuery()}
-             WHERE ads.id = $1`,
-            [id],
-        );
+        const ad = await this.adsRepo.findOne({
+            where: { id },
+            relations: { user: true, images: true },
+        });
 
-        if (result.rows.length === 0) {
+        if (!ad) {
             throw new NotFoundException('Ad not found.');
         }
 
-        return result.rows[0];
+        return this.mapAdForApi(ad);
     }
 
     update(id: number, _updateAdDto: UpdateAdDto) {
@@ -446,20 +504,28 @@ export class AdService {
 
         this.logger.debug(`Saving...`);
 
-        const result = await this.pool.query(
-            `INSERT INTO saved_ads (user_id, ad_id, created_at)
-             VALUES ($1, $2, NOW())
-             ON CONFLICT (user_id, ad_id) DO NOTHING
-             RETURNING user_id, ad_id`,
-            [userId, adId],
-        );
+        let saved = false;
+        try {
+            await this.savedAdsRepo.insert({ userId, adId });
+            saved = true;
+        } catch (error) {
+            if (error instanceof QueryFailedError) {
+                const driverError: any = (error as any).driverError;
+                if (driverError?.code === '23505') {
+                    saved = false;
+                } else {
+                    throw error;
+                }
+            } else {
+                throw error;
+            }
+        }
 
-
-        this.logger.debug(`Saved status: ${result.rows.length > 0}`);
+        this.logger.debug(`Saved status: ${saved}`);
 
         return {
             message: 'Ad saved successfully.',
-            saved: result.rows.length > 0,
+            saved,
         };
     }
 
@@ -468,15 +534,11 @@ export class AdService {
             throw new BadRequestException('Invalid user ID or ad ID.');
         }
 
-        const result = await this.pool.query(
-            `DELETE FROM saved_ads
-             WHERE user_id = $1 AND ad_id = $2`,
-            [userId, adId],
-        );
+        const result = await this.savedAdsRepo.delete({ userId, adId });
 
         return {
             message: 'Ad unsaved successfully.',
-            deleted: result.rowCount > 0,
+            deleted: Boolean(result.affected && result.affected > 0),
         };
     }
 
@@ -485,15 +547,8 @@ export class AdService {
             throw new BadRequestException('Invalid user ID or ad ID.');
         }
 
-        const result = await this.pool.query(
-            `SELECT user_id, ad_id FROM saved_ads
-             WHERE user_id = $1 AND ad_id = $2`,
-            [userId, adId],
-        );
-
-        return {
-            isSaved: result.rows.length > 0,
-        };
+        const exists = await this.savedAdsRepo.exists({ where: { userId, adId } });
+        return { isSaved: exists };
     }
 
 

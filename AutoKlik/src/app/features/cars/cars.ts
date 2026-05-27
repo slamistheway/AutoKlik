@@ -5,16 +5,9 @@ import { FormsModule } from '@angular/forms';
 import {Router, RouterLink} from '@angular/router';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import {
-  faCar,
   faChevronDown,
   faEllipsis,
-  faMotorcycle,
-  faRoadBarrier,
-  faSearch,
-  faShuttleVan,
-  faTrailer,
-  faTractor,
-  faTruck, faFilter, faArrowRight, faTrashCan, faSliders,
+ faFilter, faArrowRight, faTrashCan, faSliders,
 } from '@fortawesome/free-solid-svg-icons';
 import {BehaviorSubject, filter, Observable, of, take, timeout} from 'rxjs';
 import { FilterBrands } from '../../shared/filters/filter-brands/filter-brands';
@@ -23,7 +16,6 @@ import { FilterColor } from '../../shared/filters/filter-color/filter-color';
 import { FilterCondition } from '../../shared/filters/filter-condition/filter-condition';
 import { FilterCounty } from '../../shared/filters/filter-county/filter-county';
 import { FilterDoorNumber } from '../../shared/filters/filter-doorNumber/filter-doorNumber';
-import { FilterDrivingLicence } from '../../shared/filters/filter-drivingLicence/filter-drivingLicence';
 import { FilterEnginePower } from '../../shared/filters/filter-enginePower/filter-enginePower';
 import { FilterEngineSize } from '../../shared/filters/filter-engineSize/filter-engineSize';
 import { FilterGasType } from '../../shared/filters/filter-gasType/filter-gasType';
@@ -42,12 +34,12 @@ import {
   getCategoryLabel as getCategoryLabelFn, getLoadErrorMessage,
   getPageNumbers, getSaveErrorMessage,
   getSubcategoryLabel as getSubcategoryLabelFn,
-  getToastCSS, LanguagePreferenceService,
+  getToastCSS,
   saveAdToasts,
 } from '../../shared/functions/shared-functions';
 import {Footer} from '../../shared/layout/footer/footer';
 import {NavbarComponent} from '../../shared/layout/navbar/navbar';
-import {Auth} from '../auth/auth';
+import { Auth } from '../../core/services/auth';
 import {CurrentUser} from '../../models/current-user.model';
 
 
@@ -183,14 +175,14 @@ export class CarsComponent implements OnInit {
   private readonly adsApiUrl = 'http://localhost:3000/ad/all';
 
 
-  private readonly defaultCurrentUser: CurrentUser = {
+  currentUser$: Observable<CurrentUser | null> = of(null);
+  currentUser: CurrentUser = {
     id: 0,
     username: 'guest',
     email: '',
     pfp: 'default-pfp.jpg',
   };
-  currentUser$: Observable<CurrentUser | null> = of(null);
-  currentUser: CurrentUser = this.defaultCurrentUser;
+
 
 
   protected readonly faChevronDown = faChevronDown;
@@ -203,7 +195,7 @@ export class CarsComponent implements OnInit {
 
 
 
-  /*---------------------------AD SAVE BUTTON AND SAVING ADS---------------------------*/
+  /*----------------------------------------------AD SAVE BUTTON AND SAVING ADS------------------------------------------------*/
   saveAdButton$ = new BehaviorSubject<boolean>(true);
   private readonly savingAdIds = new Set<number>();
   private readonly savedAdIds = new Set<number>();
@@ -213,7 +205,7 @@ export class CarsComponent implements OnInit {
   }
 
   toggleSaveAd(adId: number): void {
-    if (this.currentUser.id <= 0) {
+    if (this.currentUser.id == 0) {
       enqueueToast('Morate biti prijavljeni da biste spremili oglas.', 'error');
       return;
     }
@@ -374,10 +366,7 @@ export class CarsComponent implements OnInit {
 
   constructor(
     private readonly http: HttpClient,
-    private readonly auth: Auth,
-    private readonly languagePreference: LanguagePreferenceService,
-    private readonly router: Router,
-    private eRef: ElementRef
+    private readonly auth: Auth
   ) {}
 
   private readonly translations: Record<CarsTranslationKey, string> = {
@@ -400,7 +389,7 @@ export class CarsComponent implements OnInit {
     this.loadAdsFromDatabase(this.selectedVehicle_type);
 
     this.auth.loadUser();
-    this.currentUser$ = this.auth.user$;
+    this.currentUser$ = this.auth.currentUser$;
     this.currentUser$
       .pipe(
         filter((user): user is CurrentUser => Boolean(user?.id)),
@@ -410,7 +399,6 @@ export class CarsComponent implements OnInit {
         this.currentUser = user;
         this.saveAdButton$.next(user.id > 0);
         console.log('current user id:', user.id);
-        this.loadAdsFromDatabase(this.selectedVehicle_type);
       });
 
   }

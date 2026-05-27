@@ -1,7 +1,6 @@
 import {HttpErrorResponse, HttpParams} from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
-import {AppLanguage} from '../types/translations';
 
 export function getProfileImageUrl(user: { pfp?: string } | null): string {
   const pfp = user?.pfp?.trim();
@@ -320,7 +319,7 @@ export const categoryLabelMap: Record<string, string> = {
 };
 
 export const subcategoryLabelMap: Record<string, string> = {
-  personal_car: 'Osobni automobili',
+  personal_cars: 'Osobni automobili',
   sports_motorcycle: 'Sportski motori',
   road_motorcycle: 'Cestovni motori',
   moped_motorcycle: 'Mopedi',
@@ -434,36 +433,6 @@ export function getSaveErrorMessage(error: unknown): string {
 
 /*---------------------------------- SAVE AD BUTTON ----------------------------------------*/
 
-
-
-
-
-
-/*---------------------------------- JEZIK ----------------------------------------*/
-@Injectable({ providedIn: 'root' })
-export class LanguagePreferenceService {
-  private readonly storageKey = 'app.language';
-  private readonly languageSubject = new BehaviorSubject<AppLanguage>(this.readStoredLanguage());
-  readonly language$ = this.languageSubject.asObservable();
-
-  get currentLanguage(): AppLanguage {
-    return this.languageSubject.value;
-  }
-
-  setLanguage(language: AppLanguage): void {
-    this.languageSubject.next(language);
-    globalThis?.localStorage?.setItem(this.storageKey, language);
-  }
-
-  toggleLanguage(): void {
-    this.setLanguage(this.currentLanguage === 'hr' ? 'en' : 'hr');
-  }
-
-  private readStoredLanguage(): AppLanguage {
-    const stored = globalThis?.localStorage?.getItem(this.storageKey);
-    return stored === 'en' ? 'en' : 'hr';
-  }
-}
 
 
 

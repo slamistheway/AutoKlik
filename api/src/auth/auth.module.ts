@@ -4,6 +4,8 @@ import { AuthController } from './auth.controller';
 import {JwtModule} from '@nestjs/jwt';
 import { DatabaseModule } from '../database.module';
 import { JwtStrategy } from './jwt.strategy';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { User } from '../users/entities/user.entity';
 
 
 const jwtSecret = process.env.JWT_SECRET ?? 'dev_jwt_secret';
@@ -21,6 +23,7 @@ if (!process.env.JWT_SECRET) {
             signOptions: { expiresIn: '1h' },
         }),
         DatabaseModule,
+        TypeOrmModule.forFeature([User]),
     ],
     controllers: [AuthController],
     providers: [AuthService, JwtStrategy],

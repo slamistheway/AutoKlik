@@ -1,7 +1,6 @@
 import {
     BadRequestException,
     ConflictException,
-    Inject,
     Injectable,
     InternalServerErrorException,
     UnauthorizedException,
@@ -9,9 +8,12 @@ import {
 } from '@nestjs/common';
 import {RegisterDto} from "./dto/register.dto";
 import {LoginDto} from "./dto/login.dto";
-import { Pool } from 'pg';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { QueryFailedError } from 'typeorm';
+import { User } from '../users/entities/user.entity';
 
 @Injectable()
 export class AuthService {
@@ -21,7 +23,7 @@ export class AuthService {
     private readonly emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     constructor(
-        @Inject('DATABASE_POOL') private readonly pool: Pool,
+        @InjectRepository(User) private readonly usersRepo: Repository<User>,
         private readonly jwtService: JwtService,
     ) {}
 
@@ -49,39 +51,39 @@ export class AuthService {
         this.logger.debug(`Hashed password for username="${username}": ${hashedPassword}`);
 
         try {
-            const result = await this.pool.query(
-                `INSERT INTO users (username, email, password, pfp, first_name, last_name, phone, city, country)
-                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-                 RETURNING id, username, email, pfp, first_name, last_name, phone, city, country`,
-                [username, email, hashedPassword, pfp, firstName, lastName, phone, city, country],
-            );
+            const created = this.usersRepo.create({
+                username,
+                email,
+                password: hashedPassword,
+                pfp,
+                firstName,
+                lastName,
+                phone,
+                city,
+                country,
+            });
 
-            const user = result.rows[0];
-            this.logger.log(`User created: ${JSON.stringify(user)}`);
+            const user = await this.usersRepo.save(created);
+            this.logger.log(`User created: id=${user.id}, username=${user.username}`);
 
             return {
                 message: 'Registracija uspješna.',
-                user: {
-                    id: user.id,
-                    username: user.username,
-                    email: user.email,
-                    pfp: user.pfp,
-                    firstName: user.first_name,
-                    lastName: user.last_name,
-                    phone: user.phone,
-                    city: user.city,
-                    country: user.country,
-                },
             };
         } catch (err) {
-            if (err.code === '23505') {
-                const detail = err.detail;
-                if (detail.includes('username')) {
-                    this.logger.warn('Username already exists');
-                    throw new ConflictException("Krosničko ime već postoji");
-                } else if (detail.includes('email')) {
-                    this.logger.warn('Email already exists');
-                    throw new ConflictException("Email već postoji");
+            if (err instanceof QueryFailedError) {
+                const driverError: any = (err as any).driverError;
+                if (driverError?.code === '23505') {
+                    const detail = String(driverError?.detail ?? '');
+                    if (detail.includes('username')) {
+                        this.logger.warn('Username already exists');
+                        throw new ConflictException('Krosničko ime već postoji');
+                    }
+                    if (detail.includes('email')) {
+                        this.logger.warn('Email already exists');
+                        throw new ConflictException('Email već postoji');
+                    }
+
+                    throw new ConflictException('Korisnik već postoji.');
                 }
             }
 
@@ -105,20 +107,18 @@ export class AuthService {
         }
 
         const isEmail = identifier.includes('@');
-        const query = isEmail
-            ? 'SELECT id, username, email, password, pfp FROM users WHERE email = $1'
-            : 'SELECT id, username, email, password, pfp FROM users WHERE username = $1';
-
 
         try {
-            const result = await this.pool.query(query, [identifier]);
+            const normalizedIdentifier = isEmail ? identifier.toLowerCase() : identifier;
+            const user = await this.usersRepo.findOne({
+                where: isEmail ? { email: normalizedIdentifier } : { username: normalizedIdentifier },
+            });
 
-            if (result.rows.length === 0) {
+            if (!user) {
                 this.logger.warn(`Login failed: users row not found for email/username="${identifier}"`);
                 throw new UnauthorizedException('Neispravni podaci za prijavu.');
             }
 
-            const user = result.rows[0];
             const isMatch = await bcrypt.compare(password, user.password);
 
             if (!isMatch) {

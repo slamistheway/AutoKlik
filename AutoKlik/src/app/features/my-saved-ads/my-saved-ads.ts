@@ -5,7 +5,7 @@ import {MyProfileAside} from '../../shared/layout/my-profile-aside/my-profile-as
 import {CommonModule} from '@angular/common';
 import {BehaviorSubject, filter, finalize, Observable, of, Subject, take, timeout} from 'rxjs';
 import {CurrentUser} from '../../models/current-user.model';
-import {Auth} from '../auth/auth';
+import { Auth } from '../../core/services/auth';
 import {HttpClient, HttpErrorResponse} from '@angular/common/http';
 import {
   clampPage,
@@ -71,7 +71,7 @@ export class MySavedAds implements OnInit {
 
   ngOnInit(): void {
     this.auth.loadUser();
-    this.currentUser$ = this.auth.user$;
+    this.currentUser$ = this.auth.currentUser$;
     this.currentUser$
       .pipe(
         filter((user): user is CurrentUser => Boolean(user?.id)),

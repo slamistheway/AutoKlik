@@ -12,7 +12,7 @@ import {
   getSubcategoryLabel, saveAdToasts
 } from '../../shared/functions/shared-functions';
 import { CurrentUser } from '../../models/current-user.model';
-import {Auth} from '../auth/auth';
+import { Auth } from '../../core/services/auth';
 
 
 interface PublicAd {
@@ -79,7 +79,7 @@ export class Ad implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.auth.loadUser();
-    this.currentUser$ = this.auth.user$;
+    this.currentUser$ = this.auth.currentUser$;
     this.currentUser$
       .pipe(
         filter((user): user is CurrentUser => Boolean(user?.id)),

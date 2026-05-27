@@ -43,15 +43,13 @@ import {
   clampPage,
   getPageNumbers,
   getLoadErrorMessage,
-  LanguagePreferenceService,
   ToastType,
   SaveToast
 } from '../../shared/functions/shared-functions';
-import type { HomeTranslationEntry, HomeTranslationKey, HomeTranslationsByLanguage, AppLanguage } from '../../shared/types/translations';
 
 import {BehaviorSubject, distinctUntilChanged, finalize, Observable, of, Subject, timeout} from 'rxjs';
 import {HttpClient, HttpErrorResponse, HttpParams} from '@angular/common/http';
-import {Auth} from '../auth/auth';
+import { Auth } from '../../core/services/auth';
 
 
 interface PublicAd {
@@ -209,95 +207,7 @@ export class Pretrazi implements OnInit {
   private toastIdCounter = 0;
   private readonly toastTimers = new Map<number, number>();
   searchText = '';
-  currentLanguage: AppLanguage = 'hr';
 
-  private readonly emptyTranslations: Record<HomeTranslationKey, string> = {
-    searchPlaceholder: '',
-    filtersTitle: '',
-    showMoreFilters: '',
-    clearFilters: '',
-    searchButton: '',
-    featuredTitle: '',
-    adsTitle: '',
-    loadingAds: '',
-    noAdsFound: '',
-    publishedOn: '',
-    saveAd: '',
-    savedAd: '',
-    savingAd: '',
-  };
-
-  private homeTranslations: HomeTranslationsByLanguage = {
-    hr: { ...this.emptyTranslations },
-    en: { ...this.emptyTranslations },
-  };
-
-  private readonly translationKeys: HomeTranslationKey[] = [
-    'searchPlaceholder',
-    'filtersTitle',
-    'showMoreFilters',
-    'clearFilters',
-    'searchButton',
-    'featuredTitle',
-    'adsTitle',
-    'loadingAds',
-    'noAdsFound',
-    'publishedOn',
-    'saveAd',
-    'savedAd',
-    'savingAd',
-  ];
-
-  t(key: HomeTranslationKey): string {
-    const text = this.homeTranslations[this.currentLanguage]?.[key];
-    if (typeof text === 'string' && text.trim().length > 0) {
-      return text;
-    }
-
-    const fallback = this.homeTranslations.hr?.[key];
-    if (typeof fallback === 'string' && fallback.trim().length > 0) {
-      return fallback;
-    }
-
-    return key;
-  }
-
-  private loadTranslations(): void {
-    this.http.get<HomeTranslationEntry[]>('/translations.json').subscribe({
-      next: (entries) => {
-        const nextTranslations: HomeTranslationsByLanguage = {
-          hr: { ...this.emptyTranslations },
-          en: { ...this.emptyTranslations },
-        };
-
-        if (!Array.isArray(entries)) {
-          this.homeTranslations = nextTranslations;
-          return;
-        }
-
-        for (const entry of entries) {
-          if (!entry || (entry.language !== 'hr' && entry.language !== 'en')) {
-            continue;
-          }
-
-          const translationForLanguage: Record<HomeTranslationKey, string> = { ...this.emptyTranslations };
-          for (const key of this.translationKeys) {
-            translationForLanguage[key] = (entry as any)[key] ?? '';
-          }
-
-          nextTranslations[entry.language] = translationForLanguage;
-        }
-
-        this.homeTranslations = nextTranslations;
-      },
-      error: () => {
-        this.homeTranslations = {
-          hr: { ...this.emptyTranslations },
-          en: { ...this.emptyTranslations },
-        };
-      },
-    });
-  }
 
   /*SAVE AD BUTTON*/
   saveAdButton$ = new BehaviorSubject<boolean>(true);
@@ -377,7 +287,6 @@ export class Pretrazi implements OnInit {
   constructor(
     private readonly http: HttpClient,
     private readonly auth: Auth,
-    private readonly languagePreference: LanguagePreferenceService,
     private readonly route: ActivatedRoute,
     private eRef: ElementRef
   ) {
@@ -403,13 +312,9 @@ export class Pretrazi implements OnInit {
     }
 
     this.activeFilters = this.buildFiltersFromSelectedValues();
-    this.loadTranslations();
-    this.languagePreference.language$.subscribe((language) => {
-      this.currentLanguage = language;
-    });
 
     this.auth.loadUser();
-    this.currentUser$ = this.auth.user$;
+    this.currentUser$ = this.auth.currentUser$;
 
     this.currentUser$
       .pipe(
@@ -1262,4 +1167,3 @@ export class Pretrazi implements OnInit {
     }
   }
 }
-

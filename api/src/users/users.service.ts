@@ -1,21 +1,32 @@
-import { BadRequestException, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { Pool } from 'pg';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { DataSource, In, Repository } from 'typeorm';
+import { User } from './entities/user.entity';
+import { Ad } from '../ad/entities/ad.entity';
+import { AdImage } from '../ad/entities/ad-image.entity';
+import { SavedAd } from '../ad/entities/saved-ad.entity';
 
 @Injectable()
 export class UsersService {
     private readonly logger = new Logger(UsersService.name);
 
-    constructor(@Inject('DATABASE_POOL') private readonly pool: Pool) {}
+    constructor(
+        @InjectRepository(User) private readonly usersRepo: Repository<User>,
+        @InjectRepository(Ad) private readonly adsRepo: Repository<Ad>,
+        @InjectRepository(AdImage) private readonly adImagesRepo: Repository<AdImage>,
+        @InjectRepository(SavedAd) private readonly savedAdsRepo: Repository<SavedAd>,
+        private readonly dataSource: DataSource,
+    ) {}
 
-    private mapUserRow(user: any) {
+    private mapUserEntity(user: User) {
         return {
             id: user.id,
             username: user.username,
             email: user.email,
             pfp: user.pfp,
-            firstName: user.first_name,
-            lastName: user.last_name,
+            firstName: user.firstName,
+            lastName: user.lastName,
             phone: user.phone,
             city: user.city,
             country: user.country,
@@ -23,18 +34,12 @@ export class UsersService {
     }
 
     async getMe(userId: number) {
-        const result = await this.pool.query(
-            'SELECT id, username, email, pfp, first_name, last_name, phone, city, country FROM users WHERE id = $1',
-            [userId],
-        );
-
-        if (result.rows.length === 0) {
+        const user = await this.usersRepo.findOne({ where: { id: userId } });
+        if (!user) {
             throw new NotFoundException('Korisnik nije pronađen.');
         }
 
-        this.logger.debug(`Found ${result.rows.length} rows`);
-
-        return this.mapUserRow(result.rows[0]);
+        return this.mapUserEntity(user);
     }
 
     async updatePfp(userId: number, pfpPath: string) {
@@ -42,23 +47,19 @@ export class UsersService {
             throw new BadRequestException('Profilna slika nije proslijedena.');
         }
 
-        const result = await this.pool.query(
-            `UPDATE users
-             SET pfp = $2
-             WHERE id = $1
-             RETURNING id, pfp`,
-            [userId, pfpPath.trim()],
-        );
-
-        if (result.rows.length === 0) {
+        const user = await this.usersRepo.findOne({ where: { id: userId } });
+        if (!user) {
             throw new NotFoundException('Korisnik nije pronaden.');
         }
+
+        user.pfp = pfpPath.trim();
+        const saved = await this.usersRepo.save(user);
 
         this.logger.debug(`Updated profile picture for user ${userId}`);
 
         return {
-            id: result.rows[0].id,
-            pfp: result.rows[0].pfp,
+            id: saved.id,
+            pfp: saved.pfp,
         };
     }
 
@@ -73,24 +74,21 @@ export class UsersService {
         const city = updateProfileDto.city?.trim() ?? '';
         const country = updateProfileDto.country?.trim() ?? '';
 
-        const result = await this.pool.query(
-            `UPDATE users
-             SET first_name = $2,
-                 last_name = $3,
-                 phone = $4,
-                 city = $5,
-                 country = $6
-             WHERE id = $1
-             RETURNING id, username, email, pfp, first_name, last_name, phone, city, country`,
-            [userId, firstName || null, lastName || null, phone || null, city || null, country || null],
-        );
-
-        if (result.rows.length === 0) {
+        const user = await this.usersRepo.findOne({ where: { id: userId } });
+        if (!user) {
             throw new NotFoundException('Korisnik nije pronađen.');
         }
 
+        user.firstName = firstName || null;
+        user.lastName = lastName || null;
+        user.phone = phone || null;
+        user.city = city || null;
+        user.country = country || null;
+
+        const saved = await this.usersRepo.save(user);
+
         this.logger.debug(`Updated profile fields for user ${userId}`);
-        return this.mapUserRow(result.rows[0]);
+        return this.mapUserEntity(saved);
     }
 
     async deleteMe(userId: number) {
@@ -98,46 +96,35 @@ export class UsersService {
             throw new BadRequestException('Neispravan korisnik.');
         }
 
-        const client = await this.pool.connect();
-
-        try {
-            await client.query('BEGIN');
+        await this.dataSource.transaction(async (manager) => {
+            const usersRepo = manager.getRepository(User);
+            const adsRepo = manager.getRepository(Ad);
+            const adImagesRepo = manager.getRepository(AdImage);
+            const savedAdsRepo = manager.getRepository(SavedAd);
 
             // Remove saved entries created by this user.
-            await client.query('DELETE FROM saved_ads WHERE user_id = $1', [userId]);
+            await savedAdsRepo.delete({ userId });
 
             // Remove saved references to ads owned by this user.
-            await client.query(
-                `DELETE FROM saved_ads
-                 WHERE ad_id IN (SELECT id FROM ads WHERE user_id = $1)`,
-                [userId],
-            );
-
-            await client.query(
-                `DELETE FROM ad_images
-                 WHERE ad_id IN (SELECT id FROM ads WHERE user_id = $1)`,
-                [userId],
-            );
-
-            await client.query('DELETE FROM ads WHERE user_id = $1', [userId]);
-
-            const deletedUserResult = await client.query('DELETE FROM users WHERE id = $1 RETURNING id', [userId]);
-
-            if (deletedUserResult.rows.length === 0) {
-                throw new NotFoundException('Korisnik nije pronađen.');
+            const ownedAds = await adsRepo.find({ select: { id: true }, where: { userId } });
+            const ownedAdIds = ownedAds.map((ad) => ad.id);
+            if (ownedAdIds.length > 0) {
+                await savedAdsRepo.delete({ adId: In(ownedAdIds) });
+                await adImagesRepo.delete({ adId: In(ownedAdIds) });
             }
 
-            await client.query('COMMIT');
-            this.logger.debug(`Deleted user account ${userId}`);
+            await adsRepo.delete({ userId });
 
-            return {
-                message: 'Račun je uspješno izbrisan.',
-            };
-        } catch (error) {
-            await client.query('ROLLBACK');
-            throw error;
-        } finally {
-            client.release();
-        }
+            const deleteUserResult = await usersRepo.delete({ id: userId });
+            if (!deleteUserResult.affected) {
+                throw new NotFoundException('Korisnik nije pronađen.');
+            }
+        });
+
+        this.logger.debug(`Deleted user account ${userId}`);
+
+        return {
+            message: 'Račun je uspješno izbrisan.',
+        };
     }
 }

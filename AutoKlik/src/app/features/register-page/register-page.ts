@@ -1,11 +1,10 @@
 import { Component } from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {FormsModule, NgForm} from '@angular/forms';
-import {NavbarComponent} from '../../../../shared/layout/navbar/navbar';
-
+import {NavbarComponent} from '../../shared/layout/navbar/navbar';
 import {RouterLink} from '@angular/router';
 import {HttpClient} from '@angular/common/http';
-import {Observable, observable, Subject} from 'rxjs';
+import {Subject} from 'rxjs';
 
 
 
@@ -78,7 +77,7 @@ export class RegisterPage {
     this.errorMessage$.next('');
     this.successMessage$.next('');
 
-    this.http.post<{ message?: string }>('http://localhost:3000/auth/register', {
+    this.http.post<{ message?: string }>('http://localhost:3000/register', {
       username: username,
       email: email,
       password: this.password,

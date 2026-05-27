@@ -14,7 +14,7 @@
             (focus)="hideAllDropdowns()"
             [value]="searchText"
             (input)="onSearchTextChange($event)"
-            [placeholder]="t('searchPlaceholder')"
+            placeholder="Pretraži ovdje..."
             class="w-full border-2 border-[var(--border-color)] pl-4 pr-12 py-2.5 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--color-navbar)] focus:border-[var(--color-navbar)]"
           />
           <button
@@ -28,7 +28,7 @@
       </div>
 
       <div class="border-4 border-[var(--border-color)] p-6">
-        <p class="text-center font-medium  mb-3">{{ t('filtersTitle') }}</p>
+        <p class="text-center font-medium  mb-3">Filteri vozila</p>
 
 
         <!-- VRSTE VOZILA / IKONE -->
@@ -41,7 +41,7 @@
               carSelected
                 ? 'border-[var(--color-navbar)] text-[var(--color-navbar)] bg-[var(--color-accent-soft)]'
                 : 'border-[var(--border-color)] text-gray-600 hover:border-[var(--color-navbar)] hover:text-[var(--color-navbar)]'
-            " aria-label="Car"
+            " aria-label="Automobil"
           >
             <fa-icon [icon]="faCar"></fa-icon>
           </button>
@@ -55,7 +55,7 @@
               motorcycleSelected
                 ? 'border-[var(--color-navbar)] text-[var(--color-navbar)] bg-[var(--color-accent-soft)]'
                 : 'border-[var(--border-color)] text-gray-600 hover:border-[var(--color-navbar)] hover:text-[var(--color-navbar)]'
-            " aria-label="Motorcycle"
+            " aria-label="Motocikl"
           >
             <fa-icon [icon]="faMotorcycle"></fa-icon>
           </button>
@@ -69,7 +69,7 @@
               vanSelected
                 ? 'border-[var(--color-navbar)] text-[var(--color-navbar)] bg-[var(--color-accent-soft)]'
                 : 'border-[var(--border-color)] text-gray-600 hover:border-[var(--color-navbar)] hover:text-[var(--color-navbar)]'
-            " aria-label="Van"
+            " aria-label="Kombi"
           >
             <fa-icon [icon]="faShuttleVan"></fa-icon>
           </button>
@@ -82,7 +82,7 @@
               otherSelected
                 ? 'border-[var(--color-navbar)] text-[var(--color-navbar)] bg-[var(--color-accent-soft)]'
                 : 'border-[var(--border-color)] text-gray-600 hover:border-[var(--color-navbar)] hover:text-[var(--color-navbar)]'
-            " aria-label="Other"
+            " aria-label="Ostalo"
           >
             <fa-icon [icon]="faEllipsis"></fa-icon>
           </button>
@@ -201,7 +201,7 @@
           <button class="border-4 border-[var(--border-color)] p-1" type="button"
                   (click)="toggleMoreFilters()"
                   (focus)="hideAllDropdowns()">
-            {{ t('showMoreFilters') }}
+            Prikaži više filtera
           </button>
         </div>
 
@@ -310,10 +310,10 @@
         <!-- -----------VIŠE FILTERA----------- -->
         <div class="flex justify-end w-full mr-3 mt-3 gap-2">
           <button class="border-4 border-[var(--border-color)] p-1" type="button" (click)="clearFilters()" (focus)="hideAllDropdowns()">
-            {{ t('clearFilters') }}
+            Očisti filtere
           </button>
           <button class="border-4 border-[var(--border-color)] p-1" type="button" (click)="search()" (focus)="hideAllDropdowns()">
-            {{ t('searchButton') }}
+            Traži
           </button>
         </div>
       </div>
@@ -325,17 +325,17 @@
 
   <section class="max-w-7xl mx-auto px-4">
     <div class="bg-[var(--color-accent-soft)] border border-gray-200 rounded-xl shadow-sm px-12 py-6">
-      <h1 class="text-center">{{ t('featuredTitle') }}</h1>
+      <h1 class="text-center">Istaknuti oglasi</h1>
 
 
       <div class="border-4 flex-1 p-6 bg-white rounded-lg shadow-md space-y-6">
         <div class="flex items-center justify-between gap-4">
-          <h1 class="text-2xl font-bold text-gray-900">{{ t('adsTitle') }}</h1>
+          <h1 class="text-2xl font-bold text-gray-900">Aktualni oglasi</h1>
         </div>
 
         @if (isLoading$ | async) {
           <div class="rounded-lg border border-dashed border-gray-300 bg-gray-50 px-4 py-6 text-center text-sm text-gray-600">
-            {{ t('loadingAds') }}
+            Učitavanje oglasa...
           </div>
         } @else {
           @if (errorMessage$ | async; as errorMessage) {
@@ -420,7 +420,7 @@
                               ? 'bg-[var(--color-navbar)] text-white hover:bg-[var(--color-navbar-hover)]'
                               : 'border border-gray-300 text-gray-700 hover:bg-gray-50')"
                           >
-                            {{ isAdSaving(ad.id) ? t('savingAd') : (isAdSaved(ad.id) ? ('❤️ ' + t('savedAd')) : ('🤍 ' + t('saveAd'))) }}
+                            {{ isAdSaving(ad.id) ? 'Spremanje...' : (isAdSaved(ad.id) ? ('❤️ Spremljeno') : ('🤍 Spremi oglas')) }}
                           </button>
                         }
 
@@ -431,7 +431,7 @@
                       <!-- Tags/Categories -->
                       <div class="flex flex-wrap items-center gap-1.5 pt-2 border-t border-gray-100">
                         <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs text-gray-600 whitespace-nowrap">
-                          {{ t('publishedOn') }} {{ ad.created_at | date:'dd.MM.yyyy' }}
+                          Objavljeno {{ ad.created_at | date:'dd.MM.yyyy' }}
                         </span>
                       </div>
                     </div>
@@ -445,7 +445,7 @@
             }
             @else if (!(errorMessage$ | async)) {
               <div class="rounded-lg border border-dashed border-gray-300 bg-gray-50 px-4 py-6 text-center text-sm text-gray-600">
-                {{ t('noAdsFound') }}
+                Nema oglasa za zadane kriterije.
               </div>
             }
           }

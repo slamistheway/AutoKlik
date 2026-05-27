@@ -14,8 +14,9 @@ export const appConfig: ApplicationConfig = {
         scrollPositionRestoration: 'top',
       }),
     ),
-    provideHttpClient(withInterceptorsFromDi()),
-    { provide: HTTP_INTERCEPTORS, useClass: JwtInterceptor, multi: true },
+    provideHttpClient(withInterceptorsFromDi()), {
+      provide: HTTP_INTERCEPTORS, useClass: JwtInterceptor, multi: true
+    },
   ]
 };
 

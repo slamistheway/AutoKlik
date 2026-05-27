@@ -7,7 +7,7 @@ import { CurrentUser } from '../../models/current-user.model';
 import { NavbarComponent } from '../../shared/layout/navbar/navbar';
 import { Footer } from '../../shared/layout/footer/footer';
 import {MyProfileAside} from '../../shared/layout/my-profile-aside/my-profile-aside';
-import {Auth} from '../auth/auth';
+import { Auth } from '../../core/services/auth';
 
 
 @Component({
@@ -23,9 +23,8 @@ export class MyMessages {
   ngOnInit(): void {
     this.auth.loadUser();
 
-    this.currentUser$ = this.auth.user$;
+    this.currentUser$ = this.auth.currentUser$;
   }
 }
-
 
 

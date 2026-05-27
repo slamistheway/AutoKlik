@@ -3,12 +3,13 @@ import { AuthService } from './auth.service';
 import {RegisterDto} from "./dto/register.dto";
 import {LoginDto} from "./dto/login.dto";
 
-@Controller('auth')
+@Controller()
 export class AuthController {
-
-
     private readonly logger = new Logger(AuthService.name);
-    constructor(private readonly authService: AuthService) {}
+
+    constructor(
+        private readonly authService: AuthService
+    ) {}
 
     @Post('register')
     async register(@Body() dto: RegisterDto) {
@@ -16,7 +17,7 @@ export class AuthController {
         try {
             return await this.authService.register(dto);
         } catch (err) {
-            this.logger.error('Register error', err?.stack ?? err);
+            this.logger.error('RegisterPage error', err?.stack ?? err);
             throw err;
         }
     }
@@ -31,6 +32,4 @@ export class AuthController {
             throw err;
         }
     }
-
-
 }

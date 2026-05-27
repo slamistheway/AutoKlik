@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { of } from 'rxjs';
-import { Auth } from '../auth/auth';
+import { Auth } from '../../core/services/auth';
 import { MyAds } from './my-ads';
 import { CurrentUser } from '../../models/current-user.model';
 
@@ -35,7 +35,7 @@ describe('MyAds', () => {
           id: 1,
           user_id: 7,
           category: 'car',
-          subcategory: 'personal_car',
+          subcategory: 'personal_cars',
           brand: 'BMW',
           model: '320d',
           title: 'Test oglas',

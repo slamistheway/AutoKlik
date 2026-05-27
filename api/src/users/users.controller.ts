@@ -29,6 +29,7 @@ export class UsersController {
         return this.usersService.getMe(Number(req.user.id));
     }
 
+
     @UseGuards(JwtAuthGuard)
     @Post('me/upload-pfp')
     @UseInterceptors(

@@ -1,7 +1,7 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { BehaviorSubject, combineLatest, firstValueFrom, map, Observable, Subscription } from 'rxjs';
 import { CurrentUser } from '../../models/current-user.model';
-import { Auth } from '../auth/auth';
+import { Auth } from '../../core/services/auth';
 import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import { faPen } from '@fortawesome/free-solid-svg-icons';
@@ -36,11 +36,6 @@ export class MySettings implements OnInit, OnDestroy {
   currentUser$: Observable<CurrentUser | null>;
 
   // Form fields
-  firstName = '';
-  lastName = '';
-  phone = '';
-  city = '';
-  country = '';
   selectedFile: File | null = null;
   isSaving = false;
   saveMessage = '';
@@ -63,7 +58,7 @@ export class MySettings implements OnInit, OnDestroy {
   };
 
   constructor(private readonly auth: Auth, private readonly http: HttpClient, private readonly router: Router) {
-    this.currentUser$ = this.auth.user$;
+    this.currentUser$ = this.auth.currentUser$;
     this.profileImageUrl$ = combineLatest([this.currentUser$, this.profileImageOverrideSubject]).pipe(
       map(([user, overrideUrl]) => overrideUrl ?? getProfileImageUrl(user)),
     );
@@ -78,11 +73,6 @@ export class MySettings implements OnInit, OnDestroy {
         return;
       }
 
-      this.firstName = user.firstName ?? '';
-      this.lastName = user.lastName ?? '';
-      this.phone = user.phone ?? '';
-      this.city = user.city ?? '';
-      this.country = user.country ?? '';
       this.resetEditState();
     });
   }
@@ -149,11 +139,7 @@ export class MySettings implements OnInit, OnDestroy {
         this.http.patch<CurrentUser>(
           'http://localhost:3000/users/me',
           {
-            firstName: this.firstName,
-            lastName: this.lastName,
-            phone: this.phone,
-            city: this.city,
-            country: this.country,
+
           },
           { headers },
         ),
