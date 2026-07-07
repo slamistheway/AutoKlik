@@ -58,7 +58,7 @@ export class MySettings implements OnInit, OnDestroy {
   };
 
   constructor(private readonly auth: Auth, private readonly http: HttpClient, private readonly router: Router) {
-    this.currentUser$ = this.auth.currentUser$;
+    this.currentUser$ = this.auth.user$;
     this.profileImageUrl$ = combineLatest([this.currentUser$, this.profileImageOverrideSubject]).pipe(
       map(([user, overrideUrl]) => overrideUrl ?? getProfileImageUrl(user)),
     );

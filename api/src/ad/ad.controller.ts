@@ -57,6 +57,8 @@ export class AdController {
     return parsed;
   }
 
+
+  /*-------------------------------------------CREATE---------------------------------------------*/
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(FilesInterceptor('images', 10, { storage: adImageStorage }))
   @Post()
@@ -69,6 +71,9 @@ export class AdController {
       year: Number(createAdDto.year),
     }, images);
   }
+
+
+
 
   @UseGuards(JwtAuthGuard)
   @Get('me')
@@ -90,8 +95,7 @@ export class AdController {
   @Get('all')
   findAllAds(
       @Req() req: any,
-      @Query()
-      query: {
+      @Query() query: {
         category?: string;
         subcategory?: string;
         brands?: string;
@@ -103,9 +107,6 @@ export class AdController {
         offset?: string;
       },
   ) {
-    const limit = Math.min(this.parsePositiveInt(query.limit, 5), 50);
-    const offset = this.parseNonNegativeInt(query.offset, 0);
-
     const filters = {
       category: query.category,
       subcategory: query.subcategory,
@@ -116,7 +117,7 @@ export class AdController {
       search: query.search,
     };
 
-    return this.adService.findAllAds(req.user?.id, filters, { limit, offset });
+    return this.adService.findAllAds(req.user?.id, filters);
   }
 
 
@@ -124,15 +125,6 @@ export class AdController {
   findOne(@Param('id') id: string) {
     return this.adService.findOne(+id);
   }
-
-
-
-
-
-
-
-
-
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateAdDto: UpdateAdDto) {

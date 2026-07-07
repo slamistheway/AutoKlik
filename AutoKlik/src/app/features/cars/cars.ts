@@ -1,15 +1,14 @@
 import { CommonModule } from '@angular/common';
 import {HttpClient, HttpErrorResponse, HttpParams} from '@angular/common/http';
-import {Component, ElementRef, OnInit} from '@angular/core';
+import {Component, OnInit} from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import {Router, RouterLink} from '@angular/router';
+import {RouterLink} from '@angular/router';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import {
   faChevronDown,
-  faEllipsis,
- faFilter, faArrowRight, faTrashCan, faSliders,
+  faArrowRight, faTrashCan, faSliders,
 } from '@fortawesome/free-solid-svg-icons';
-import {BehaviorSubject, filter, Observable, of, take, timeout} from 'rxjs';
+import {BehaviorSubject, filter, Observable, of, Subject, take} from 'rxjs';
 import { FilterBrands } from '../../shared/filters/filter-brands/filter-brands';
 import { FilterBuyOrLeaseType } from '../../shared/filters/filter-buyOrLeaseType/filter-buyOrLeaseType';
 import { FilterColor } from '../../shared/filters/filter-color/filter-color';
@@ -22,11 +21,8 @@ import { FilterGasType } from '../../shared/filters/filter-gasType/filter-gasTyp
 import { FilterGearType } from '../../shared/filters/filter-gearType/filter-gearType';
 import { FilterKilometrage } from '../../shared/filters/filter-kilometrage/filter-kilometrage';
 import { FilterModels } from '../../shared/filters/filter-models/filter-models';
-import { FilterPayload } from '../../shared/filters/filter-payload/filter-payload';
 import { FilterPrices } from '../../shared/filters/filter-prices/filter-prices';
 import { FilterSellerType } from '../../shared/filters/filter-sellerType/filter-sellerType';
-import { FilterVolume } from '../../shared/filters/filter-volume/filter-volume';
-import { FilterWeight } from '../../shared/filters/filter-weight/filter-weight';
 import { FilterYears } from '../../shared/filters/filter-years/filter-years';
 import {
   clampPage, enqueueToast,
@@ -119,13 +115,6 @@ interface AppliedFilterChip {
   value: string;
 }
 
-interface PagedAdsResponse {
-  items?: PublicAdCar[];
-  totalCount?: number;
-  limit?: number;
-  offset?: number;
-}
-
 type CarsTranslationKey =
   | 'searchPlaceholder'
   | 'filtersTitle'
@@ -172,7 +161,6 @@ type CarsTranslationKey =
   styleUrls: [],
 })
 export class CarsComponent implements OnInit {
-  private readonly adsApiUrl = 'http://localhost:3000/ad/all';
 
 
   currentUser$: Observable<CurrentUser | null> = of(null);
@@ -199,6 +187,7 @@ export class CarsComponent implements OnInit {
   saveAdButton$ = new BehaviorSubject<boolean>(true);
   private readonly savingAdIds = new Set<number>();
   private readonly savedAdIds = new Set<number>();
+  publicAdCars: PublicAdCar[] = [];
 
   isAdSaved(adId: number): boolean {
     return this.savedAdIds.has(adId);
@@ -241,45 +230,28 @@ export class CarsComponent implements OnInit {
   }
 
   private updateAdSavedFlag(adId: number, isSaved: boolean): void {
-    const ads = this.PublicAdCars$.value;
-
-    if (!ads) {
-      return;
-    }
-
-    this.PublicAdCars$.next(
-      ads.map((ad) => (ad.id === adId ? {...ad, is_saved: isSaved} : ad)),
-    );
+    this.publicAdCars = this.publicAdCars.map((ad) => (ad.id === adId ? {...ad, is_saved: isSaved} : ad));
   }
 
   private markSavedAds(ads: PublicAdCar[]): void {
     console.log("marking saved ads based on API response")
 
     if (ads.length === 0) {
-      this.PublicAdCars$.next([]);
+      this.publicAdCars = [];
       console.log("no found ads in database")
       return;
     }
 
-    if (this.currentUser.id <= 0) {
-      console.log("no user logged in, marking all ads as not saved")
-      this.PublicAdCars$.next(ads.map((ad) => ({...ad, is_saved: false})));
-      return;
-    }
-
+    // Trust the API for `is_saved`. (When user is not authenticated the API returns false.)
+    this.savedAdIds.clear();
     ads.forEach((ad) => {
       if (ad.is_saved) {
-        console.log(`ad ${ad.id} saved based on API response`)
         this.savedAdIds.add(ad.id);
-      } else {
-        console.log(`ad ${ad.id} NOT saved based on API response`)
-        this.savedAdIds.delete(ad.id);
       }
     });
 
-    this.PublicAdCars$.next(
-      ads.map((ad) => ({...ad, is_saved: this.savedAdIds.has(ad.id)})),
-    );
+    this.publicAdCars = ads.map((ad) => ({ ...ad, is_saved: this.savedAdIds.has(ad.id) }));
+    this.refreshResults(this.currentPage);
   }
 
 
@@ -287,8 +259,10 @@ export class CarsComponent implements OnInit {
 
   readonly isLoading$ = new BehaviorSubject<boolean>(false);
   private isRequestInFlight = false;
-  readonly errorMessage$ = new BehaviorSubject<string>('');
-  readonly PublicAdCars$ = new BehaviorSubject<PublicAdCar[] | null>(null);
+
+
+  errorMessageSubject = new Subject<string>();
+  errorMessage$ = this.errorMessageSubject.asObservable();
 
   readonly selectedVehicle_type = 'cars';
   showMoreFilters = false;
@@ -298,7 +272,6 @@ export class CarsComponent implements OnInit {
   readonly adsPerPage = 5;
 
   searchText = '';
-  private allAds: PublicAdCar[] = [];
   private activeFilters: HomeAdFilters = {};
   appliedFilterChips: AppliedFilterChip[] = [];
 
@@ -389,7 +362,7 @@ export class CarsComponent implements OnInit {
     this.loadAdsFromDatabase(this.selectedVehicle_type);
 
     this.auth.loadUser();
-    this.currentUser$ = this.auth.currentUser$;
+    this.currentUser$ = this.auth.user$;
     this.currentUser$
       .pipe(
         filter((user): user is CurrentUser => Boolean(user?.id)),
@@ -429,13 +402,6 @@ export class CarsComponent implements OnInit {
   onEnginePowerMAXChange(value: string): void { this.selectedEnginePowerMAX = value; }
   onEngineSizeMINChange(value: string): void { this.selectedEngineSizeMIN = value; }
   onEngineSizeMAXChange(value: string): void { this.selectedEngineSizeMAX = value; }
-  onDrivingLicenceChange(value: string): void { this.selectedDrivingLicence = value; }
-  onPayloadMINChange(value: string): void { this.selectedPayloadMIN = value; }
-  onPayloadMAXChange(value: string): void { this.selectedPayloadMAX = value; }
-  onWeightMINChange(value: string): void { this.selectedWeightMIN = value; }
-  onWeightMAXChange(value: string): void { this.selectedWeightMAX = value; }
-  onVolumeMINChange(value: string): void { this.selectedVolumeMIN = value; }
-  onVolumeMAXChange(value: string): void { this.selectedVolumeMAX = value; }
   onPriceMINChange(value: string): void { this.selectedPriceMIN = value; }
   onPriceMAXChange(value: string): void { this.selectedPriceMAX = value; }
   onYearMINChange(value: string): void { this.selectedYearMIN = value; }
@@ -457,64 +423,37 @@ export class CarsComponent implements OnInit {
     this.showMoreFilters = !this.showMoreFilters;
   }
 
-  private loadAdsFromDatabase(category: string = this.selectedVehicle_type, page = 1): void {
+  private loadAdsFromDatabase(category: string): void {
     if (this.isRequestInFlight) {
       return;
     }
 
-    const safeTotalPages = this.totalPages > 0 ? this.totalPages : 1;
-    const safePage = clampPage(page, safeTotalPages);
-    const normalizedCategory = category?.trim() || this.selectedVehicle_type;
-    const pageSize = 50;
-
     this.isRequestInFlight = true;
     this.isLoading$.next(true);
-    this.errorMessage$.next('');
+    this.errorMessageSubject.next('');
 
-    const loadedAds: PublicAdCar[] = [];
+    const params = new HttpParams().set('category', category);
 
-    const loadNextPage = (offset: number, totalCount: number): void => {
-      const params = new HttpParams()
-        .set('category', normalizedCategory)
-        .set('limit', String(pageSize))
-        .set('offset', String(offset));
-
-      this.http
-        .get<PagedAdsResponse>(this.adsApiUrl, { params })
-        .pipe(timeout(10000))
-        .subscribe({
-          next: (response) => {
-            const items = Array.isArray(response?.items) ? response.items : [];
-            const nextTotalCount = Number(response?.totalCount ?? totalCount ?? 0);
-
-            loadedAds.push(...items);
-
-            if (items.length === 0 || loadedAds.length >= nextTotalCount) {
-              this.allAds = loadedAds;
-              this.totalAdsCount = loadedAds.length;
-              this.markSavedAds(loadedAds);
-              this.refreshResults(safePage);
-              this.isRequestInFlight = false;
-              this.isLoading$.next(false);
-              return;
-            }
-
-            loadNextPage(offset + items.length, nextTotalCount);
-          },
-          error: (error: unknown) => {
-            console.error('Failed to load cars from database', error);
-            this.errorMessage$.next(getLoadErrorMessage(error));
-            this.allAds = [];
-            this.PublicAdCars$.next([]);
-            this.totalAdsCount = 0;
-            this.currentPage = 1;
-            this.isRequestInFlight = false;
-            this.isLoading$.next(false);
-          },
-        });
-    };
-
-    loadNextPage(0, 0);
+    this.http.get<PublicAdCar[]>("http://localhost:3000/ad/all", { params })
+      .subscribe({
+        next: (response) => {
+          const ads = response ?? [];
+          this.publicAdCars = ads;
+          this.totalAdsCount = ads.length;
+          this.markSavedAds(ads);
+          this.isRequestInFlight = false;
+          this.isLoading$.next(false);
+        },
+        error: (error: unknown) => {
+          console.error('Failed to load cars from database', error);
+          this.errorMessageSubject.next(getLoadErrorMessage(error));
+          this.publicAdCars = [];
+          this.totalAdsCount = 0;
+          this.currentPage = 1;
+          this.isRequestInFlight = false;
+          this.isLoading$.next(false);
+        },
+      });
   }
 
   applyFilters(): void {
@@ -681,9 +620,6 @@ export class CarsComponent implements OnInit {
     return getPageNumbers(this.totalPages);
   }
 
-  get pagedAds(): PublicAdCar[] {
-    return this.PublicAdCars$.value ?? [];
-  }
 
   goToPage(page: number): void {
     if (this.totalPages <= 0) return;
@@ -706,12 +642,12 @@ export class CarsComponent implements OnInit {
     const safePage = clampPage(page, this.totalPages > 0 ? this.totalPages : 1);
     this.currentPage = safePage;
     const start = (safePage - 1) * this.adsPerPage;
-    this.PublicAdCars$.next(filtered.slice(start, start + this.adsPerPage));
+    this.publicAdCars = filtered.slice(start, start + this.adsPerPage);
   }
 
   private filterAds(): PublicAdCar[] {
     const filters = this.getRequestFilters();
-    return this.allAds.filter((ad) => this.matchesFilters(ad, filters));
+    return this.publicAdCars.filter((ad) => this.matchesFilters(ad, filters));
   }
 
   private getRequestFilters(): HomeAdFilters {
@@ -791,7 +727,9 @@ export class CarsComponent implements OnInit {
     if (filters.buyOrLease && !this.matchesCsvValue(ad.buyOrLease, filters.buyOrLease)) return false;
     if (filters.color && !this.matchesCsvValue(ad.color, filters.color)) return false;
     if (filters.doorNumber && !this.matchesCsvValue(ad.doorNumber, filters.doorNumber)) return false;
-    if (filters.sellerType && !this.matchesCsvValue(ad.sellerType, filters.sellerType)) return false;
+    if (filters.sellerType) {
+      return this.matchesCsvValue(ad.sellerType, filters.sellerType);
+    }
 
     return true;
   }
@@ -904,9 +842,7 @@ export class CarsComponent implements OnInit {
     chips.push({ key, label, value: `${minLabel} - ${maxLabel}` });
   }
 
-  protected readonly faFilter = faFilter;
   protected readonly faArrowRight = faArrowRight;
-  protected readonly faEllipsis = faEllipsis;
   protected readonly faTrashCan = faTrashCan;
   protected readonly faSliders = faSliders;
 }

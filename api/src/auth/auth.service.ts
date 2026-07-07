@@ -51,7 +51,7 @@ export class AuthService {
         this.logger.debug(`Hashed password for username="${username}": ${hashedPassword}`);
 
         try {
-            const created = this.usersRepo.create({
+            const createdUsersRepo = this.usersRepo.create({
                 username,
                 email,
                 password: hashedPassword,
@@ -63,7 +63,7 @@ export class AuthService {
                 country,
             });
 
-            const user = await this.usersRepo.save(created);
+            const user = await this.usersRepo.save(createdUsersRepo);
             this.logger.log(`User created: id=${user.id}, username=${user.username}`);
 
             return {

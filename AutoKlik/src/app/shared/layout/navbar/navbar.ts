@@ -31,7 +31,7 @@ export class NavbarComponent implements OnInit {
     console.log(localStorage);
 
     this.auth.loadUser();
-    this.currentUser$ = this.auth.currentUser$;
+    this.currentUser$ = this.auth.user$;
   }
 
 

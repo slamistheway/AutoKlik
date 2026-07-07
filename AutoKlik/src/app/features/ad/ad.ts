@@ -60,7 +60,8 @@ export class Ad implements OnInit, OnDestroy {
   publicAd$ = new BehaviorSubject<PublicAd | null>(null);
   currentImageIndex = 0;
   saveAdButton$ = new BehaviorSubject<boolean>(true);
-  errorMessage$ = new Subject<string>();
+  errorMessageSubject = new Subject<string>()
+  errorMessage$ = this.errorMessageSubject.asObservable();
   isSaved$ = new BehaviorSubject<boolean>(false);
   isSaving$ = new BehaviorSubject<boolean>(false);
   saveMessage$ = new BehaviorSubject<string>('');
@@ -79,7 +80,7 @@ export class Ad implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.auth.loadUser();
-    this.currentUser$ = this.auth.currentUser$;
+    this.currentUser$ = this.auth.user$;
     this.currentUser$
       .pipe(
         filter((user): user is CurrentUser => Boolean(user?.id)),
@@ -88,7 +89,7 @@ export class Ad implements OnInit, OnDestroy {
 
     const adId = Number(this.route.snapshot.paramMap.get('id'));
     if (!Number.isFinite(adId) || adId <= 0) {
-      this.errorMessage$.next('Neispravan ID oglasa.');
+      this.errorMessageSubject.next('Neispravan ID oglasa.');
       return;
     }
     this.http.get<PublicAd>(`http://localhost:3000/ad/${adId}`).subscribe({
@@ -98,7 +99,7 @@ export class Ad implements OnInit, OnDestroy {
         this.checkIfSaved(ad.id);
       },
       error: () => {
-        this.errorMessage$.next('Oglas nije pronađen.');
+        this.errorMessageSubject.next('Oglas nije pronađen.');
       },
     });
   }

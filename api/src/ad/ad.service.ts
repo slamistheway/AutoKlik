@@ -304,7 +304,7 @@ export class AdService {
     /*-------------------------------------------SELECTING---------------------------------------------*/
     /*-------------------------------------------SELECTING---------------------------------------------*/
     async findAllAds(
-        userId?: number | string,
+        userId?: number,
         filters: {
             category?: string;
             subcategory?: string;
@@ -314,48 +314,23 @@ export class AdService {
             yearMax?: string;
             search?: string;
         } = {},
-        pagination: {
-            limit?: number;
-            offset?: number;
-        } = {},
     ) {
         const normalizedUserId = Number(userId);
         this.logger.debug('normalizedUserId za homapage:' + normalizedUserId);
 
-        const safeLimit = Number.isInteger(pagination.limit) && Number(pagination.limit) > 0
-            ? Math.min(Number(pagination.limit), 50)
-            : 5;
-        const safeOffset = Number.isInteger(pagination.offset) && Number(pagination.offset) >= 0
-            ? Number(pagination.offset)
-            : 0;
-
         const hasUserId = Number.isFinite(normalizedUserId) && normalizedUserId > 0;
+        const MAX_RECENT_ADS = 30;
 
-        // 1) totalCount (no images join to avoid duplicates)
-        const countQb = this.adsRepo.createQueryBuilder('ads');
-        this.applyFilters(countQb, filters);
-        const totalCount = await countQb.getCount();
-
-        if (totalCount === 0) {
-            return {
-                items: [],
-                totalCount: 0,
-                limit: safeLimit,
-                offset: safeOffset,
-            };
-        }
-
-        // 2) page IDs first (stable pagination without duplicates from images joins)
         const idsQb = this.adsRepo
             .createQueryBuilder('ads')
-            .select('ads.id', 'id')
-            .distinct(true);
+            .select('ads.id', 'id');
+
         this.applyFilters(idsQb, filters);
+
         idsQb
             .orderBy('ads.createdAt', 'DESC')
             .addOrderBy('ads.id', 'DESC')
-            .skip(safeOffset)
-            .take(safeLimit);
+            .take(MAX_RECENT_ADS);
 
         const idRows = await idsQb.getRawMany<{ id: number | string }>();
         const adIds = idRows
@@ -363,15 +338,9 @@ export class AdService {
             .filter((id) => Number.isFinite(id) && id > 0);
 
         if (adIds.length === 0) {
-            return {
-                items: [],
-                totalCount,
-                limit: safeLimit,
-                offset: safeOffset,
-            };
+            return [];
         }
 
-        // 3) load full entities with relations for the selected page
         const ads = await this.adsRepo
             .createQueryBuilder('ads')
             .leftJoinAndSelect('ads.user', 'users')
@@ -382,7 +351,11 @@ export class AdService {
             .addOrderBy('images.createdAt', 'ASC')
             .getMany();
 
-        // 4) compute saved status (optional user)
+        const adsById = new Map<number, Ad>(ads.map((ad) => [ad.id, ad] as const));
+        const orderedAds = adIds
+            .map((id) => adsById.get(id))
+            .filter((ad): ad is Ad => Boolean(ad));
+
         let savedAdIds = new Set<number>();
         if (hasUserId) {
             const savedRows = await this.savedAdsRepo.find({
@@ -392,18 +365,14 @@ export class AdService {
                     adId: In(adIds),
                 },
             });
+
             savedAdIds = new Set(savedRows.map((row) => row.adId));
         }
 
-        return {
-            items: ads.map((ad) => ({
-                ...this.mapAdForApi(ad),
-                is_saved: hasUserId ? savedAdIds.has(ad.id) : false,
-            })),
-            totalCount,
-            limit: safeLimit,
-            offset: safeOffset,
-        };
+        return orderedAds.map((ad) => ({
+            ...this.mapAdForApi(ad),
+            is_saved: hasUserId ? savedAdIds.has(ad.id) : false,
+        }));
     }
 
 

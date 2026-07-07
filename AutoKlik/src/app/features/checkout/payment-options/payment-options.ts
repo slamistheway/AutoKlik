@@ -160,7 +160,7 @@ export class PaymentOptions implements OnInit {
 
     this.auth.loadUser();
 
-    this.currentUser$ = this.auth.currentUser$;
+    this.currentUser$ = this.auth.user$;
     this.currentUser$.subscribe((user) => {
       this.currentUser = user;
     });

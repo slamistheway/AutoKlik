@@ -47,7 +47,7 @@ import {
   SaveToast
 } from '../../shared/functions/shared-functions';
 
-import {BehaviorSubject, distinctUntilChanged, finalize, Observable, of, Subject, timeout} from 'rxjs';
+import {BehaviorSubject, distinctUntilChanged, finalize, Observable, of, pipe, Subject, timeout} from 'rxjs';
 import {HttpClient, HttpErrorResponse, HttpParams} from '@angular/common/http';
 import { Auth } from '../../core/services/auth';
 
@@ -93,13 +93,6 @@ interface HomeAdFilters {
   yearMin?: string;
   yearMax?: string;
   search?: string;
-}
-
-interface PagedAdsResponse {
-  items: PublicAd[];
-  totalCount: number;
-  limit: number;
-  offset: number;
 }
 
 interface PersistedHomeFilters {
@@ -192,7 +185,9 @@ export class Pretrazi implements OnInit {
   showMoreFilters = false;
 
   isLoading$ = new Subject<boolean>();
-  errorMessage$ = new Subject<string>();
+  errorMessageSubject = new Subject<string>()
+  errorMessage$ = this.errorMessageSubject.asObservable();
+
   successMessage$ = new Subject<string>();
   currentUser$: Observable<CurrentUser | null> = of(null);
   currentUser: CurrentUser = this.guestUser;
@@ -257,26 +252,15 @@ export class Pretrazi implements OnInit {
       return;
     }
 
-    if (this.currentUser.id <= 0) {
-      console.log("no user logged in, marking all ads as not saved")
-      this.PublicAds$.next(ads.map((ad) => ({ ...ad, is_saved: false })));
-      return;
-    }
-
-
+    // Trust the API for `is_saved`. (When user is not authenticated the API returns false.)
+    this.savedAdIds.clear();
     ads.forEach((ad) => {
       if (ad.is_saved) {
-        console.log(`ad ${ad.id} saved based on API response`)
         this.savedAdIds.add(ad.id);
-      } else {
-        console.log(`ad ${ad.id} NOT saved based on API response`)
-        this.savedAdIds.delete(ad.id);
       }
     });
 
-    this.PublicAds$.next(
-      ads.map((ad) => ({ ...ad, is_saved: this.savedAdIds.has(ad.id) })),
-    );
+    this.PublicAds$.next(ads.map((ad) => ({ ...ad, is_saved: this.savedAdIds.has(ad.id) })));
   }
 
 
@@ -314,7 +298,7 @@ export class Pretrazi implements OnInit {
     this.activeFilters = this.buildFiltersFromSelectedValues();
 
     this.auth.loadUser();
-    this.currentUser$ = this.auth.currentUser$;
+    this.currentUser$ = this.auth.user$;
 
     this.currentUser$
       .pipe(
@@ -338,23 +322,19 @@ export class Pretrazi implements OnInit {
 
     const safeTotalPages = this.totalPages > 0 ? this.totalPages : 1;
     const safePage = clampPage(page, safeTotalPages);
-    const offset = (safePage - 1) * this.adsPerPage;
 
     this.isLoading$.next(true);
     this.isRequestInFlight = true;
-    this.errorMessage$.next("");
+    this.errorMessageSubject.next("");
 
 
     let params = new HttpParams();
-
     if (filters.category) {
       params = params.set('category', filters.category);
     }
-
     if (filters.brands) {
       params = params.set('brands', filters.brands);
     }
-
     if (filters.models) {
       params = params.set('models', filters.models);
     }
@@ -419,16 +399,8 @@ export class Pretrazi implements OnInit {
       params = params.set('search', filters.search);
     }
 
-    params = params
-      .set('limit', String(this.adsPerPage))
-      .set('offset', String(offset));
-
-    const url = 'http://localhost:3000/ad/all';
-
-    this.http
-      .get<PagedAdsResponse>(url, { params })
+    this.http.get<PublicAd[]>("http://localhost:3000/ad/all", { params })
       .pipe(
-        timeout(10000),
         finalize(() => {
           this.isLoading$.next(false);
           this.isRequestInFlight = false;
@@ -436,13 +408,13 @@ export class Pretrazi implements OnInit {
       )
       .subscribe({
         next: (response) => {
-          const ads = Array.isArray(response?.items) ? response.items : [];
-          this.totalAdsCount = Number(response?.totalCount ?? 0);
+          const ads = Array.isArray(response) ? response : [];
+          this.totalAdsCount = ads.length;
           this.currentPage = safePage;
           this.markSavedAds(ads);
         },
         error: (error: unknown) => {
-          this.errorMessage$.next(getLoadErrorMessage(error));
+          this.errorMessageSubject.next(getLoadErrorMessage(error));
           this.totalAdsCount = 0;
           this.PublicAds$.next([]);
           this.currentPage = 1;
@@ -462,7 +434,14 @@ export class Pretrazi implements OnInit {
   }
 
   get pagedAds(): PublicAd[] {
-    return this.PublicAds$.value ?? [];
+    const ads = this.PublicAds$.value ?? [];
+    if (ads.length === 0) {
+      return [];
+    }
+
+    const safePage = clampPage(this.currentPage, this.totalPages > 0 ? this.totalPages : 1);
+    const start = (safePage - 1) * this.adsPerPage;
+    return ads.slice(start, start + this.adsPerPage);
   }
 
   goToPage(page: number): void {
@@ -475,7 +454,8 @@ export class Pretrazi implements OnInit {
       return;
     }
 
-    this.loadAllAds(this.activeFilters, targetPage);
+    // Client-side pagination (API returns latest 30).
+    this.currentPage = targetPage;
   }
 
   goToPreviousPage(): void {

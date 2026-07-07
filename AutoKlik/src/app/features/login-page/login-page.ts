@@ -18,7 +18,8 @@ export class LoginPage {
   identifier = '';
   password = '';
   isSubmitting = false;
-  errorMessage$ = new Subject<string>();
+  errorMessageSubject = new Subject<string>()
+  errorMessage$ = this.errorMessageSubject.asObservable();
   successMessage$ = new Subject<string>();
 
   constructor(
@@ -28,33 +29,32 @@ export class LoginPage {
 
   login(form: NgForm) {
     if (form.invalid || this.isSubmitting) {
-      this.errorMessage$.next('Forma nije validna.');
+      this.errorMessageSubject.next('Forma nije validna.');
       return;
     }
 
     const identifier = this.identifier.trim();
     if (!identifier) {
-      this.errorMessage$.next('Unesite email ili korisničko ime.');
+      this.errorMessageSubject.next('Unesite email ili korisničko ime.');
       return;
     }
 
     this.isSubmitting = true;
-    this.errorMessage$.next('');
+    this.errorMessageSubject.next('');
     this.successMessage$.next('');
 
-    this.http.post<{ message?: string; token?: string }>('http://localhost:3000/login', {
+    this.http.post<{ message?: string; token?: string;}>('http://localhost:3000/login', {
         identifier: identifier,
         password: this.password,
       })
       .pipe(finalize(() => (this.isSubmitting = false)))
       .subscribe({
         next: (res) => {
-          this.errorMessage$.next('');
-          this.successMessage$.next(res.message ?? 'Prijava uspješna.');
+          this.errorMessageSubject.next('');
+          this.successMessage$.next(res.message ?? '');
           form.resetForm();
           this.identifier = '';
           this.password = '';
-
 
           if (res.token) {
             console.log('Received token:', res.token);
@@ -64,7 +64,7 @@ export class LoginPage {
           }
         },
         error: (err) => {
-          this.errorMessage$.next(err.error.message ?? 'Prijava nije uspjela.');
+          this.errorMessageSubject.next(err.error.message ?? 'Prijava nije uspjela.');
           this.successMessage$.next("");
         },
       });

@@ -58,7 +58,8 @@ export class MySavedAds implements OnInit {
   mySavedAds$ = new BehaviorSubject<MySavedAd[] | null>(null);
   readonly adsPerPage = 5;
   currentPage = 1;
-  errorMessage$ = new Subject<string>();
+  errorMessageSubject = new Subject<string>()
+  errorMessage$ = this.errorMessageSubject.asObservable();
   successMessage$ = new Subject<string>();
   isLoading$ = new Subject<boolean>();
   private isRequestInFlight = false;
@@ -71,7 +72,7 @@ export class MySavedAds implements OnInit {
 
   ngOnInit(): void {
     this.auth.loadUser();
-    this.currentUser$ = this.auth.currentUser$;
+    this.currentUser$ = this.auth.user$;
     this.currentUser$
       .pipe(
         filter((user): user is CurrentUser => Boolean(user?.id)),
@@ -179,7 +180,7 @@ export class MySavedAds implements OnInit {
     const token = localStorage.getItem('sessionApiToken');
     if (!token) {
       this.isLoading$.next(false);
-      this.errorMessage$.next('Morate biti prijavljeni da biste vidjeli svoje oglase.');
+      this.errorMessageSubject.next('Morate biti prijavljeni da biste vidjeli svoje oglase.');
       this.mySavedAds$.next([]);
       this.currentPage = 1;
       return;
@@ -187,7 +188,7 @@ export class MySavedAds implements OnInit {
 
     this.isLoading$.next(true);
     this.isRequestInFlight = true;
-    this.errorMessage$.next("");
+    this.errorMessageSubject.next("");
 
     this.http
       .get<MySavedAd[]>('http://localhost:3000/ad/me/saved')
@@ -203,7 +204,7 @@ export class MySavedAds implements OnInit {
           this.currentPage = 1;
         },
         error: (error: unknown) => {
-          this.errorMessage$.next(this.getLoadErrorMessage(error));
+          this.errorMessageSubject.next(this.getLoadErrorMessage(error));
           this.mySavedAds$.next([]);
           this.currentPage = 1;
         },

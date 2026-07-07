@@ -6,7 +6,7 @@ import { CurrentUser } from '../../models/current-user.model';
 @Injectable({ providedIn: 'root' })
 export class Auth {
   private userSubject = new BehaviorSubject<CurrentUser | null>(null);
-  currentUser$: Observable<CurrentUser | null> = this.userSubject.asObservable();
+  user$: Observable<CurrentUser | null> = this.userSubject.asObservable();
 
   constructor(
     private http: HttpClient

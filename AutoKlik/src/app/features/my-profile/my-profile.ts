@@ -24,7 +24,7 @@ export class MyProfile implements OnInit {
   ngOnInit(): void {
     this.auth.loadUser();
 
-    this.currentUser$ = this.auth.currentUser$;
+    this.currentUser$ = this.auth.user$;
   }
 
 

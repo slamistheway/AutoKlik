@@ -267,9 +267,7 @@
           }
 
 
-          @if (PublicAdCars$ | async; as ads) {
-            @if (ads.length > 0) {
-
+          @if (publicAdCars.length > 0) {
               @if (totalPages > 0) {
                 <div class="flex justify-center items-center mt-2 gap-1">
                   <button
@@ -299,7 +297,7 @@
               }
 
               <div class="grid gap-4">
-                @for (ad of pagedAds; track ad.id) {
+                @for (ad of publicAdCars; track ad.id) {
                   <article class="rounded-lg border border-gray-200 bg-white shadow-md hover:shadow-lg transition-shadow duration-300 flex overflow-hidden">
                     <!-- Image Container - Left Side -->
                     <a [routerLink]="['/ad', ad.id]" class="block overflow-hidden bg-gray-100 shrink-0 w-48 h-40">
@@ -399,7 +397,6 @@
               </div>
             }
           }
-        }
       </div>
 
 
