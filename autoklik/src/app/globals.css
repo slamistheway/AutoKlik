@@ -1,0 +1,36 @@
+@import "tailwindcss";
+
+:root {
+  --color-navbar: #7f1d1d;
+  --color-navbar-hover: #991b1b;
+
+  --color-footer: #7f1d1d;
+  --color-footer-text: white;
+  --color-footerLink-text: gray;
+  --color-footerLinkHover-text: white;
+
+
+  --color-otherDivs: white ;
+  --color-otherDivs-text: #7f1d1d;
+  --color-otherDivsAltText-text: red;
+
+  --color-accent: #bf0000;
+  --color-accent-hover: #ef4444;
+  --color-accent-soft: #fef2f2;
+
+  --color-surface: #ffffff;
+  --color-surface-muted: #f8fafc;
+
+  --color-selectedListItem: #f19292;
+
+  --color-text: black;
+  --color-white-text: white;
+  --color-text-muted: #4b5563;
+
+  --border-color: #bebfc5;
+}
+
+
+input::placeholder {
+  color: #bebfc5;
+}

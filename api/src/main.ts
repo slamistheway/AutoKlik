@@ -10,9 +10,9 @@ async function bootstrap() {
     logger: ['log', 'error', 'warn', 'debug', 'verbose'] as LogLevel[],
   });
   app.enableCors({
-    origin: 'http://localhost:4200',
+    origin: ['http://localhost:3000', 'http://localhost:4200'],
     credentials: true,
   });
-  await app.listen(process.env.PORT ?? 3000);
+  await app.listen(process.env.PORT ?? 3001);
 }
 bootstrap();

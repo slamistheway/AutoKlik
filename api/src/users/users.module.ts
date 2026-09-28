@@ -1,16 +1,12 @@
 import { Module } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { UsersController } from './users.controller';
-import { DatabaseModule } from '../database.module';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { User } from './entities/user.entity';
-import { Ad } from '../ad/entities/ad.entity';
-import { AdImage } from '../ad/entities/ad-image.entity';
-import { SavedAd } from '../ad/entities/saved-ad.entity';
+import { DrizzleModule } from '../db/drizzle/drizzle.module';
+import {NodePgDatabase} from "drizzle-orm/node-postgres";
 
 @Module({
-    imports: [DatabaseModule, TypeOrmModule.forFeature([User, Ad, AdImage, SavedAd])],
-    controllers: [UsersController],
+    imports: [DrizzleModule],
     providers: [UsersService],
+    controllers: [UsersController],
 })
 export class UsersModule {}

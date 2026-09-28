@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1790365562811,
+      "tag": "0000_lame_nova",
+      "breakpoints": true
+    },
+    {
+      "breakpoints": true,
+      "idx": 1,
+      "tag": "0001_add_preview_img",
+      "version": "7",
+      "when": 1790453348998
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790624902339,
+      "tag": "0002_steep_khan",
+      "breakpoints": true
+    }
+  ]
+}

@@ -1,130 +1,140 @@
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { UpdateProfileDto } from './dto/update-profile.dto';
-import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, In, Repository } from 'typeorm';
-import { User } from './entities/user.entity';
-import { Ad } from '../ad/entities/ad.entity';
-import { AdImage } from '../ad/entities/ad-image.entity';
-import { SavedAd } from '../ad/entities/saved-ad.entity';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
+import { eq, inArray } from 'drizzle-orm';
+import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
+import { UpdateProfileDto } from '../dtos/update-profile.dto';
+import * as schema from '../db/schema';
+
+const { users, ads, adImages, savedAds } = schema;
+type User = typeof users.$inferSelect;
 
 @Injectable()
 export class UsersService {
-    private readonly logger = new Logger(UsersService.name);
+  private readonly logger = new Logger(UsersService.name);
 
-    constructor(
-        @InjectRepository(User) private readonly usersRepo: Repository<User>,
-        @InjectRepository(Ad) private readonly adsRepo: Repository<Ad>,
-        @InjectRepository(AdImage) private readonly adImagesRepo: Repository<AdImage>,
-        @InjectRepository(SavedAd) private readonly savedAdsRepo: Repository<SavedAd>,
-        private readonly dataSource: DataSource,
-    ) {}
+  constructor(
+    @Inject('DRIZZLE_DB') private readonly db: NodePgDatabase<typeof schema>,
+  ) {}
 
-    private mapUserEntity(user: User) {
-        return {
-            id: user.id,
-            username: user.username,
-            email: user.email,
-            pfp: user.pfp,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            phone: user.phone,
-            city: user.city,
-            country: user.country,
-        };
+  private mapUserEntity(user: User) {
+    return {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      pfp: user.pfp,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      phone: user.phone,
+      city: user.city,
+      country: user.country,
+    };
+  }
+
+  async getMe(userId: number) {
+    const [user] = await this.db
+      .select()
+      .from(users)
+      .where(eq(users.id, userId));
+
+    if (!user) {
+      throw new NotFoundException('Korisnik nije pronađen.');
     }
 
-    async getMe(userId: number) {
-        const user = await this.usersRepo.findOne({ where: { id: userId } });
-        if (!user) {
-            throw new NotFoundException('Korisnik nije pronađen.');
-        }
+    return this.mapUserEntity(user);
+  }
 
-        return this.mapUserEntity(user);
+  async updatePfp(userId: number, pfpPath: string) {
+    if (!pfpPath?.trim()) {
+      throw new BadRequestException('Profilna slika nije proslijedena.');
     }
 
-    async updatePfp(userId: number, pfpPath: string) {
-        if (!pfpPath?.trim()) {
-            throw new BadRequestException('Profilna slika nije proslijedena.');
-        }
+    const [updatedUser] = await this.db
+      .update(users)
+      .set({ pfp: pfpPath.trim() })
+      .where(eq(users.id, userId))
+      .returning({ id: users.id, pfp: users.pfp });
 
-        const user = await this.usersRepo.findOne({ where: { id: userId } });
-        if (!user) {
-            throw new NotFoundException('Korisnik nije pronaden.');
-        }
-
-        user.pfp = pfpPath.trim();
-        const saved = await this.usersRepo.save(user);
-
-        this.logger.debug(`Updated profile picture for user ${userId}`);
-
-        return {
-            id: saved.id,
-            pfp: saved.pfp,
-        };
+    if (!updatedUser) {
+      throw new NotFoundException('Korisnik nije pronaden.');
     }
 
-    async updateProfile(userId: number, updateProfileDto: UpdateProfileDto) {
-        if (!Number.isFinite(userId) || userId <= 0) {
-            throw new BadRequestException('Neispravan korisnik.');
-        }
+    this.logger.debug(`Updated profile picture for user ${userId}`);
 
-        const firstName = updateProfileDto.firstName?.trim() ?? '';
-        const lastName = updateProfileDto.lastName?.trim() ?? '';
-        const phone = updateProfileDto.phone?.trim() ?? '';
-        const city = updateProfileDto.city?.trim() ?? '';
-        const country = updateProfileDto.country?.trim() ?? '';
+    return updatedUser;
+  }
 
-        const user = await this.usersRepo.findOne({ where: { id: userId } });
-        if (!user) {
-            throw new NotFoundException('Korisnik nije pronađen.');
-        }
-
-        user.firstName = firstName || null;
-        user.lastName = lastName || null;
-        user.phone = phone || null;
-        user.city = city || null;
-        user.country = country || null;
-
-        const saved = await this.usersRepo.save(user);
-
-        this.logger.debug(`Updated profile fields for user ${userId}`);
-        return this.mapUserEntity(saved);
+  async updateProfile(userId: number, updateProfileDto: UpdateProfileDto) {
+    if (!Number.isFinite(userId) || userId <= 0) {
+      throw new BadRequestException('Neispravan korisnik.');
     }
 
-    async deleteMe(userId: number) {
-        if (!Number.isFinite(userId) || userId <= 0) {
-            throw new BadRequestException('Neispravan korisnik.');
-        }
+    const firstName = updateProfileDto.firstName?.trim() ?? '';
+    const lastName = updateProfileDto.lastName?.trim() ?? '';
+    const phone = updateProfileDto.phone?.trim() ?? '';
+    const city = updateProfileDto.city?.trim() ?? '';
+    const country = updateProfileDto.country?.trim() ?? '';
 
-        await this.dataSource.transaction(async (manager) => {
-            const usersRepo = manager.getRepository(User);
-            const adsRepo = manager.getRepository(Ad);
-            const adImagesRepo = manager.getRepository(AdImage);
-            const savedAdsRepo = manager.getRepository(SavedAd);
+    const [updatedUser] = await this.db
+      .update(users)
+      .set({
+        firstName: firstName || null,
+        lastName: lastName || null,
+        phone: phone || null,
+        city: city || null,
+        country: country || null,
+      })
+      .where(eq(users.id, userId))
+      .returning();
 
-            // Remove saved entries created by this user.
-            await savedAdsRepo.delete({ userId });
-
-            // Remove saved references to ads owned by this user.
-            const ownedAds = await adsRepo.find({ select: { id: true }, where: { userId } });
-            const ownedAdIds = ownedAds.map((ad) => ad.id);
-            if (ownedAdIds.length > 0) {
-                await savedAdsRepo.delete({ adId: In(ownedAdIds) });
-                await adImagesRepo.delete({ adId: In(ownedAdIds) });
-            }
-
-            await adsRepo.delete({ userId });
-
-            const deleteUserResult = await usersRepo.delete({ id: userId });
-            if (!deleteUserResult.affected) {
-                throw new NotFoundException('Korisnik nije pronađen.');
-            }
-        });
-
-        this.logger.debug(`Deleted user account ${userId}`);
-
-        return {
-            message: 'Račun je uspješno izbrisan.',
-        };
+    if (!updatedUser) {
+      throw new NotFoundException('Korisnik nije pronađen.');
     }
+
+    this.logger.debug(`Updated profile fields for user ${userId}`);
+    return this.mapUserEntity(updatedUser);
+  }
+
+  async deleteMe(userId: number) {
+    if (!Number.isFinite(userId) || userId <= 0) {
+      throw new BadRequestException('Neispravan korisnik.');
+    }
+
+    await this.db.transaction(async (tx) => {
+      // Remove saved entries created by this user.
+      await tx.delete(savedAds).where(eq(savedAds.userId, userId));
+
+      // Remove saved references to ads owned by this user and their images.
+      const ownedAds = await tx
+        .select({ id: ads.id })
+        .from(ads)
+        .where(eq(ads.userId, userId));
+      const ownedAdIds = ownedAds.map((ad) => ad.id);
+      if (ownedAdIds.length > 0) {
+        await tx.delete(savedAds).where(inArray(savedAds.adId, ownedAdIds));
+        await tx.delete(adImages).where(inArray(adImages.adId, ownedAdIds));
+      }
+
+      await tx.delete(ads).where(eq(ads.userId, userId));
+
+      const [deletedUser] = await tx
+        .delete(users)
+        .where(eq(users.id, userId))
+        .returning({ id: users.id });
+
+      if (!deletedUser) {
+        throw new NotFoundException('Korisnik nije pronađen.');
+      }
+    });
+
+    this.logger.debug(`Deleted user account ${userId}`);
+
+    return {
+      message: 'Račun je uspješno izbrisan.',
+    };
+  }
 }
