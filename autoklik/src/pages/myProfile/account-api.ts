@@ -3,7 +3,7 @@ export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost
 
 export function getSessionToken() {
   if (typeof window === 'undefined') return null;
-  return window.sessionStorage.getItem('sessionApiToken');
+  return window.localStorage.getItem('sessionApiToken');
 }
 
 export async function getResponseMessage(response: Response, fallback: string) {

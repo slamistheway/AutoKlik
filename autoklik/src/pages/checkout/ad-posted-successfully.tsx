@@ -1,5 +1,4 @@
 'use client';
-import '../../app/globals.css';
 
 import { useRouter } from 'next/router';
 import { Navbar } from '@/components/navbar';

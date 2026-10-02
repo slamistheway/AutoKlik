@@ -60,6 +60,8 @@ export const pinSave = async (
 
 
 
+
+
 export const deleteSave = async (
     argSaveID: string,
     argSaveType: 'post' | 'comment',
@@ -110,8 +112,10 @@ export const deleteSave = async (
     }
 };
 
-
-
+export function getSessionToken() {
+    if (typeof window === 'undefined') return null;
+    return window.localStorage.getItem('sessionApiToken');
+}
 
 export const addSaveToList = async (
     arg_ListID: string,

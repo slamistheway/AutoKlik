@@ -1,28 +1,19 @@
 'use client';
 
-import '../app/globals.css';
 import {useEffect, useState} from 'react';
 import {Navbar} from "@/components/navbar";
 import {Footer} from "@/components/footer";
 import {ArrowRightIcon} from "lucide-react";
+import FilterChoose from "@/components/filters/filter-choose";
+import FilterNumeric from "@/components/filters/filter-numeric";
 import FilterBrands from "@/components/filters/filter-brands";
 import FilterModels from "@/components/filters/filter-models";
-import FilterPrices from "@/components/filters/filter-prices";
-import FilterYears from "@/components/filters/filter-years";
-import FilterKilometrage from "@/components/filters/filter-kilometrage";
-import FilterCondition from "@/components/filters/filter-condition";
 import FilterCounty from "@/components/filters/filter-county";
-import FilterEnginePower from "@/components/filters/filter-enginePower";
-import FilterSellerType from "@/components/filters/filter-sellerType";
 import FilterColor from "@/components/filters/filter-color";
-import FilterEngineSize from "@/components/filters/filter-engineSize";
-import FilterGasType from "@/components/filters/filter-gasType";
-import FilterGearType from "@/components/filters/filter-gearType";
-import FilterDoorNumber from "@/components/filters/filter-doorNumber";
-import FilterBuyOrLeaseType from "@/components/filters/filter-buyOrLeaseType";
-import {AdCardData, AdFullData} from "@/types/types";
+import type { AdCardData } from '@/types/types';
 import {AdCard} from "@/components/adCard";
 import {resolve_api_ad_img} from "@/shared/functions";
+import {toAdCardData} from '@/shared/ad-data';
 
 
 type RangeValue = { min: string; max: string };
@@ -32,7 +23,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 
 
 
-export default function Cars() {
+export default function Search() {
     {/*----FILTERS----*/}
     const [search, setSearch] = useState('');
     const [brands, setBrands] = useState<string[]>([]);
@@ -58,32 +49,33 @@ export default function Cars() {
     useEffect(() => {
         const fetchAll = async () => {
             try {
-                const [allAdsRes] = await Promise.all([
-                    fetch(`${API_BASE_URL}/ads/all`)
-                ]);
+                const token = typeof window === 'undefined' ? null : window.localStorage.getItem('sessionApiToken');
+                const pageFilters = new URLSearchParams(window.location.search);
+                const apiFilters = new URLSearchParams();
+                ['search', 'brands', 'models', 'yearMin', 'yearMax'].forEach(key => {
+                    const value = pageFilters.get(key);
+                    if (value) apiFilters.set(key, value);
+                });
+                const filterQuery = apiFilters.toString();
+                setSearch(pageFilters.get('search') ?? '');
+                setBrands(pageFilters.get('brands')?.split(',').filter(Boolean) ?? []);
+                setModels(pageFilters.get('models')?.split(',').filter(Boolean) ?? []);
+                setYears({
+                    min: pageFilters.get('yearMin') ?? '',
+                    max: pageFilters.get('yearMax') ?? '',
+                });
 
-                const failed = [allAdsRes].find((r) => !r.ok);
-                if (failed) {
-                    const errBody = await failed.json().catch(() => ({}));
+                const allAdsRes = await fetch(`${API_BASE_URL}/ads/all${filterQuery ? `?${filterQuery}` : ''}`, {
+                    headers: token ? { Authorization: `Bearer ${token}` } : {},
+                });
+
+                if (!allAdsRes.ok) {
+                    const errBody = await allAdsRes.json().catch(() => ({}));
                     throw new Error(errBody?.message ?? 'Failed to load saves.');
                 }
 
-                const apiAds: AdFullData[] = await allAdsRes.json();
-                setAds(apiAds.map(ad => {
-                    return {
-                        id: ad.id,
-                        title: ad.title ?? 'Oglas bez naslova',
-                        price: String(ad.price ?? ''),
-                        year: String(ad.year ?? ''),
-                        mileage: String(ad.mileage ?? ''),
-                        location: ad.county ?? '',
-                        image: resolve_api_ad_img(ad.preview_img),
-                        fuel: ad.fuel ?? undefined,
-                        condition: ad.condition ?? undefined,
-                        sellerType: ad.seller_type ?? undefined,
-                        sellerName: ad.seller_username ?? undefined,
-                    };
-                }));
+                const apiAds: unknown[] = await allAdsRes.json();
+                setAds(apiAds.map(toAdCardData).map((ad: AdCardData) => ({ ...ad, previewImg: resolve_api_ad_img(ad.previewImg) })));
                 setErrorMessage('');
 
             } catch (err: unknown) {
@@ -106,18 +98,6 @@ export default function Cars() {
                 <section className="mx-auto mt-5 w-11/12 max-w-6xl rounded-2xl border border-gray-200 bg-gray-100 p-5 md:p-8">
                     <h1 className="text-2xl font-bold">Pretraživanje</h1>
                     <p className="mt-1 text-gray-600">Pretražite oglase po željenim kriterijima.</p>
-                    <form className="mt-5 flex" onSubmit={event => event.preventDefault()}>
-                        <input
-                            type="text"
-                            placeholder="Pretraži oglase..."
-                            value={search}
-                            onChange={event => setSearch(event.target.value)}
-                            className="w-full rounded-l-md border border-gray-300 bg-white p-3"
-                        />
-                        <button type="submit" aria-label="Pretraži" className="rounded-r-md bg-white px-4">
-                            <ArrowRightIcon className="w-5 h-5 text-gray-500" />
-                        </button>
-                    </form>
 
                     <hr className="my-6 border-gray-300" />
 
@@ -125,19 +105,19 @@ export default function Cars() {
                     <div className="grid grid-cols-1 gap-x-5 gap-y-6 sm:grid-cols-2 lg:grid-cols-4">
                         <FilterBrands title="Marka" selectedVehicle_type="cars" mode="multi" value={brands} onChange={value => setBrands(Array.isArray(value) ? value : [])} />
                         <FilterModels title="Model" selectedVehicle_type="cars" selectedBrands={brands} mode="multi" value={models} onChange={value => setModels(Array.isArray(value) ? value : [])} />
-                        <FilterEnginePower mode="range" value={enginePower} onChange={value => setEnginePower(value as RangeValue)} />
-                        <FilterPrices mode="range" value={prices} onChange={value => setPrices(value as RangeValue)} />
-                        <FilterYears mode="range" value={years} onChange={value => setYears(value as RangeValue)} />
-                        <FilterKilometrage mode="range" value={kilometrage} onChange={value => setKilometrage(value as RangeValue)} />
-                        <FilterCondition mode="single" value={condition} onChange={value => setCondition(String(value))} />
+                        <FilterNumeric filterType="enginePower" mode="range" value={enginePower} onChange={value => setEnginePower(value as RangeValue)} />
+                        <FilterNumeric filterType="price" mode="range" value={prices} onChange={value => setPrices(value as RangeValue)} />
+                        <FilterNumeric filterType="year" mode="range" value={years} onChange={value => setYears(value as RangeValue)} />
+                        <FilterNumeric filterType="kilometrage" mode="range" value={kilometrage} onChange={value => setKilometrage(value as RangeValue)} />
+                        <FilterChoose filterType="condition" value={condition} onChange={value => setCondition(String(value))} />
                         <FilterCounty mode="multi" value={counties} onChange={value => setCounties(Array.isArray(value) ? value : [])} />
-                        <FilterBuyOrLeaseType value={buyOrLease} onChange={value => setBuyOrLease(String(value))} />
-                        <FilterSellerType value={sellerType} onChange={value => setSellerType(String(value))} />
-                        <FilterEngineSize mode="range" value={engineSize} onChange={value => setEngineSize(value as RangeValue)} />
-                        <FilterGasType value={gasType} onChange={value => setGasType(String(value))} />
-                        <FilterGearType value={gearType} onChange={value => setGearType(String(value))} />
+                        <FilterChoose filterType="buyOrLease" value={buyOrLease} onChange={value => setBuyOrLease(String(value))} />
+                        <FilterChoose filterType="sellerType" value={sellerType} onChange={value => setSellerType(String(value))} />
+                        <FilterNumeric filterType="engineSize" mode="range" value={engineSize} onChange={value => setEngineSize(value as RangeValue)} />
+                        <FilterChoose filterType="fuel" value={gasType} onChange={value => setGasType(String(value))} />
+                        <FilterChoose filterType="gear" value={gearType} onChange={value => setGearType(String(value))} />
                         <FilterColor mode="multi" value={colors} onChange={value => setColors(Array.isArray(value) ? value : [])} />
-                        <FilterDoorNumber value={doorNumber} onChange={value => setDoorNumber(String(value))} />
+                        <FilterChoose filterType="doorNumber" value={doorNumber} onChange={value => setDoorNumber(String(value))} />
                     </div>
                 </section>
 

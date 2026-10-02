@@ -1,0 +1,1 @@
+ALTER TABLE "ads" RENAME COLUMN "mileage" TO "kilometrage";

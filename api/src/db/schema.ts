@@ -1,17 +1,16 @@
 import {
-  bigint,
-  integer,
-  numeric,
-  pgTable,
-  primaryKey,
-  serial,
-  text,
-  timestamp,
-  unique,
-  varchar,
-  index, bigserial,
+    bigint,
+    integer,
+    numeric,
+    pgTable,
+    primaryKey,
+    serial,
+    text,
+    timestamp,
+    unique,
+    varchar,
+    index, bigserial, boolean,
 } from "drizzle-orm/pg-core";
-import { sql } from "drizzle-orm";
 
 
 export const users = pgTable(
@@ -26,8 +25,7 @@ export const users = pgTable(
       phone: varchar("phone", { length: 20 }),
       city: varchar("city", { length: 100 }),
       country: varchar("country", { length: 100 }),
-      createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-      updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+      dateCreated: timestamp("date_created", { withTimezone: false }).defaultNow()
     },
     (table) => [
       unique("users_username_key").on(table.username),
@@ -48,7 +46,7 @@ export const ads = pgTable("ads", {
     description: text("description"),
     year: integer("year"),
     price: numeric("price"),
-    mileage: integer("mileage"),
+    kilometrage: integer("kilometrage"),
     fuel: text("fuel"),
     condition: text("condition"),
     county: text("county"),
@@ -64,8 +62,10 @@ export const ads = pgTable("ads", {
 
     previewImg: text("preview_img"),
 
-    createdAt: timestamp("created_at", { withTimezone: false }).defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: false }).defaultNow(),
+    featured: boolean("featured").default(false),
+
+    dateCreated: timestamp("date_created", { withTimezone: false }).defaultNow(),
+    dateLastUpdated: timestamp("date_last_updated", { withTimezone: false }).defaultNow(),
 });
 
 export const adImages = pgTable(
@@ -88,7 +88,7 @@ export const savedAds = pgTable(
       adId: bigint("ad_id", { mode: "number" })
           .notNull()
           .references(() => ads.id, { onDelete: "cascade" }),
-      createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+      dateSaved: timestamp("date_saved", { withTimezone: true }).defaultNow(),
     },
     (table) => [primaryKey({ columns: [table.userId, table.adId], name: "saved_ads_pkey" })],
 );

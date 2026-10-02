@@ -71,6 +71,9 @@ export class AdsController {
   }
 
   /*-------------------------------------------CREATE---------------------------------------------*/
+  /*-------------------------------------------CREATE---------------------------------------------*/
+  /*-------------------------------------------CREATE---------------------------------------------*/
+  /*-------------------------------------------CREATE---------------------------------------------*/
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(FilesInterceptor('images', 10, { storage: adImageStorage }))
   @Post()
@@ -98,7 +101,7 @@ export class AdsController {
         user_id: Number(req.user?.id),
         year: Number(createAdDto.year),
         price: nullableNumber(createAdDto.price) ?? 0,
-        mileage: nullableInteger(createAdDto.mileage) ?? 0,
+        kilometrage: nullableInteger(createAdDto.kilometrage) ?? 0,
         doorNumber: nullableInteger(createAdDto.doorNumber),
         weight: nullableInteger(createAdDto.weight),
         payload: nullableInteger(createAdDto.payload),
@@ -156,6 +159,12 @@ export class AdsController {
     return this.adService.findAllAds(req.user?.id, filters);
   }
 
+  @Get('featured')
+  findFeaturedAds(@Req() req: any,) {
+    return this.adService.findFeaturedAds(req.user?.id);
+  }
+
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.adService.findOne(+id);
@@ -188,8 +197,12 @@ export class AdsController {
     return this.adService.checkIfSaved(Number(req.user?.id), +adId);
   }
 
-  /*--------------------------CRUD---------------------------------*/
-  /*DELETE AD*/
+  /*-------------------------------------------DELETE---------------------------------------------*/
+  /*-------------------------------------------DELETE---------------------------------------------*/
+  /*-------------------------------------------DELETE---------------------------------------------*/
+  /*-------------------------------------------DELETE---------------------------------------------*/
+
+  /*--------------------------DELETING ADS---------------------------------*/
   @UseGuards(JwtAuthGuard)
   @Delete('delete/:adId')
   deleteAd(@Param('adId') adId: string, @Req() req: any) {

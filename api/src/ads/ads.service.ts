@@ -49,7 +49,7 @@ export class AdsService {
       title: ad.title,
       description: ad.description,
       price: ad.price,
-      mileage: ad.mileage,
+      kilometrage: ad.kilometrage,
       fuel: ad.fuel,
       condition: ad.condition,
       county: ad.county,
@@ -65,8 +65,8 @@ export class AdsService {
       preview_img: ad.previewImg ?? images[0] ?? null,
       year: ad.year,
       images,
-      created_at: ad.createdAt,
-      updated_at: ad.updatedAt,
+      created_at: ad.dateCreated,
+      updated_at: ad.dateLastUpdated,
     };
   }
 
@@ -159,17 +159,14 @@ export class AdsService {
       .leftJoin(users, eq(users.id, ads.userId))
       .leftJoin(adImages, eq(adImages.adId, ads.id))
       .where(where)
-      .orderBy(desc(ads.createdAt), desc(ads.id), asc(adImages.createdAt));
+      .orderBy(desc(ads.dateCreated), desc(ads.id), asc(adImages.createdAt));
   }
 
   /*-------------------------------------------CRUD---------------------------------------------*/
-  async deleteAd(adId: number, userId: number) {
-    if (
-      !Number.isFinite(adId) ||
-      adId <= 0 ||
-      !Number.isFinite(userId) ||
-      userId <= 0
-    ) {
+  async deleteAd(adId: number, userId: number): Promise<{ statusCode: string; message: string }> {
+    this.logger.log("Deleting ad with id " + adId);
+
+    if (!Number.isFinite(adId) || adId <= 0 || !Number.isFinite(userId) || userId <= 0) {
       throw new BadRequestException('Invalid ads ID or user ID.');
     }
 
@@ -185,7 +182,14 @@ export class AdsService {
     }
 
     this.logger.log(`Ad with ID ${adId} deleted by user with ID ${userId}.`);
+
+    return {
+      statusCode: "200",
+      message: "Oglas je uspješno izbrisan."
+    }
   }
+
+
 
   async create(createAdDto: CreateAdDto, imageUrls: string[] = []) {
     const {
@@ -215,7 +219,7 @@ export class AdsService {
           brand: brand,
           model: model,
           price: String(createAdDto.price),
-          mileage: createAdDto.mileage,
+          kilometrage: createAdDto.kilometrage,
           year: year ?? null,
           fuel: createAdDto.fuel || null,
           condition: createAdDto.condition || null,
@@ -287,7 +291,7 @@ export class AdsService {
       .select({ id: ads.id })
       .from(ads)
       .where(and(...filterConditions))
-      .orderBy(desc(ads.createdAt), desc(ads.id))
+      .orderBy(desc(ads.dateCreated), desc(ads.id))
       .limit(MAX_RECENT_ADS);
     const adIds = idRows.map((row) => row.id);
 
@@ -333,7 +337,7 @@ export class AdsService {
 
     const rows = await this.db
       .select({
-        savedAt: savedAds.createdAt,
+        savedAt: savedAds.dateSaved,
         ad: ads,
         imageUrl: adImages.imageUrl,
       })
@@ -341,7 +345,7 @@ export class AdsService {
       .innerJoin(ads, eq(ads.id, savedAds.adId))
       .leftJoin(adImages, eq(adImages.adId, ads.id))
       .where(eq(savedAds.userId, normalizedUserId))
-      .orderBy(desc(savedAds.createdAt), asc(adImages.createdAt));
+      .orderBy(desc(savedAds.dateSaved), asc(adImages.createdAt));
 
     const grouped = new Map<
       number,
@@ -368,11 +372,62 @@ export class AdsService {
       preview_img: ad.previewImg ?? images[0] ?? null,
       year: ad.year,
       images,
-      created_at: ad.createdAt,
-      updated_at: ad.updatedAt,
+      created_at: ad.dateCreated,
+      updated_at: ad.dateLastUpdated,
       saved_at: savedAt,
     }));
   }
+
+
+
+  async findFeaturedAds(userId?: number,) {
+    const normalizedUserId = Number(userId);
+    const hasUserId = Number.isFinite(normalizedUserId) && normalizedUserId > 0;
+    const MAX_RECENT_ADS = 20;
+
+    const idRows = await this.db
+        .select({ id: ads.id })
+        .from(ads)
+        .where(eq(ads.featured, true))
+        .limit(MAX_RECENT_ADS);
+
+    const adIds = idRows.map((row) => row.id);
+
+    if (adIds.length === 0) return [];
+
+    const adRows = await this.getAdsWithRelations(inArray(ads.id, adIds));
+    const mappedAds = this.mapJoinedAds(adRows);
+    const orderedAds = new Map(mappedAds.map((ad) => [ad.id, ad]));
+
+    let savedAdIds = new Set<number>();
+    if (hasUserId) {
+      const savedRows = await this.db
+          .select({ adId: savedAds.adId })
+          .from(savedAds)
+          .where(
+              and(
+                  eq(savedAds.userId, normalizedUserId),
+                  inArray(savedAds.adId, adIds),
+              ),
+          );
+
+      savedAdIds = new Set(savedRows.map((row) => row.adId));
+    }
+
+    return adIds
+        .map((id) => orderedAds.get(id))
+        .filter((ad): ad is NonNullable<typeof ad> => Boolean(ad))
+        .map((ad) => ({
+          ...ad,
+          is_saved: hasUserId ? savedAdIds.has(ad.id) : false,
+        }));
+  }
+
+
+
+
+
+
 
   async fetchAllAdsByUserId(userId: number | string) {
     const normalizedUserId = Number(userId);

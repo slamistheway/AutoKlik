@@ -58,7 +58,7 @@ export default function FilterColor({ value, onChange, mode = 'multi', title = '
                 className="flex w-full items-center justify-between border-2 border-[var(--border-color)] px-3 py-2 text-left text-sm"
         >          <span className="flex flex-wrap items-center gap-1">
             {/*----NO COLORS----*/}
-            {value.length === 0 && <span>{placeholder}</span>}
+            {value.length === 0 && <span className="text-gray-400">{placeholder}</span>}
 
             {/*----CHOSEN COLORS----*/}
             {value.map(selectedColor => {

@@ -1,5 +1,3 @@
-import {useState} from "react";
-
 export type CurrentUser = {
     id: number | string;
     username: string;
@@ -12,42 +10,43 @@ export type CurrentUser = {
     country?: string | null;
 };
 
-export interface AdCardData { //popravi data typeove
+
+export type AdCardData = {
     id: number;
-    title: string;
-    price: string;
-    year: string;
-    mileage: string;
-    location: string;
-    fuel?: string;
-    condition?: string;
-    
-    sellerType?: string;
-    sellerName?: string;
+    userId: number;
 
-    image: string; //pretvori ovo u preview_img
-}
+    category: string | '';
+    subcategory: string | '';
+    brand: string | '';
+    model: string | '';
+    year: number | null;
+    price: string | '';
+    kilometrage: number | null;
 
-export type AdFullData = { //popravi data typeove
-    id?: number;
-    brand: string;
-    model: string;
+    fuel: string | '';
+    condition: string | '';
+    county: string | '';
+    sellerType: string | '';
+    buyOrLease: string | '';
+    gearType: string | '';
+    color: string | '';
+    doorNumber: number | null;
+    drivingLicence: string | '';
+    weight: number | null;
+    payload: number | null;
+    volume: number | null;
 
-    price: number | string | null;
-    year: string | null;
-    mileage: string | null;
-    county: string | null; //pretvori ovo u location
-    fuel: string | null;
-    enginePower: string | null;
-    condition: string | null;
+    title: string | '';
+    description: string | '';
+    previewImg: string | '';
 
-    sellerType: string | null;
-    seller_username?: string | null;
-
-    title: string | null;
-    description: string | null;
-
-    preview_img?: string | null;
-    images?: string[];
+    dateCreated: string | null;
+    dateLastUpdated: string | null;
+    sellerUsername?: string | null;
+    is_saved?: boolean;
+    savedAt?: string | null;
 };
 
+export type AdFullData = AdCardData & {
+    images: string[];
+};

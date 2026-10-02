@@ -76,7 +76,7 @@ export default function FilterModels({ value, onChange, selectedVehicle_type, se
         >
           <span className="flex flex-wrap items-center gap-1">
             {/*----NO MODELS----*/}
-            {value.length === 0 && <span>{placeholder}</span>}
+            {value.length === 0 && <span className="text-gray-400">{placeholder}</span>}
 
             {/*----CHOSEN MODELS----*/}
             {value.map((model) => (

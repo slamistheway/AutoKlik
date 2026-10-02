@@ -4,31 +4,17 @@ import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { ChevronLeft, ChevronRight, Heart, MapPin, Share2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, MapPin, Share2 } from 'lucide-react';
 import { Footer } from '@/components/footer';
 import { Navbar } from '@/components/navbar';
-import type { AdFullData } from '@/types/types';
-import '../../app/globals.css';
-import {resolve_api_ad_img} from "@/shared/functions";
+import { SaveAdButton } from '@/components/saveAdButton';
+import type { AdFullData, CurrentUser } from '@/types/types';
+import { toAdFullData } from '@/shared/ad-data';
+import {getSessionToken, resolve_api_ad_img} from "@/shared/functions";
+import {fetchCurrentUser} from "@/app/auth/auth-guards";
+import {getResponseMessage} from "@/pages/myProfile/account-api";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
-
-type AdDetails = AdFullData & {
-  category?: string | null;
-  subcategory?: string | null;
-  brand?: string | null;
-  model?: string | null;
-  description?: string | null;
-  buy_or_lease?: string | null;
-  gear_type?: string | null;
-  color?: string | null;
-  door_number?: number | null;
-  driving_licence?: string | null;
-  weight?: number | null;
-  payload?: number | null;
-  volume?: number | null;
-};
-
 
 function formatPrice(price?: number | string | null) {
   if (price === null || price === undefined || price === '') return 'Cijena na upit';
@@ -37,19 +23,32 @@ function formatPrice(price?: number | string | null) {
 
 export default function AdPage() {
   const router = useRouter();
-  const [ad, setAd] = useState<AdDetails | null>(null);
   const [activeImage, setActiveImage] = useState(0);
   const [errorMessage, setErrorMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const [isSaved, setIsSaved] = useState(false);
   const [shareMessage, setShareMessage] = useState('');
+
+
+  const [user, setUser] = useState<CurrentUser | null>(null);
+  const [ad, setAd] = useState<AdFullData | null>(null);
+
+  const imagePaths = ad?.images.length ? ad.images : ad?.previewImg ? [ad.previewImg] : [];
+  const images = imagePaths.map(resolve_api_ad_img);
+  const selectedImage = images[activeImage] ?? '/default_ad_img.png';
+
+  const showPreviousImage = () => setActiveImage((current) => (current - 1 + images.length) % images.length);
+  const showNextImage = () => setActiveImage((current) => (current + 1) % images.length);
+
 
   useEffect(() => {
     if (!router.isReady || typeof router.query.id !== 'string') return;
     const controller = new AbortController();
 
+    const token = getSessionToken();
+
     const fetchAd = async () => {
       try {
+
         const response = await fetch(`${API_BASE_URL}/ads/${encodeURIComponent(router.query.id as string)}`, {
           signal: controller.signal,
         });
@@ -58,8 +57,9 @@ export default function AdPage() {
           throw new Error(body?.message ?? 'Oglas nije pronađen.');
         }
 
-        const result = await response.json() as AdDetails;
+        const result = toAdFullData(await response.json());
         setAd(result);
+
         setErrorMessage('');
       } catch (error) {
         if (controller.signal.aborted) return;
@@ -69,16 +69,30 @@ export default function AdPage() {
       }
     };
 
+
+    let active = true;
+    const loadProfile = async () => {
+      let currentUser: CurrentUser;
+      try {
+        currentUser = await fetchCurrentUser();
+        if (active) {
+          setUser(currentUser);
+        }
+
+        console.log('Logged user id:', currentUser.id);
+      } catch (loadError) {
+        if (active) setErrorMessage(loadError instanceof Error ? loadError.message : 'Nije moguće učitati korisnički profil.');
+        return;
+      }
+    };
+    void loadProfile();
+
+
     void fetchAd();
-    return () => controller.abort();
+    return () => {controller.abort(); active = false;};
   }, [router.isReady, router.query.id]);
+  
 
-  const imagePaths = ad?.images?.length ? ad.images : ad?.preview_img ? [ad.preview_img] : [];
-  const images = imagePaths.map(resolve_api_ad_img);
-  const selectedImage = images[activeImage] ?? '/default_ad_img.png';
-
-  const showPreviousImage = () => setActiveImage((current) => (current - 1 + images.length) % images.length);
-  const showNextImage = () => setActiveImage((current) => (current + 1) % images.length);
 
   const shareAd = async () => {
     try {
@@ -89,28 +103,39 @@ export default function AdPage() {
     }
   };
 
-  const detailRows: [string, string | number | null | undefined][] = ad ? [
-    ['Kategorija', ad.category],
-    ['Potkategorija', ad.subcategory],
-    ['Marka', ad.brand],
-    ['Model', ad.model],
-    ['Godina', ad.year],
-    ['Kilometraža', ad.mileage === null || ad.mileage === undefined ? null : `${new Intl.NumberFormat('hr-HR').format(ad.mileage)} km`],
-    ['Gorivo', ad.fuel],
-    ['Stanje', ad.condition],
-    ['Mjenjač', ad.gear_type],
-    ['Boja', ad.color],
-    ['Broj vrata', ad.door_number],
-    ['Županija', ad.county],
-  ] : [];
-  const details = detailRows.filter(([, value]) => value !== null && value !== undefined && value !== '');
+
+
+  const deleteAd = (adId: number, setErrorMessage: (msg: string) => void) => {
+    const token = getSessionToken();
+    if (!token) {
+      console.warn('User is not authenticated. Cannot delete ad.');
+      return;
+    }
+
+    fetch(`http://localhost:3001/ads/delete/${adId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ arg_adID: adId }),
+    }).then(async (res) => {
+        if (!res.ok) {
+          throw new Error(res?.statusText ?? 'Brisanje oglasa nije uspjelo.');
+        }
+
+        window.location.href = '/';
+
+    }).catch((err) => {
+      setErrorMessage(err?.message);
+    });
+  };
+
+
 
   return (
     <>
       <Navbar />
       <main className="min-h-screen bg-[#111114] px-4 py-6 text-white sm:px-6 lg:py-10">
         <div className="mx-auto max-w-7xl">
-          <Link href="/cars" className="mb-5 inline-flex items-center gap-2 text-sm text-gray-300 hover:text-white">
+          <Link href="/autoklik/src/pages/search" className="mb-5 inline-flex items-center gap-2 text-sm text-gray-300 hover:text-white">
             <ChevronLeft className="h-4 w-4" /> Natrag na oglase
           </Link>
 
@@ -164,7 +189,7 @@ export default function AdPage() {
                   <p className="mt-5 text-3xl font-extrabold text-white">{formatPrice(ad.price)}</p>
                   <div className="mt-4 flex flex-wrap gap-2 text-xs">
                     {ad.condition && <span className="rounded-full bg-orange-500/15 px-3 py-1 text-orange-300">{ad.condition}</span>}
-                    {ad.seller_type && <span className="rounded-full bg-white/10 px-3 py-1 text-gray-200">{ad.seller_type}</span>}
+                    {ad.sellerType && <span className="rounded-full bg-white/10 px-3 py-1 text-gray-200">{ad.sellerType}</span>}
                   </div>
 
                   <div className="my-5 border-t border-white/10" />
@@ -173,16 +198,26 @@ export default function AdPage() {
                   </div>
                   <div className="mt-5 rounded-xl bg-[#111114] p-4">
                     <p className="text-xs text-gray-400">Prodavatelj</p>
-                    <p className="mt-1 font-semibold">{ad.seller_username || 'Privatni oglašivač'}</p>
+                    <p className="mt-1 font-semibold">{ad.sellerUsername || 'Privatni oglašivač'}</p>
                   </div>
 
                   <button type="button" className="mt-4 w-full rounded-xl bg-orange-600 px-4 py-3 font-bold text-white transition hover:bg-orange-500">
                     Pošalji poruku
                   </button>
                   <div className="mt-3 grid grid-cols-2 gap-3">
-                    <button type="button" onClick={() => setIsSaved((saved) => !saved)} className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 px-3 py-2.5 text-sm text-gray-200 hover:bg-white/5">
-                      <Heart className={`h-4 w-4 ${isSaved ? 'fill-orange-500 text-orange-500' : ''}`} /> {isSaved ? 'Spremljeno' : 'Spremi'}
-                    </button>
+                    <SaveAdButton
+                      adId={ad.id ?? Number(router.query.id)}
+                      checkSavedOnMount
+                      variant="heart"
+                      className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 px-3 py-2.5 text-sm text-gray-200 hover:bg-white/5"
+                    />
+
+                    {ad.userId === user?.id && (
+                      <button type="button" onClick={() => deleteAd(ad.id, setErrorMessage)} className="bg-red-500 inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 px-3 py-2.5 text-sm text-gray-200 hover:bg-white/5">
+                        Delete
+                      </button>
+                    )}
+
                     <button type="button" onClick={shareAd} className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 px-3 py-2.5 text-sm text-gray-200 hover:bg-white/5">
                       <Share2 className="h-4 w-4" /> Podijeli
                     </button>
@@ -203,11 +238,10 @@ export default function AdPage() {
                 <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
                   {[
                       ['Godina', ad.year],
-                      ['Kilometraža', ad.mileage === null || ad.mileage === undefined ? null : `${new Intl.NumberFormat('hr-HR').format(ad.mileage)} km`],
+                      ['Kilometraža', ad.kilometrage],
                       ['Gorivo', ad.fuel],
-                      ['Snaga', ad.enginePower],
-                      ['Mjenjač', ad.gear_type],
-                      ['Prodavač', ad.seller_type]
+                      /*['Mjenjač', ad.gearType],*/
+                      ['Prodavač', ad.sellerType]
 
                   ].filter(([, value]) => value !== null && value !== undefined && value !== '').map(([label, value]) => (
                     <div key={String(label)} className="rounded-xl bg-[#111114] p-4">
@@ -218,19 +252,6 @@ export default function AdPage() {
                 </div>
               </section>
 
-              {details.length > 0 && (
-                <section className="mt-5 rounded-2xl border border-white/10 bg-[#1b1b20] p-5 sm:p-6">
-                  <h2 className="text-xl font-bold">Tehnički podaci</h2>
-                  <dl className="mt-4 grid gap-x-8 sm:grid-cols-2">
-                    {details.map(([label, value], index) => (
-                      <div key={label} className={`flex justify-between gap-4 border-t border-white/10 px-3 py-3 text-sm ${index % 2 === 1 ? 'bg-[#151519]' : ''}`}>
-                        <dt className="text-gray-400">{label}</dt>
-                        <dd className="text-right font-medium text-gray-100">{value}</dd>
-                      </div>
-                    ))}
-                  </dl>
-                </section>
-              )}
             </>
           )}
         </div>

@@ -22,6 +22,34 @@
       "when": 1790624902339,
       "tag": "0002_steep_khan",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1790716283828,
+      "tag": "0003_green_spot",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790799143035,
+      "tag": "0004_add_ads_featured",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790799237773,
+      "tag": "0005_spotty_roxanne_simpson",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790865544853,
+      "tag": "0006_simple_prima",
+      "breakpoints": true
     }
   ]
 }

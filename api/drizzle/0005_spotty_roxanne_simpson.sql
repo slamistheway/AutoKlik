@@ -1,0 +1,1 @@
+ALTER TABLE "ads" ALTER COLUMN "featured" SET DEFAULT false;

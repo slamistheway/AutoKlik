@@ -11,7 +11,7 @@ export default function MyProfileAside() {
       <Link href="/my-saved-ads" className="block px-3 py-2 rounded-md hover:bg-gray-100 text-sm font-medium">
         Spremljeni oglasi
       </Link>
-      <Link href="/cars" className="block px-3 py-2 rounded-md hover:bg-gray-100 text-sm font-medium">
+      <Link href="/autoklik/src/pages/search" className="block px-3 py-2 rounded-md hover:bg-gray-100 text-sm font-medium">
         Svi oglasi
       </Link>
     </div>

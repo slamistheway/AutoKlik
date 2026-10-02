@@ -1,6 +1,5 @@
 'use client';
 
-import '../app/globals.css';
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -53,7 +52,7 @@ function LoginPage() {
       }
 
       if (payload.token) {
-        window.sessionStorage.setItem('sessionApiToken', payload.token);
+        window.localStorage.setItem('sessionApiToken', payload.token);
         setAuthenticated();
         const returnUrl = router.query.returnUrl;
         const destination = typeof returnUrl === 'string' && returnUrl.startsWith('/') && !returnUrl.startsWith('//')

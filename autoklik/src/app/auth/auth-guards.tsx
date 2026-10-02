@@ -5,7 +5,7 @@ import { useRouter } from 'next/router';
 import {CurrentUser} from "@/types/types";
 
 const AUTH_STORAGE_KEY = 'autoklik.authenticated';
-const SESSION_TOKEN_KEY = 'sessionApiToken';
+const TOKEN_STORAGE_KEY = 'sessionApiToken';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 
 
@@ -14,15 +14,15 @@ export function isAuthenticated() {
   if (typeof window === 'undefined') return false;
 
   try {
-    return Boolean(window.sessionStorage.getItem(SESSION_TOKEN_KEY)) &&
-      window.sessionStorage.getItem(AUTH_STORAGE_KEY) === 'true';
+    return Boolean(window.localStorage.getItem(TOKEN_STORAGE_KEY)) &&
+      window.localStorage.getItem(AUTH_STORAGE_KEY) === 'true';
   } catch {
     return false;
   }
 }
 
 export async function fetchCurrentUser(): Promise<CurrentUser> {
-  const token = window.sessionStorage.getItem(SESSION_TOKEN_KEY);
+  const token = window.localStorage.getItem(TOKEN_STORAGE_KEY);
   if (!token) throw new Error('Niste prijavljeni.');
 
   const response = await fetch(`${API_BASE_URL}/users/me`, {
@@ -37,7 +37,7 @@ export async function fetchCurrentUser(): Promise<CurrentUser> {
 }
 
 export function setAuthenticated() {
-  window.sessionStorage.setItem(AUTH_STORAGE_KEY, 'true');
+  window.localStorage.setItem(AUTH_STORAGE_KEY, 'true');
 }
 
 export function authGuard<P extends object>(Page: ComponentType<P>) {
@@ -87,8 +87,8 @@ export function guestOnlyAuthGuard<P extends object>(Page: ComponentType<P>) {
 
 export function clearSessionToken() {
   if (typeof window === 'undefined') return;
-  window.sessionStorage.removeItem(SESSION_TOKEN_KEY);
-  window.sessionStorage.removeItem(AUTH_STORAGE_KEY);
+  window.localStorage.removeItem(TOKEN_STORAGE_KEY);
+  window.localStorage.removeItem(AUTH_STORAGE_KEY);
 }
 
 export function clearLocalStorage(){

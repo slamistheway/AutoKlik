@@ -68,7 +68,7 @@ export default function FilterBrands({ value, onChange, selectedVehicle_type, mo
         >
           <span className="flex flex-wrap items-center gap-1">
             {/*----NO BRANDS----*/}
-            {value.length === 0 && <span>{placeholder}</span>}
+            {value.length === 0 && <span className="text-gray-400">{placeholder}</span>}
 
             {/*----CHOSEN BRANDS----*/}
             {value.map((brand) => (

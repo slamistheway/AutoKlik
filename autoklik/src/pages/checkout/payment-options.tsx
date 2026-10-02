@@ -1,5 +1,4 @@
 'use client';
-import '../../app/globals.css';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
@@ -104,7 +103,7 @@ export default function PaymentOptionsPage() {
       body.append('model', details.model.trim());
       body.append('year', String(details.year ?? ''));
       body.append('price', String(details.price ?? 0));
-      body.append('mileage', String(details.mileage ?? 0));
+      body.append('kilometrage', String(details.kilometrage ?? 0));
       body.append('fuel', details.fuel);
       body.append('enginePower', String(details.enginePower ?? ''));
       body.append('condition', details.condition);

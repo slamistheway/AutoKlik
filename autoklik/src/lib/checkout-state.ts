@@ -6,7 +6,7 @@ export interface CheckoutDetailsState {
   enginePower: string;
   year: number | null;
   price: number | null;
-  mileage: number | null;
+  kilometrage: number | null;
   fuel: string;
   condition: string;
   county: string;
@@ -29,7 +29,7 @@ const DETAILS_KEY = 'checkout.detailsState';
 const STEP_KEY = 'checkout.currentStep';
 const emptyCategory = (): CheckoutCategoryState => ({ category: '', subcategory: '' });
 const emptyDetails = (): CheckoutDetailsState => ({
-  brand: '', model: '', enginePower: '', year: null, price: null, mileage: null, fuel: '', condition: '', county: '',
+  brand: '', model: '', enginePower: '', year: null, price: null, kilometrage: null, fuel: '', condition: '', county: '',
   sellerType: '', buyOrLease: '', gearType: null, color: null, doorNumber: null, drivingLicence: '',
   weight: null, payload: null, volume: null, title: '', description: '', images: [],
 });
@@ -70,7 +70,6 @@ function persistDetails() {
 export function setCategoryState(state: CheckoutCategoryState) {
   initialize();
   categoryState = { ...state };
-  window.localStorage.setItem(CATEGORY_KEY, JSON.stringify(categoryState));
 }
 export function getCategoryState() { return { ...categoryState }; }
 export function hasCategoryState() { return Boolean(categoryState.category && categoryState.subcategory); }
@@ -96,7 +95,7 @@ export function hasDraftContent() {
   initialize();
   return Boolean(
     detailsState.brand || detailsState.model || detailsState.enginePower || detailsState.year !== null || detailsState.price !== null ||
-    detailsState.mileage !== null || detailsState.fuel || detailsState.condition || detailsState.county ||
+    detailsState.kilometrage !== null || detailsState.fuel || detailsState.condition || detailsState.county ||
     detailsState.sellerType || detailsState.buyOrLease || detailsState.gearType || detailsState.color ||
     detailsState.doorNumber !== null || detailsState.drivingLicence || detailsState.weight !== null ||
     detailsState.payload !== null || detailsState.volume !== null || detailsState.title.trim() ||

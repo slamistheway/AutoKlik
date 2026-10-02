@@ -5,7 +5,7 @@ export class CreateAdDto {
     brand!: string;
     model!: string;
     price!: number;
-    mileage!: number;
+    kilometrage!: number;
     fuel!: string;
     condition!: string;
     county!: string;

@@ -1,5 +1,4 @@
 'use client';
-import '../../app/globals.css';
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
@@ -12,21 +11,12 @@ import {
   getSubcategoryLabel,
 } from '@/lib/checkout-data';
 import * as checkoutState from '@/lib/checkout-state';
+import FilterChoose from "@/components/filters/filter-choose";
+import FilterNumeric from "@/components/filters/filter-numeric";
 import FilterBrands from "@/components/filters/filter-brands";
 import FilterModels from "@/components/filters/filter-models";
-import FilterEnginePower from "@/components/filters/filter-enginePower";
-import FilterPrices from "@/components/filters/filter-prices";
-import FilterYears from "@/components/filters/filter-years";
-import FilterKilometrage from "@/components/filters/filter-kilometrage";
-import FilterCondition from "@/components/filters/filter-condition";
 import FilterCounty from "@/components/filters/filter-county";
-import FilterBuyOrLeaseType from "@/components/filters/filter-buyOrLeaseType";
-import FilterSellerType from "@/components/filters/filter-sellerType";
-import FilterEngineSize from "@/components/filters/filter-engineSize";
-import FilterGasType from "@/components/filters/filter-gasType";
-import FilterGearType from "@/components/filters/filter-gearType";
 import FilterColor from "@/components/filters/filter-color";
-import FilterDoorNumber from "@/components/filters/filter-doorNumber";
 import {getSessionToken} from "@/pages/myProfile/account-api";
 
 
@@ -65,7 +55,7 @@ interface AdFormData {
   model: string;
   price: string;
   year: string;
-  mileage: string;
+  kilometrage: string;
   county: string;
   fuel: string;
   enginePower: string;
@@ -103,7 +93,7 @@ export default function DetailsPage() {
     model: savedDetails.model,
     price: inputValue(savedDetails.price),
     year: inputValue(savedDetails.year),
-    mileage: inputValue(savedDetails.mileage),
+    kilometrage: inputValue(savedDetails.kilometrage),
     county: savedDetails.county,
     fuel: savedDetails.fuel,
     enginePower: savedDetails.enginePower,
@@ -148,7 +138,7 @@ export default function DetailsPage() {
         model: restoredDetails.model,
         price: inputValue(restoredDetails.price),
         year: inputValue(restoredDetails.year),
-        mileage: inputValue(restoredDetails.mileage),
+        kilometrage: inputValue(restoredDetails.kilometrage),
         county: restoredDetails.county,
         fuel: restoredDetails.fuel,
         enginePower: restoredDetails.enginePower,
@@ -197,7 +187,7 @@ export default function DetailsPage() {
       enginePower: model.enginePower,
       year: parsePositiveNumber(model.year),
       price: parsePositiveNumber(model.price),
-      mileage: parsePositiveNumber(model.mileage),
+      kilometrage: parsePositiveNumber(model.kilometrage),
       fuel: model.fuel,
       condition: model.condition,
       county: model.county,
@@ -244,8 +234,8 @@ export default function DetailsPage() {
         return !adFormModel.year;
       case 'price':
         return parsePositiveNumber(adFormModel.price) === null;
-      case 'mileage':
-        return parsePositiveNumber(adFormModel.mileage) === null;
+      case 'kilometrage':
+        return parsePositiveNumber(adFormModel.kilometrage) === null;
       case 'county':
         return !adFormModel.county;
       case 'condition':
@@ -269,7 +259,7 @@ export default function DetailsPage() {
         adFormModel.enginePower &&
         parsePositiveNumber(adFormModel.price) !== null &&
         adFormModel.year &&
-        parsePositiveNumber(adFormModel.mileage) !== null &&
+        parsePositiveNumber(adFormModel.kilometrage) !== null &&
         adFormModel.condition &&
         adFormModel.title.trim() &&
         adFormModel.description.trim() &&
@@ -384,7 +374,7 @@ export default function DetailsPage() {
     updateField('enginePower', '150');
     updateField('price', '10000');
     updateField('year', '2020');
-    updateField('mileage', '20000');
+    updateField('kilometrage', '20000');
     updateField('condition', 'Rabljeno');
     updateField('county', 'Zagreb');
     updateField('sellerType', 'Privatni')
@@ -409,6 +399,7 @@ export default function DetailsPage() {
   return (
     <>
       <CheckoutLeavePrompt />
+
       <header>
         <Navbar />
       </header>
@@ -434,23 +425,23 @@ export default function DetailsPage() {
               <div className="grid grid-cols-1 gap-x-5 gap-y-6 sm:grid-cols-2 lg:grid-cols-4">
                 <FilterBrands title="Marka" selectedVehicle_type="cars" mode="single" value={adFormModel.brand ? [adFormModel.brand] : []} onChange={value => updateField('brand', value[0] ?? '')} />
                 <FilterModels title="Model" selectedVehicle_type="cars" selectedBrands={adFormModel.brand ? [adFormModel.brand] : []} mode="single" value={adFormModel.model ? [adFormModel.model] : []} onChange={value => updateField('model', value[0] ?? '')} />
-                <FilterEnginePower mode="single" value={adFormModel.enginePower} onChange={value => updateField('enginePower', value)} />
-                <FilterPrices mode="single" value={adFormModel.price} onChange={value => updateField('price', value)} />
-                <FilterYears mode="single" value={adFormModel.year} onChange={value => updateField('year', value)} />
-                <FilterKilometrage mode="single" value={adFormModel.mileage} onChange={value => updateField('mileage', value)} />
-                <FilterCondition mode="single" value={adFormModel.condition} onChange={value => updateField('condition', String(value))} />
+                <FilterNumeric filterType="enginePower" mode="single" value={adFormModel.enginePower} onChange={value => updateField('enginePower', value)} />
+                <FilterNumeric filterType="price" mode="single" value={adFormModel.price} onChange={value => updateField('price', value)} />
+                <FilterNumeric filterType="year" mode="single" value={adFormModel.year} onChange={value => updateField('year', value)} />
+                <FilterNumeric filterType="kilometrage" mode="single" value={adFormModel.kilometrage} onChange={value => updateField('kilometrage', value)} />
+                <FilterChoose filterType="condition" value={adFormModel.condition} onChange={value => updateField('condition', String(value))} />
                 <FilterCounty mode="single" value={adFormModel.county ? [adFormModel.county] : []} onChange={value => updateField('county', value[0] ?? '')} />
-                <FilterGearType value={adFormModel.gearType} onChange={value => updateField('gearType', String(value))} />
-                <FilterSellerType value={adFormModel.sellerType} onChange={value => updateField('sellerType', String(value))} />
+                <FilterChoose filterType="gear" value={adFormModel.gearType} onChange={value => updateField('gearType', String(value))} />
+                <FilterChoose filterType="sellerType" value={adFormModel.sellerType} onChange={value => updateField('sellerType', String(value))} />
 
                 
-                {/*     <FilterBuyOrLeaseType value={buyOrLease} onChange={value => setBuyOrLease(String(value))} />
-                <FilterSellerType value={sellerType} onChange={value => setSellerType(String(value))} />
-                <FilterEngineSize mode="range" value={engineSize} onChange={value => setEngineSize(value as RangeValue)} />
-                <FilterGasType value={gasType} onChange={value => setGasType(String(value))} />
-                <FilterGearType value={gearType} onChange={value => setGearType(String(value))} />
+                {/*     <FilterChoose filterType="buyOrLease" value={buyOrLease} onChange={value => setBuyOrLease(String(value))} />
+                <FilterChoose filterType="sellerType" value={sellerType} onChange={value => setSellerType(String(value))} />
+                <FilterNumeric filterType="engineSize" mode="range" value={engineSize} onChange={value => setEngineSize(value as RangeValue)} />
+                <FilterChoose filterType="fuel" value={gasType} onChange={value => setGasType(String(value))} />
+                <FilterChoose filterType="gear" value={gearType} onChange={value => setGearType(String(value))} />
                 <FilterColor mode="multi" value={colors} onChange={value => setColors(Array.isArray(value) ? value : [])} />
-                <FilterDoorNumber value={doorNumber} onChange={value => setDoorNumber(String(value))} />*/}
+                <FilterChoose filterType="doorNumber" value={doorNumber} onChange={value => setDoorNumber(String(value))} />*/}
               </div>
             </div>
             

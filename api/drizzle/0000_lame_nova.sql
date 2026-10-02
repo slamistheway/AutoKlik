@@ -18,7 +18,7 @@ CREATE TABLE "ads" (
 	"created_at" timestamp DEFAULT now(),
 	"updated_at" timestamp DEFAULT now(),
 	"price" numeric,
-	"mileage" integer,
+	"kilometrage" integer,
 	"fuel" text,
 	"condition" text,
 	"county" text,

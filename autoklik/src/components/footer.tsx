@@ -18,7 +18,7 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/cars" className="text-gray-300 hover:text-white">
+                <Link href="/autoklik/src/pages/search" className="text-gray-300 hover:text-white">
                   Automobili
                 </Link>
               </li>
