@@ -426,6 +426,7 @@ export default function MyMessages() {
 
 
                                                     <input ref={messageInput}
+                                                           maxLength={10000}
                                                            value={messageBody}
                                                            onChange={event => setMessageBody(event.target.value)}
                                                            disabled={sendingMessage}

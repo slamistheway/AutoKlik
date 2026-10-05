@@ -45,7 +45,7 @@ export default function AdPostedSuccessfullyPage() {
                     disabled={!adId}
                     className="px-5 py-2.5 rounded-md bg-[var(--color-navbar)] text-white hover:bg-[var(--color-navbar-hover)] disabled:opacity-50"
                 >
-                  Pogledaj oglas kao kupac
+                  Pogledaj oglas
                 </button>
               </div>
             </div>

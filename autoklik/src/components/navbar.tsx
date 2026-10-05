@@ -161,7 +161,7 @@ export function Navbar() {
               </button>
 
               <form onSubmit={submitSearch} className="flex min-w-0 flex-1 items-center md:max-w-3xl">
-                <input type="search" aria-label="Pretraži oglase" placeholder="Pretraži oglase..." value={search} onChange={event => setSearch(event.currentTarget.value)} className="h-10 min-w-0 flex-1 rounded-l-md border border-gray-300 bg-white px-3 text-gray-900 outline-none focus:ring-2 focus:ring-[var(--color-navbar)]" />
+                <input type="search" maxLength={200} aria-label="Pretraži oglase" placeholder="Pretraži oglase..." value={search} onChange={event => setSearch(event.currentTarget.value)} className="h-10 min-w-0 flex-1 rounded-l-md border border-gray-300 bg-white px-3 text-gray-900 outline-none focus:ring-2 focus:ring-[var(--color-navbar)]" />
                 <button type="submit" aria-label="Pretraži" className="flex h-10 items-center gap-2 rounded-r-md bg-[var(--color-navbar)] px-4 font-semibold text-white hover:bg-[var(--color-navbar-hover)]">
                   <SearchIcon className="h-4 w-4" /><span className="hidden sm:inline">Pretraži</span>
                 </button>
@@ -218,11 +218,11 @@ export function Navbar() {
             <form onSubmit={submitFilters} className="mt-5 space-y-5">
               <label className="block text-sm font-medium text-gray-700">
                 Marka
-                <input type="text" value={filters.brand} onChange={event => setFilters(current => ({ ...current, brand: event.currentTarget.value }))} placeholder="npr. Volkswagen" className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 outline-none focus:border-[var(--color-navbar)] focus:ring-2 focus:ring-[var(--color-navbar)]/20" />
+                <input type="text" maxLength={100} value={filters.brand} onChange={event => setFilters(current => ({ ...current, brand: event.currentTarget.value }))} placeholder="npr. Volkswagen" className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 outline-none focus:border-[var(--color-navbar)] focus:ring-2 focus:ring-[var(--color-navbar)]/20" />
               </label>
               <label className="block text-sm font-medium text-gray-700">
                 Model
-                <input type="text" value={filters.model} onChange={event => setFilters(current => ({ ...current, model: event.currentTarget.value }))} placeholder="npr. Golf" className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 outline-none focus:border-[var(--color-navbar)] focus:ring-2 focus:ring-[var(--color-navbar)]/20" />
+                <input type="text" maxLength={100} value={filters.model} onChange={event => setFilters(current => ({ ...current, model: event.currentTarget.value }))} placeholder="npr. Golf" className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 outline-none focus:border-[var(--color-navbar)] focus:ring-2 focus:ring-[var(--color-navbar)]/20" />
               </label>
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="block text-sm font-medium text-gray-700">

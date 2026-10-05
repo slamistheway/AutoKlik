@@ -4,10 +4,10 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { Navbar } from '@/components/navbar';
 import { Footer } from '@/components/footer';
-import CheckoutStepper from '@/pages/checkout/functions and components/checkoutStepper';
-import CheckoutLeavePrompt from '@/pages/checkout/functions and components/checkoutLeavePrompt';
-import { getCategoryLabel, getSubcategoryLabel } from '@/lib/checkout-data';
-import * as checkoutState from '@/lib/checkout-state';
+import CheckoutStepper from '@/pages/checkout/components/checkoutStepper';
+import CheckoutLeavePrompt from '@/pages/checkout/components/checkoutLeavePrompt';
+import { getCategoryLabel, getSubcategoryLabel } from './lib/checkout-data';
+import * as checkoutState from './lib/checkout-state';
 import { API_BASE_URL, getResponseMessage, getSessionToken } from '../myProfile/account-api';
 import { fetchCurrentUser } from '@/app/auth/auth-guards';
 

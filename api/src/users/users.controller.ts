@@ -6,7 +6,7 @@ import {
     Get, Header, Logger, Param, ParseIntPipe,
     Patch,
     Post,
-    Request, StreamableFile,
+    Request, Res, HttpException, StreamableFile,
     UploadedFile,
     UseGuards,
     UseInterceptors,
@@ -17,10 +17,11 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { mkdirSync } from 'fs';
-import { UpdateProfileDto } from '../dtos/update-profile.dto';
-import {RegisterDto} from "../dtos/register.dto";
-import {LoginDto} from "../dtos/login.dto";
 import * as messageImage from "./message-image";
+import type { Response, Request as ExpressRequest } from 'express';
+import { RegistrationAttemptsService } from './registration-attempts.service';
+import { ConversationDto, SendMessageDto, MessageImageDto, ReadMessagesDto } from '../dtos/message.dto';
+import {LoginDto, RegisterDto, UpdateProfileDto} from "../dtos/user.dtos";
 
 
 @Controller('users')
@@ -28,7 +29,8 @@ export class UsersController {
     private readonly logger = new Logger(UsersService.name);
 
     constructor(
-        private readonly usersService: UsersService
+        private readonly usersService: UsersService,
+        private readonly registrationAttempts: RegistrationAttemptsService,
     ) {
     }
 
@@ -41,18 +43,21 @@ export class UsersController {
 
 
     @Post('register')
-    async register(@Body() dto: RegisterDto) {
-        this.logger.debug(`Register payload: ${JSON.stringify(dto)}`);
+    async register(@Body() dto: RegisterDto, @Request() req: ExpressRequest, @Res({ passthrough: true }) response: Response) {
         try {
-            return await this.usersService.register(dto);
+            return await this.registrationAttempts.execute(req.ip ?? req.socket.remoteAddress ?? 'unknown', () => this.usersService.register(dto));
         } catch (err) {
+            if (err instanceof HttpException && err.getStatus() === 429) {
+                const body = err.getResponse() as { retryAfter?: number };
+                if (body.retryAfter) response.setHeader('Retry-After', body.retryAfter);
+            }
             this.logger.error('RegisterPage error', err?.stack ?? err);
             throw err;
         }
     }
 
     @Post('login')
-    async login(@Body() dto: LoginDto) {
+    async login(@Body() dto: LoginDto, @Res({ passthrough: true }) response: Response) {
         this.logger.debug(
             `Login payload: ${JSON.stringify({
                 identifier: dto.identifier ? '***' : '',
@@ -62,6 +67,10 @@ export class UsersController {
         try {
             return await this.usersService.login(dto);
         } catch (err) {
+            if (err instanceof HttpException && err.getStatus() === 429) {
+                const body = err.getResponse() as { retryAfter?: number };
+                if (body.retryAfter) response.setHeader('Retry-After', body.retryAfter);
+            }
             this.logger.error('Login error', err?.stack ?? err);
             throw err;
         }
@@ -129,7 +138,7 @@ export class UsersController {
 
     @UseGuards(JwtAuthGuard)
     @Post('addConversation')
-    async addConversation(@Request() req: any, @Body() body: { otherUserId: number }) {
+    async addConversation(@Request() req: any, @Body() body: ConversationDto) {
         const userId = Number(req.user.id);
         const otherUserId = Number(body.otherUserId);
         return await this.usersService.addConversation(userId, otherUserId);
@@ -137,7 +146,7 @@ export class UsersController {
 
     @UseGuards(JwtAuthGuard)
     @Post('loadConversation')
-    async loadConversation(@Request() req: any, @Body() body: { otherUserId: number }) {
+    async loadConversation(@Request() req: any, @Body() body: ConversationDto) {
         const userId = Number(req.user.id);
         const otherUserId = Number(body.otherUserId);
         return await this.usersService.loadConversation(userId, otherUserId);
@@ -145,13 +154,13 @@ export class UsersController {
 
     @UseGuards(JwtAuthGuard)
     @Post('sendMessage')
-    async sendMessage(@Request() req: any, @Body() body: { conversationId: number; body: string }) {
+    async sendMessage(@Request() req: any, @Body() body: SendMessageDto) {
         return await this.usersService.sendMessage(Number(req.user.id), body.conversationId, body.body);
     }
 
     @UseGuards(JwtAuthGuard)
     @Post('markMessagesRead')
-    async markMessagesRead(@Request() req: any, @Body() body: { conversationId: number; throughMessageId: number }) {
+    async markMessagesRead(@Request() req: any, @Body() body: ReadMessagesDto) {
         return await this.usersService.markMessagesRead(Number(req.user.id), body.conversationId, body.throughMessageId);
     }
 
@@ -165,10 +174,7 @@ export class UsersController {
             fieldSize: 40000
         }
     }))
-    async sendMessageImage(@Request() req: any, @Body() body: {
-        conversationId: string;
-        body?: string
-    }, @UploadedFile() image?: messageImage.MessageImageUpload) {
+    async sendMessageImage(@Request() req: any, @Body() body: MessageImageDto, @UploadedFile() image?: messageImage.MessageImageUpload) {
         return await this.usersService.sendMessage(Number(req.user.id), Number(body.conversationId), body.body ?? '', image);
     }
 

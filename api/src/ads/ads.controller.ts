@@ -13,14 +13,14 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { AdsService } from './ads.service';
-import { CreateAdDto } from '../dtos/create-ad.dto';
-import { UpdateAdDto } from '../dtos/update-ad.dto';
 import { JwtAuthGuard } from '../users/guards/jwt-auth.guard';
 import { OptionalJwtAuthGuard } from '../users/guards/optional-jwt-auth.guard';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { mkdirSync } from 'fs';
 import { extname, join } from 'path';
+import {AdsQueryDto, CreateAdDto, UpdateAdDto} from "../dtos/ad.dtos";
+import { SkipThrottle } from '@nestjs/throttler';
 
 const adImageUploadPath = join(process.cwd(), 'public', 'ad-images');
 
@@ -115,12 +115,14 @@ export class AdsController {
 
   @UseGuards(JwtAuthGuard)
   @Get('me')
+  @SkipThrottle({ default: true, burst: true })
   findMyAds(@Req() req: any) {
     return this.adService.fetchAllAdsByUserId(Number(req.user?.id));
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('me/saved')
+  @SkipThrottle({ default: true, burst: true })
   findMySavedAds(@Req() req: any) {
     return this.adService.fetchSavedAds(Number(req.user?.id));
   }
@@ -131,28 +133,19 @@ export class AdsController {
   /*-------------------------------------------READ---------------------------------------------*/
   @UseGuards(OptionalJwtAuthGuard)
   @Get('all')
+  @SkipThrottle({ default: true, burst: true })
   findAllAds(
     @Req() req: any,
     @Query()
-    query: {
-      category?: string;
-      subcategory?: string;
-      brands?: string;
-      models?: string;
-      yearMin?: string;
-      yearMax?: string;
-      search?: string;
-      limit?: string;
-      offset?: string;
-    },
+    query: AdsQueryDto,
   ) {
     const filters = {
       category: query.category,
       subcategory: query.subcategory,
       brands: query.brands,
       models: query.models,
-      yearMin: query.yearMin,
-      yearMax: query.yearMax,
+      yearMin: query.yearMin === undefined ? undefined : String(query.yearMin),
+      yearMax: query.yearMax === undefined ? undefined : String(query.yearMax),
       search: query.search,
     };
 
@@ -160,12 +153,14 @@ export class AdsController {
   }
 
   @Get('featured')
+  @SkipThrottle({ default: true, burst: true })
   findFeaturedAds(@Req() req: any,) {
     return this.adService.findFeaturedAds(req.user?.id);
   }
 
 
   @Get(':id')
+  @SkipThrottle({ default: true, burst: true })
   findOne(@Param('id') id: string) {
     return this.adService.findOne(+id);
   }
@@ -193,6 +188,7 @@ export class AdsController {
   }
   @UseGuards(JwtAuthGuard)
   @Get('saved/:adId')
+  @SkipThrottle({ default: true, burst: true })
   checkIfSaved(@Param('adId') adId: string, @Req() req: any) {
     return this.adService.checkIfSaved(Number(req.user?.id), +adId);
   }

@@ -172,9 +172,6 @@ export default function AdPage() {
       <Navbar />
       <main className="min-h-screen bg-[#111114] px-4 py-6 text-white sm:px-6 lg:py-10">
         <div className="mx-auto max-w-7xl">
-          <Link href="/autoklik/src/pages/search" className="mb-5 inline-flex items-center gap-2 text-sm text-gray-300 hover:text-white">
-            <ChevronLeft className="h-4 w-4" /> Natrag na oglase
-          </Link>
 
           {isLoading && <div className="rounded-2xl border border-white/10 bg-[#1b1b20] p-8 text-gray-300">Učitavanje oglasa...</div>}
           {!isLoading && errorMessage && <div role="alert" className="rounded-2xl border border-red-400/30 bg-red-950/40 p-6 text-red-100">{errorMessage}</div>}

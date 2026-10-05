@@ -205,6 +205,7 @@ export default function MySettings() {
                               id={field.key}
                               name={field.key}
                               type="text"
+                              maxLength={field.key === 'phone' ? 20 : 100}
                               autoComplete={field.autocomplete}
                               value={profile[field.key]}
                               readOnly={!editing[field.key] || isSaving}

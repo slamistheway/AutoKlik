@@ -5,6 +5,8 @@ import { DrizzleModule } from '../db/drizzle/drizzle.module';
 import {NodePgDatabase} from "drizzle-orm/node-postgres";
 import {JwtModule} from "@nestjs/jwt";
 import {JwtStrategy} from "./jwt.strategy";
+import { LoginAttemptsService } from './login-attempts.service';
+import { RegistrationAttemptsService } from './registration-attempts.service';
 
 const jwtSecret = process.env.JWT_SECRET ?? 'dev_jwt_secret';
 if (!process.env.JWT_SECRET) {
@@ -22,7 +24,7 @@ if (!process.env.JWT_SECRET) {
         DrizzleModule,
     ],
     controllers: [UsersController],
-    providers: [UsersService, JwtStrategy],
+    providers: [UsersService, JwtStrategy, LoginAttemptsService, RegistrationAttemptsService],
     exports: [JwtModule],
 })
 export class UsersModule {}

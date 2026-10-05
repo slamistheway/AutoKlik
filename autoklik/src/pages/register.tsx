@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Footer } from '@/components/footer';
 import { Navbar } from '@/components/navbar';
@@ -30,10 +30,17 @@ function RegisterPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [retryAfter, setRetryAfter] = useState(0);
+
+  useEffect(() => {
+    if (retryAfter === 0) return;
+    const interval = window.setInterval(() => setRetryAfter(seconds => Math.max(0, seconds - 1)), 1000);
+    return () => window.clearInterval(interval);
+  }, [retryAfter]);
 
   const register = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (isSubmitting) return;
+    if (isSubmitting || retryAfter > 0) return;
 
     const trimmedUsername = username.trim();
     const trimmedEmail = email.trim();
@@ -68,6 +75,10 @@ function RegisterPage() {
       console.log('Register response payload:', payload);
 
       if (!response.ok) {
+        if (response.status === 429) {
+          const seconds = Number(response.headers.get('Retry-After') ?? response.headers.get('Retry-After-burst'));
+          setRetryAfter(Number.isFinite(seconds) && seconds > 0 ? Math.ceil(seconds) : 900);
+        }
         throw new Error(getErrorMessage(payload, 'Registracija nije uspjela.'));
       }
 
@@ -102,24 +113,24 @@ function RegisterPage() {
             <div className="space-y-4 rounded-md shadow-sm">
               <div>
                 <label htmlFor="username" className="mb-1 block text-sm font-medium">Korisničko ime</label>
-                <input id="username" name="username" type="text" value={username} onChange={event => setUsername(event.target.value)} autoComplete="username" required className={inputClass} placeholder="Unesi korisničko ime" />
+                <input id="username" name="username" type="text" maxLength={50} pattern="[A-Za-z0-9]+" value={username} onChange={event => setUsername(event.target.value)} autoComplete="username" required className={inputClass} placeholder="Unesi korisničko ime" />
               </div>
               <div>
                 <label htmlFor="email" className="mb-1 block text-sm font-medium">Email adresa</label>
-                <input id="email" name="email" type="email" value={email} onChange={event => setEmail(event.target.value)} autoComplete="email" required className={inputClass} placeholder="Unesi email adresu" />
+                <input id="email" name="email" type="email" maxLength={255} value={email} onChange={event => setEmail(event.target.value)} autoComplete="email" required className={inputClass} placeholder="Unesi email adresu" />
               </div>
               <div>
                 <label htmlFor="password" className="mb-1 block text-sm font-medium">Lozinka</label>
-                <input id="password" name="password" type="password" value={password} onChange={event => setPassword(event.target.value)} autoComplete="new-password" required className={inputClass} placeholder="Unesi lozinku" />
+                <input id="password" name="password" type="password" minLength={8} maxLength={72} value={password} onChange={event => setPassword(event.target.value)} autoComplete="new-password" required className={inputClass} placeholder="Unesi lozinku" />
               </div>
             </div>
 
             {errorMessage && <p role="alert" className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{errorMessage}</p>}
             {successMessage && <p role="status" className="rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">{successMessage}</p>}
 
-            <button type="submit" disabled={isSubmitting}
+            <button type="submit" disabled={isSubmitting || retryAfter > 0}
               className="group relative flex w-full justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 enabled:hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300">
-              {isSubmitting ? 'Registracija u tijeku...' : 'Registriraj se'}
+              {retryAfter > 0 ? `Pokušaj ponovno za ${retryAfter} s` : isSubmitting ? 'Registracija u tijeku...' : 'Registriraj se'}
             </button>
           </form>
         </div>

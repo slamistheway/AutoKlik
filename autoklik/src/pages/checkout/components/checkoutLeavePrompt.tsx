@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import * as checkoutState from '@/lib/checkout-state';
+import * as checkoutState from '../lib/checkout-state';
 
 function hasUnsavedDraft(): boolean {
   return checkoutState.hasCategoryState() || checkoutState.hasDetailsState();
@@ -70,7 +70,9 @@ export default function CheckoutLeavePrompt() {
     setPendingUrl(null);
   }, []);
 
+  function continueNavigation(bool: boolean) {
 
+  }
 
 
 

@@ -4,13 +4,13 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
 import { Navbar } from '@/components/navbar';
 import { Footer } from '@/components/footer';
-import CheckoutStepper from '@/pages/checkout/functions and components/checkoutStepper';
-import CheckoutLeavePrompt from '@/pages/checkout/functions and components/checkoutLeavePrompt';
+import CheckoutStepper from '@/pages/checkout/components/checkoutStepper';
+import CheckoutLeavePrompt from '@/pages/checkout/components/checkoutLeavePrompt';
 import {
   getCategoryLabel,
   getSubcategoryLabel,
-} from '@/lib/checkout-data';
-import * as checkoutState from '@/lib/checkout-state';
+} from './lib/checkout-data';
+import * as checkoutState from './lib/checkout-state';
 import FilterChoose from "@/components/filters/filter-choose";
 import FilterNumeric from "@/components/filters/filter-numeric";
 import FilterBrands from "@/components/filters/filter-brands";
@@ -550,6 +550,7 @@ export default function DetailsPage() {
                 type="text"
                 required
                 minLength={5}
+                maxLength={200}
                 value={adFormModel.title}
                 onChange={(e) => updateField('title', e.target.value)}
                 className={`mt-1 block w-full rounded-md border px-3 py-2 focus:border-red-600 focus:outline-none ${
@@ -573,6 +574,7 @@ export default function DetailsPage() {
                 name="description"
                 required
                 minLength={10}
+                maxLength={10000}
                 rows={5}
                 value={adFormModel.description}
                 onChange={(e) => updateField('description', e.target.value)}

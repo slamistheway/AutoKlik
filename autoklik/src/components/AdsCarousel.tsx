@@ -14,21 +14,25 @@ interface AdsCarouselProps {
 
 export function AdsCarousel({ ads, errorMessage, currentUserId }: AdsCarouselProps) {
     const [page, setPage] = useState(0);
-    const [pageSize, setPageSize] = useState(5);
+    const [pageSize, setPageSize] = useState(10);
 
     useEffect(() => {
         const lgMedia = window.matchMedia('(min-width: 1024px)');
 
         const handleMediaChange = (e: MediaQueryListEvent) => {
-            setPageSize(e.matches ? 5 : 3);
+            setPageSize(e.matches ? 10 : 6);
+            setPage(0);
         };
 
         lgMedia.addEventListener('change', handleMediaChange);
 
 
-        setPageSize(lgMedia.matches ? 5 : 3);
+        const frame = window.requestAnimationFrame(() => setPageSize(lgMedia.matches ? 10 : 6));
 
-        return () => lgMedia.removeEventListener('change', handleMediaChange);
+        return () => {
+            window.cancelAnimationFrame(frame);
+            lgMedia.removeEventListener('change', handleMediaChange);
+        };
     }, []);
 
 
@@ -42,44 +46,45 @@ export function AdsCarousel({ ads, errorMessage, currentUserId }: AdsCarouselPro
     }, [ads, pageSize]);
 
     const lastPage = pages.length - 1;
-    const canGoLeft = page > 0;
-    const canGoRight = page < lastPage;
+    const activePage = Math.min(page, lastPage);
+    const canGoLeft = activePage > 0;
+    const canGoRight = activePage < lastPage;
 
     const goLeft = () => {
-        if (canGoLeft) setPage((p) => p - 1);
+        if (canGoLeft) setPage(activePage - 1);
     };
 
     const goRight = () => {
-        if (canGoRight) setPage((p) => p + 1);
+        if (canGoRight) setPage(activePage + 1);
     };
 
 
 
     return (
-    <div className="flex items-end justify-between gap-4 mt-6">
+    <div className="mt-6 grid grid-cols-[40px_minmax(0,1fr)_40px] items-stretch gap-3">
       <button
         type="button"
         onClick={goLeft}
         disabled={!canGoLeft}
-        aria-label="Prethodnih X oglasa"
-        className="float relative top-0 left-0 shrink-0 disabled:opacity-30 disabled:cursor-not-allowed"
+        aria-label="Prethodna stranica oglasa"
+        className="flex h-full w-full items-center justify-center rounded-xl border border-gray-200 bg-white text-[var(--color-navbar)] shadow-sm transition enabled:hover:border-[var(--color-navbar)] enabled:hover:bg-[var(--color-navbar)] enabled:hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-navbar)] disabled:cursor-not-allowed disabled:text-gray-300 disabled:shadow-none"
       >
-        <ArrowLeftIcon />
+        <ArrowLeftIcon className="h-5 w-5" aria-hidden="true" />
       </button>
 
-      <div className="flex-1 overflow-hidden">
+      <div className="overflow-hidden">
         {errorMessage && <p role="alert" className="mb-4 text-sm text-red-700">{errorMessage}</p>}
 
-        {/* Track: each page is 100% wide, holding up to 5 ad cards. Sliding the track
+        {/* Track: each page is 100% wide, holding two rows of ad cards. Sliding the track
             left/right by one page width is what produces the "swipe out, swipe in" effect. */}
         <div
           className="flex transition-transform duration-500 ease-in-out"
-          style={{ transform: `translateX(-${page * 100}%)` }}
+          style={{ transform: `translateX(-${activePage * 100}%)` }}
         >
           {pages.map((pageAds, pageIndex) => (
             <div
               key={pageIndex}
-              className="grid w-full shrink-0 gap-4 grid-cols-3 lg:grid-cols-5"
+              className="grid w-full shrink-0 gap-4 grid-cols-3 grid-rows-2 lg:grid-cols-5"
             >
               {pageAds.map((ad) => (
                 <AdCard key={ad.id} ad={ad} href={`/ad/${ad.id}`} currentUserId={currentUserId} />
@@ -93,10 +98,10 @@ export function AdsCarousel({ ads, errorMessage, currentUserId }: AdsCarouselPro
         type="button"
         onClick={goRight}
         disabled={!canGoRight}
-        aria-label="Sljedećih X oglasa"
-        className="relative top-0 left-0 shrink-0 disabled:opacity-30 disabled:cursor-not-allowed"
+        aria-label="Sljedeća stranica oglasa"
+        className="flex h-full w-full items-center justify-center rounded-xl border border-gray-200 bg-white text-[var(--color-navbar)] shadow-sm transition enabled:hover:border-[var(--color-navbar)] enabled:hover:bg-[var(--color-navbar)] enabled:hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-navbar)] disabled:cursor-not-allowed disabled:text-gray-300 disabled:shadow-none"
       >
-        <ArrowRightIcon />
+        <ArrowRightIcon className="h-5 w-5" aria-hidden="true" />
       </button>
     </div>
   );

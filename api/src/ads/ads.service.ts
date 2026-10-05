@@ -7,8 +7,7 @@ import {
 } from '@nestjs/common';
 import {and, asc, desc, eq, gte, ilike, inArray, lte, or, type SQL,} from 'drizzle-orm';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
-import { CreateAdDto } from '../dtos/create-ad.dto';
-import { UpdateAdDto } from '../dtos/update-ad.dto';
+import { CreateAdDto, UpdateAdDto } from '../dtos/ad.dtos';
 import * as schema from '../db/schema';
 
 const { ads, adImages, savedAds, users } = schema;

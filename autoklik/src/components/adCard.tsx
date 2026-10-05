@@ -20,7 +20,7 @@ export function AdCard({ ad, href, currentUserId }: AdCardProps) {
     <article className="relative overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition hover:shadow-lg ">
       <div className="h-full ">
         <Link href={href} className="group block h-full">
-          <div className="relative aspect-4/3 overflow-hidden bg-gray-100">
+          <div className="relative aspect-video overflow-hidden bg-gray-100">
             <Image
               loading="eager"
               src={ad.previewImg}

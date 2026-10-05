@@ -5,10 +5,10 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { Navbar } from '@/components/navbar';
 import { Footer } from '@/components/footer';
-import CheckoutStepper from '@/pages/checkout/functions and components/checkoutStepper';
-import CheckoutLeavePrompt from '@/pages/checkout/functions and components/checkoutLeavePrompt';
-import * as checkoutState from '@/lib/checkout-state';
-import { CATEGORIES, SUBCATEGORIES } from '@/lib/checkout-data';
+import CheckoutStepper from '@/pages/checkout/components/checkoutStepper';
+import CheckoutLeavePrompt from '@/pages/checkout/components/checkoutLeavePrompt';
+import * as checkoutState from './lib/checkout-state';
+import { CATEGORIES, SUBCATEGORIES } from './lib/checkout-data';
 import {getSessionToken} from "@/pages/myProfile/account-api";
 
 export default function VehicleCategoryPage() {

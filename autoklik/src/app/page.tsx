@@ -1,10 +1,9 @@
 'use client';
 
 import Link from "next/link";
-import { AdCard } from "@/components/adCard";
 import { Footer } from "@/components/footer";
 import { Navbar } from "@/components/navbar";
-import {ArrowLeftIcon, ArrowRightIcon, CarIcon, CogIcon, MotorbikeIcon, TruckIcon,} from 'lucide-react'
+import {ArrowRightIcon} from 'lucide-react'
 import './globals.css';
 import {useEffect, useState} from "react";
 import {API_BASE_URL, getSessionToken} from "@/pages/myProfile/account-api";
@@ -20,6 +19,29 @@ import {fetchCurrentUser} from '@/app/auth/auth-guards';
 
 export default function Home() {
   const [currentUserId, setCurrentUserId] = useState<number | string | null>();
+  const [featuredAds, setFeaturedAds] = useState<AdCardData[]>([]);
+  const [recommendedAds, setRecommendedAds] = useState<AdCardData[]>([]);
+
+
+  const [featuredError, setFeaturedError] = useState('');
+  const [recommendedError, setRecommendedError] = useState('');
+  const startCategories = ["Automobili", "Motocikli", "Dijelovi", "Električni automobili", "Športski motocikli", "Kamioni", "Oldtimeri", "SUV vozila", "Skuteri", "ATV / Quad"];
+  const startBrands = [
+    {name: 'Alfa Romeo', logo: '/brands/alfa-romeo-logo-2015.png'},
+    {name: 'Audi', logo: '/brands/audi-logo-2016.png'},
+    {name: 'BMW', logo: '/brands/bmw-logo-1997.png'},
+    {name: 'BYD', logo: '/brands/byd-logo-2022.png'},
+    {name: 'Dacia', logo: '/brands/dacia-logo-2015.png'},
+    {name: 'Fiat', logo: '/brands/fiat-logo-2006.png'},
+    {name: 'Ford', logo: '/brands/ford-logo-2003.png'},
+    {name: 'Mazda', logo: '/brands/mazda-logo-2018.v.png'},
+    {name: 'Renault', logo: '/brands/renault-logo-2015.png'},
+    {name: 'Škoda', logo: '/brands/skoda-logo-1999.png'},
+    {name: 'Toyota', logo: '/brands/toyota-logo-2005.png'},
+    {name: 'Volkswagen', logo: '/brands/volkswagen-logo-2012.png'},
+  ];
+
+
   useEffect(() => {
     let active = true;
     if (!getSessionToken()) {
@@ -31,45 +53,40 @@ export default function Home() {
     }
     return () => { active = false; };
   }, []);
-  const [ads, setAds] = useState<AdCardData[]>([]);
-  const [errorMessage, setErrorMessage] = useState('')
-  const startCategories = ["Automobili", "Motocikli", "Dijelovi", "Električni automobili", "Športski motocikli", "Kamioni", "Oldtimeri", "SUV vozila", "Skuteri", "ATV / Quad"];
-  const startBrands = [
-    {name: 'Alfa Romeo', logo: '/brands/alfa-romeo-logo-2015.png'},
-    {name: 'Audi', logo: '/brands/audi-logo-2016.png'},
-    {name: 'BMW', logo: '/brands/bmw-logo-1997.png'},
-    {name: 'BYD', logo: '/brands/byd-logo-2022.png'},
-    {name: 'Fiat', logo: '/brands/fiat-logo-2006.png'},
-    {name: 'Ford', logo: '/brands/ford-logo-2003.png'},
-    {name: 'Mazda', logo: '/brands/mazda-logo-2018.v.png'},
-    {name: 'Toyota', logo: '/brands/toyota-logo-2005.png'},
-    {name: 'Volkswagen', logo: '/brands/volkswagen-logo-2012.png'},
-  ];
+
 
   useEffect(() => {
-    const fetchAll = async () => {
+    const controller = new AbortController();
+    const token = getSessionToken();
+    const fetchAds = async (
+      path: string,
+      setAds: (ads: AdCardData[]) => void,
+      setError: (message: string) => void,
+    ) => {
       try {
-        const token = typeof window === 'undefined' ? null : window.localStorage.getItem('sessionApiToken');
-
-        const allAdsRes = await fetch(`${API_BASE_URL}/ads/featured`, {
+        const response = await fetch(`${API_BASE_URL}/ads/${path}`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
+          signal: controller.signal,
         });
-
-        if (!allAdsRes.ok) {
-          const errBody = await allAdsRes.json().catch(() => ({}));
-          throw new Error(errBody?.message ?? 'Failed to load saves.');
+        if (!response.ok) {
+          const errBody = await response.json().catch(() => ({}));
+          throw new Error(errBody?.message ?? 'Oglasi se nisu mogli učitati.');
         }
-
-        const apiAds: unknown[] = await allAdsRes.json();
+        const apiAds: unknown[] = await response.json();
+        if (controller.signal.aborted) return;
         setAds(apiAds.map(toAdCardData).map((ad: AdCardData) => ({ ...ad, previewImg: resolve_api_ad_img(ad.previewImg) })));
-        setErrorMessage('');
-
+        setError('');
       } catch (err: unknown) {
-        setErrorMessage(err instanceof Error ? err.message : 'Failed to load alls.');
+        if (controller.signal.aborted) return;
+        setError(err instanceof Error ? err.message : 'Oglasi se nisu mogli učitati.');
       }
     };
 
-    fetchAll();
+    void Promise.allSettled([
+      fetchAds('featured', setFeaturedAds, setFeaturedError),
+      fetchAds('all', setRecommendedAds, setRecommendedError),
+    ]);
+    return () => controller.abort();
   }, []);
 
 
@@ -84,27 +101,6 @@ export default function Home() {
 
         <main className="bg-[var(--color-accent-soft)] font-semibold">
           <section className="mx-auto max-w-7xl px-4 pt-10">
-            <div className="flex items-end justify-between gap-4">
-              <p className="text-xs font-bold uppercase tracking-[0.35em] text-[var(--color-navbar)]">
-                Automobili - Istaknuti oglasi
-              </p>
-              <Link
-                  href="/search"
-                  className="text-sm font-bold text-[var(--color-navbar)] hover:text-[var(--color-text)]"
-              >
-                Vidi sve
-              </Link>
-            </div>
-
-            <AdsCarousel
-                currentUserId={currentUserId}
-                ads={ads}
-                errorMessage={errorMessage}
-            />
-          </section>
-
-
-          <section className="mx-auto max-w-7xl px-4 pt-10">
             <div className="mb-5 flex items-end justify-between gap-4">
               <h2 className="text-xl font-bold text-[var(--color-text)]">
                 Kategorije i podkategorije
@@ -113,17 +109,59 @@ export default function Home() {
 
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
               {startCategories.map((category) => (
-                <Link
-                  key={category}
-                  href="/search"
-                  className="group flex min-h-16 items-center justify-between gap-3 rounded-xl border border-[var(--border-color)] bg-white px-4 py-3 text-sm font-semibold text-[var(--color-text)] transition hover:border-[var(--color-navbar)] hover:bg-[var(--color-surface-muted)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-navbar)]"
-                >
-                  <span>{category}</span>
-                  <ArrowRightIcon className="h-4 w-4 shrink-0 text-[var(--color-navbar)] transition-transform group-hover:translate-x-1" aria-hidden="true" />
-                </Link>
+                  <Link
+                      key={category}
+                      href="/search"
+                      className="group flex min-h-16 items-center justify-between gap-3 rounded-xl border border-[var(--border-color)] bg-white px-4 py-3 text-sm font-semibold text-[var(--color-text)] transition hover:border-[var(--color-navbar)] hover:bg-[var(--color-surface-muted)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-navbar)]"
+                  >
+                    <span>{category}</span>
+                    <ArrowRightIcon className="h-4 w-4 shrink-0 text-[var(--color-navbar)] transition-transform group-hover:translate-x-1" aria-hidden="true" />
+                  </Link>
               ))}
             </div>
           </section>
+
+
+          <section className="mx-auto max-w-7xl px-4 pt-10">
+            <div className="flex items-end justify-between gap-4">
+              <h2 className="text-xl font-bold text-[var(--color-navbar)] sm:text-2xl">
+                Automobili - Istaknuti oglasi
+              </h2>
+              <Link
+                  href="/search"
+                  className="shrink-0 rounded-lg px-3 py-2 text-base font-bold text-[var(--color-navbar)] transition hover:bg-black/5 hover:text-[var(--color-text)] sm:text-lg"
+              >
+                Vidi sve
+              </Link>
+            </div>
+
+            <AdsCarousel
+                currentUserId={currentUserId}
+                ads={featuredAds}
+                errorMessage={featuredError}
+            />
+          </section>
+
+          <section className="mx-auto max-w-7xl px-4 pt-10">
+            <div className="flex items-end justify-between gap-4">
+              <h2 className="text-xl font-bold text-[var(--color-navbar)] sm:text-2xl">
+                Automobili - Preporučeno
+              </h2>
+              <Link
+                  href="/search"
+                  className="shrink-0 rounded-lg px-3 py-2 text-base font-bold text-[var(--color-navbar)] transition hover:bg-black/5 hover:text-[var(--color-text)] sm:text-lg"
+              >
+                Vidi sve
+              </Link>
+            </div>
+
+            <AdsCarousel
+                currentUserId={currentUserId}
+                ads={recommendedAds}
+                errorMessage={recommendedError}
+            />
+          </section>
+
 
 
           <section className="mx-auto max-w-7xl px-4 pt-10">
@@ -150,12 +188,6 @@ export default function Home() {
             </div>
             </div>
           </section>
-
-
-
-
-
-
         </main>
 
         <Footer />

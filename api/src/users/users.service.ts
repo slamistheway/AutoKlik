@@ -1,20 +1,21 @@
 import {
   BadRequestException, ConflictException,
-  Inject,
+  Inject, HttpException,
   Injectable, InternalServerErrorException,
   Logger,
   NotFoundException, UnauthorizedException,
 } from '@nestjs/common';
 import {and, eq, inArray, lte, ne, or, isNull, sql, desc} from 'drizzle-orm';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
-import { UpdateProfileDto } from '../dtos/update-profile.dto';
 import * as schema from '../db/schema';
-import {RegisterDto} from "../dtos/register.dto";
-import {LoginDto} from "../dtos/login.dto";
 import * as bcrypt from 'bcrypt';
 import {JwtService} from "@nestjs/jwt";
 import {MessageImageUpload, validateMessageImage} from './message-image';
 import {decryptMessageContent, encryptMessageContent, messageBodyContext} from "./message-crypto";
+import { LoginAttemptsService } from './login-attempts.service';
+import { createHash } from 'crypto';
+import { validateInput } from '../input-validation';
+import {LoginDto, RegisterDto, UpdateProfileDto} from "../dtos/user.dtos";
 
 
 const { users, ads, adImages, savedAds, conversations, messages, messageImages } = schema;
@@ -37,9 +38,11 @@ export class UsersService {
   constructor(
     @Inject('DRIZZLE_DB') private readonly db: NodePgDatabase<typeof schema>,
     private readonly jwtService: JwtService,
+    private readonly loginAttempts: LoginAttemptsService,
   ) {}
 
   async register(dto: RegisterDto) {
+    dto = validateInput(dto, 'RegisterDto') as unknown as RegisterDto;
     const username = dto.username?.trim();
     const email = dto.email?.trim().toLowerCase();
     const password = dto.password;
@@ -134,7 +137,11 @@ export class UsersService {
           )
           .limit(1);
 
+      const attemptKey = user ? `user:${user.id}` : `identifier:${createHash('sha256').update(normalizedIdentifier).digest('hex')}`;
+      this.loginAttempts.assertAvailable(attemptKey);
+
       if (!user) {
+        this.loginAttempts.recordFailure(attemptKey);
         this.logger.warn(
             `Login failed: users row not found for email/username="${identifier}"`,
         );
@@ -142,7 +149,9 @@ export class UsersService {
       }
 
       const isMatch = await passwordHasher.compare(password, user.password);
+      this.loginAttempts.assertAvailable(attemptKey);
       if (!isMatch) {
+        this.loginAttempts.recordFailure(attemptKey);
         this.logger.warn(
             `Login failed: invalid password for user id=${user.id}`,
         );
@@ -163,6 +172,7 @@ export class UsersService {
         );
       }
 
+      this.loginAttempts.reset(attemptKey);
       this.logger.log(
           `User logged in: id=${user.id}, username=${user.username}`,
       );
@@ -178,7 +188,7 @@ export class UsersService {
       };
     } catch (error) {
       if (
-          error instanceof BadRequestException ||
+          error instanceof HttpException ||
           error instanceof UnauthorizedException ||
           error instanceof InternalServerErrorException
       ) {
