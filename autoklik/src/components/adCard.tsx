@@ -9,15 +9,15 @@ import type {AdCardData} from '@/types/types';
 interface AdCardProps {
   ad: AdCardData;
   href: string;
+  currentUserId?: number | string | null;
 }
 
-export function AdCard({ ad, href }: AdCardProps) {
+export function AdCard({ ad, href, currentUserId }: AdCardProps) {
   const price = ad.price;
   const sellerType = ad.sellerType === 'trgovac' ? 'Dealer' : 'Private';
-  const condition = ad.condition === 'condition_new' ? 'New' : ad.condition === 'condition_used' ? 'Used' : null;
 
   return (
-    <article className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition hover:shadow-lg ">
+    <article className="relative overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition hover:shadow-lg ">
       <div className="h-full ">
         <Link href={href} className="group block h-full">
           <div className="relative aspect-4/3 overflow-hidden bg-gray-100">
@@ -38,20 +38,20 @@ export function AdCard({ ad, href }: AdCardProps) {
               {ad.year}{ad.year ? ' | ' : ''}{ad.kilometrage}{ad.kilometrage ? ' km' : ''}
               {ad.fuel ? ` | ${ad.fuel}` : ''}
             </p>
-            {condition && <span className="mt-0.5 w-fit rounded-full bg-yellow-300 px-2 py-0.5 text-xs text-gray-900">{condition}</span>}
             <div className="mt-1 justify-between border-t border-gray-200 pt-1 text-xs text-gray-700">
               <div>
-                <p>{ad.sellerUsername}</p>
                 <p>{ad.county}</p>
               </div>
             </div>
           </div>
         </Link>
+        {currentUserId !== undefined && Number(ad.userId) !== Number(currentUserId) && <div className="absolute right-3 top-3">
         <SaveAdButton
           adId={ad.id}
           initialSaved={ad.is_saved}
-          className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 bg-white/95 shadow-sm hover:bg-white"
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 bg-white/95 shadow-sm hover:bg-white"
         />
+        </div>}
       </div>
     </article>
   );

@@ -1,15 +1,17 @@
+import { sql } from "drizzle-orm";
 import {
     bigint,
-    integer,
-    numeric,
-    pgTable,
-    primaryKey,
-    serial,
+    bigserial,
+    boolean,
+    check,
+    foreignKey,
+    index,
+    integer, numeric,
+    pgTable, primaryKey, serial,
     text,
     timestamp,
     unique,
     varchar,
-    index, bigserial, boolean,
 } from "drizzle-orm/pg-core";
 
 
@@ -93,8 +95,6 @@ export const savedAds = pgTable(
     (table) => [primaryKey({ columns: [table.userId, table.adId], name: "saved_ads_pkey" })],
 );
 
-
-
 export const usersAdDrafts = pgTable("users_ad_drafts", {
   id: serial("id").primaryKey(),
   userId: bigint("user_id", { mode: "number" })
@@ -111,3 +111,72 @@ export const usersAdDrafts = pgTable("users_ad_drafts", {
   createdAt: timestamp("created_at", { withTimezone: false }).defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: false }).defaultNow(),
 });
+
+
+
+
+export const conversations = pgTable(
+    "conversations",
+    {
+        id: bigserial("id", { mode: "number" }).primaryKey(),
+        userAid: bigint("user_a_id", { mode: "number" })
+            .notNull()
+            .references(() => users.id),
+        userBid: bigint("user_b_id", { mode: "number" })
+            .notNull()
+            .references(() => users.id),
+        createdAt: timestamp("created_at", { withTimezone: true })
+            .notNull()
+            .defaultNow(),
+    },
+    (table) => [
+        unique("conversations_users_key").on(table.userAid, table.userBid),
+        // Always save the smaller user ID as userAid.
+        check("conversations_user_order", sql`${table.userAid} < ${table.userBid}`),
+        index("conversations_user_b_idx").on(table.userBid),
+    ],
+);
+
+export const messages = pgTable(
+    "messages",
+    {
+        id: bigserial("id", { mode: "number" }).primaryKey(),
+        conversationId: bigint("conversation_id", { mode: "number" })
+            .notNull(),
+        senderId: bigint("sender_id", { mode: "number" })
+            .notNull()
+            .references(() => users.id),
+        body: text("body").notNull(),
+        encryptionVersion: integer("encryption_version").notNull().default(0),
+        createdAt: timestamp("created_at", { withTimezone: true })
+            .notNull()
+            .defaultNow(),
+        readAt: timestamp("read_at", { withTimezone: true }),
+    },
+    (table) => [
+        foreignKey({
+            columns: [table.conversationId],
+            foreignColumns: [conversations.id],
+            name: "messages_conversation_fk",
+        }).onDelete("cascade"),
+        index("messages_conversation_created_idx").on(
+            table.conversationId,
+            table.createdAt,
+            table.id,
+        ),
+        check("messages_body_not_empty", sql`length(trim(${table.body})) > 0`),
+    ],
+);
+
+export const messageImages = pgTable(
+    "message_images",
+    {
+        messageId: bigint("message_id", { mode: "number" }).primaryKey().references(() => messages.id, { onDelete: "cascade" }),
+        encryptedData: text("encrypted_data").notNull(),
+        mimeType: varchar("mime_type", { length: 32 }).notNull(),
+        size: integer("size").notNull(),
+    },
+    (table) => [
+        check("message_images_size", sql`${table.size} > 0 and ${table.size} <= 5242880`),
+    ],
+);

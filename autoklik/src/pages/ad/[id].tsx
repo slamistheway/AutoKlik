@@ -29,7 +29,9 @@ export default function AdPage() {
   const [shareMessage, setShareMessage] = useState('');
 
 
-  const [user, setUser] = useState<CurrentUser | null>(null);
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
+  const [adPoster, setAdPoster] = useState<CurrentUser | null>(null);
+
   const [ad, setAd] = useState<AdFullData | null>(null);
 
   const imagePaths = ad?.images.length ? ad.images : ad?.previewImg ? [ad.previewImg] : [];
@@ -61,6 +63,9 @@ export default function AdPage() {
         setAd(result);
 
         setErrorMessage('');
+        if (result.userId != null && Number.isInteger(result.userId) && result.userId > 0) {
+          await fetchAdPoster(result.userId);
+        }
       } catch (error) {
         if (controller.signal.aborted) return;
         setErrorMessage(error instanceof Error ? error.message : 'Oglas se nije mogao učitati.');
@@ -69,6 +74,26 @@ export default function AdPage() {
       }
     };
 
+    const fetchAdPoster = async (userId: number) => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
+          signal: controller.signal,
+        });
+        if (!response.ok) {
+          const body = await response.json().catch(() => ({}));
+          throw new Error(body?.message ?? 'Korisnik nije pronađen.');
+        }
+
+        const result: CurrentUser = await response.json();
+        setAdPoster(result);
+        console.log('Poster user id:', result.id);
+
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        setErrorMessage(error instanceof Error ? error.message : 'Korisnik se nije mogao učitati.');
+      }
+    }
+
 
     let active = true;
     const loadProfile = async () => {
@@ -76,7 +101,7 @@ export default function AdPage() {
       try {
         currentUser = await fetchCurrentUser();
         if (active) {
-          setUser(currentUser);
+          setCurrentUser(currentUser);
         }
 
         console.log('Logged user id:', currentUser.id);
@@ -128,6 +153,18 @@ export default function AdPage() {
     });
   };
 
+
+  function goToMessageUser(id: CurrentUser['id'] | undefined, username: string | undefined) {
+    if (id === undefined || username === undefined) return;
+
+    console.log(`Going to message user: ${id}, ${username}`);
+    
+    if (Number(id) !== Number(currentUser?.id)) {
+      localStorage.setItem('goToMessageUserID', id.toString());
+      localStorage.setItem('goToMessageUserUsername', username);
+    }
+    router.push('/myMessages');
+  }
 
 
   return (
@@ -201,18 +238,23 @@ export default function AdPage() {
                     <p className="mt-1 font-semibold">{ad.sellerUsername || 'Privatni oglašivač'}</p>
                   </div>
 
-                  <button type="button" className="mt-4 w-full rounded-xl bg-orange-600 px-4 py-3 font-bold text-white transition hover:bg-orange-500">
-                    Pošalji poruku
-                  </button>
-                  <div className="mt-3 grid grid-cols-2 gap-3">
-                    <SaveAdButton
-                      adId={ad.id ?? Number(router.query.id)}
-                      checkSavedOnMount
-                      variant="heart"
-                      className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 px-3 py-2.5 text-sm text-gray-200 hover:bg-white/5"
-                    />
+                  { adPoster?.id != currentUser?.id &&
+                    <button type="button" onClick={() => goToMessageUser(adPoster?.id, adPoster?.username)} className="mt-4 w-full rounded-xl bg-orange-600 px-4 py-3 font-bold text-white transition hover:bg-orange-500">
+                      Pošalji poruku
+                    </button>
+                  }
 
-                    {ad.userId === user?.id && (
+                  <div className="mt-3 grid grid-cols-2 gap-3">
+                    {adPoster?.id != currentUser?.id &&
+                        <SaveAdButton
+                            adId={ad.id ?? Number(router.query.id)}
+                            checkSavedOnMount
+                            variant="heart"
+                            className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 px-3 py-2.5 text-sm text-gray-200 hover:bg-white/5"
+                        />
+                    }
+
+                    {ad.userId === currentUser?.id && (
                       <button type="button" onClick={() => deleteAd(ad.id, setErrorMessage)} className="bg-red-500 inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 px-3 py-2.5 text-sm text-gray-200 hover:bg-white/5">
                         Delete
                       </button>

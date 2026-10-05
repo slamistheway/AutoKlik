@@ -12,15 +12,39 @@ import type {AdCardData} from "@/types/types";
 import {toAdCardData} from '@/shared/ad-data';
 import {resolve_api_ad_img} from "@/shared/functions";
 import {AdsCarousel} from "@/components/AdsCarousel";
+import Image from "next/image";
+import {fetchCurrentUser} from '@/app/auth/auth-guards';
 
 
 
 
 export default function Home() {
+  const [currentUserId, setCurrentUserId] = useState<number | string | null>();
+  useEffect(() => {
+    let active = true;
+    if (!getSessionToken()) {
+      Promise.resolve().then(() => { if (active) setCurrentUserId(null); });
+    } else {
+      void fetchCurrentUser().then(user => {
+        if (active) setCurrentUserId(user.id);
+      }).catch(() => undefined);
+    }
+    return () => { active = false; };
+  }, []);
   const [ads, setAds] = useState<AdCardData[]>([]);
   const [errorMessage, setErrorMessage] = useState('')
   const startCategories = ["Automobili", "Motocikli", "Dijelovi", "Električni automobili", "Športski motocikli", "Kamioni", "Oldtimeri", "SUV vozila", "Skuteri", "ATV / Quad"];
-
+  const startBrands = [
+    {name: 'Alfa Romeo', logo: '/brands/alfa-romeo-logo-2015.png'},
+    {name: 'Audi', logo: '/brands/audi-logo-2016.png'},
+    {name: 'BMW', logo: '/brands/bmw-logo-1997.png'},
+    {name: 'BYD', logo: '/brands/byd-logo-2022.png'},
+    {name: 'Fiat', logo: '/brands/fiat-logo-2006.png'},
+    {name: 'Ford', logo: '/brands/ford-logo-2003.png'},
+    {name: 'Mazda', logo: '/brands/mazda-logo-2018.v.png'},
+    {name: 'Toyota', logo: '/brands/toyota-logo-2005.png'},
+    {name: 'Volkswagen', logo: '/brands/volkswagen-logo-2012.png'},
+  ];
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -58,72 +82,7 @@ export default function Home() {
           <Navbar />
         </header>
 
-        <main className="bg-[var(--color-accent-soft)] py-10 font-semibold">
-          <section className="mx-auto max-w-7xl px-4">
-
-            <div className="grid grid-cols-2 overflow-hidden rounded-3xl border border-[var(--border-color)] bg-white shadow-xl">
-              <div className="bg-linear-to-br from-(--color-text) via-(--color-navbar-hover) to-[var(--color-navbar)] p-8 text-white lg:p-12">
-                <p className="text-xs font-bold uppercase tracking-[0.4em] text-(--color-accent-soft)">
-                  AutoKlik
-                </p>
-
-                <h1 className="mt-4 text-4xl font-black leading-tight lg:text-5xl">
-                  Pronadi vozilo po svojim potrebama.
-                </h1>
-
-                <div className="mt-8 flex flex-wrap gap-3">
-                  <input
-                      type="text"
-                      placeholder="Sto trazis?"
-                      className="flex-1 rounded-full border border-gray-300 px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-navbar)]"
-                  />
-
-                  <Link
-                      href="/search"
-                      className="rounded-full bg-[var(--color-navbar)] px-5 py-3 text-sm font-bold text-white transition hover:bg-[var(--color-navbar-hover)]"
-                  >
-                    Trazi
-                  </Link>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 bg-[var(--color-surface-muted)] p-6 lg:p-8">
-                <Link
-                    href="/search"
-                    className="group rounded-2xl border border-gray-200 bg-white p-5 text-center shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
-                >
-                  <CarIcon className="mx-auto h-6 w-6 text-gray-500" />
-                  <h2 className="text-lg font-bold text-gray-900">Automobili</h2>
-                </Link>
-
-                <Link
-                    href="/search"
-                    className="group rounded-2xl border border-gray-200 bg-white p-5 text-center shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
-                >
-                  <MotorbikeIcon className="mx-auto h-6 w-6 text-gray-500" />
-                  <h2 className="text-lg font-bold text-gray-900">Motori</h2>
-                </Link>
-
-                <Link
-                    href="/search"
-                    className="group rounded-2xl border border-gray-200 bg-white p-5 text-center shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
-                >
-                  <TruckIcon className="mx-auto h-6 w-6 text-gray-500" />
-                  <h2 className="text-lg font-bold text-gray-900">Kombiji</h2>
-                </Link>
-
-                <Link
-                    href="/search"
-                    className="group rounded-2xl border border-gray-200 bg-white p-5 text-center shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
-                >
-                  <CogIcon className="mx-auto h-6 w-6 text-gray-500" />
-                  <h2 className="text-lg font-bold text-gray-900">Dijelovi i oprema</h2>
-                </Link>
-              </div>
-            </div>
-
-          </section>
-
+        <main className="bg-[var(--color-accent-soft)] font-semibold">
           <section className="mx-auto max-w-7xl px-4 pt-10">
             <div className="flex items-end justify-between gap-4">
               <p className="text-xs font-bold uppercase tracking-[0.35em] text-[var(--color-navbar)]">
@@ -138,6 +97,7 @@ export default function Home() {
             </div>
 
             <AdsCarousel
+                currentUserId={currentUserId}
                 ads={ads}
                 errorMessage={errorMessage}
             />
@@ -145,24 +105,54 @@ export default function Home() {
 
 
           <section className="mx-auto max-w-7xl px-4 pt-10">
-            <div className="flex items-end justify-between gap-4">
-              <p className="text-xs font-bold uppercase tracking-[0.35em] text-[var(--color-navbar)]">
+            <div className="mb-5 flex items-end justify-between gap-4">
+              <h2 className="text-xl font-bold text-[var(--color-text)]">
                 Kategorije i podkategorije
-              </p>
+              </h2>
             </div>
 
-            <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${startCategories.length}, minmax(0, 1fr))` }}>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
               {startCategories.map((category) => (
                 <Link
                   key={category}
                   href="/search"
-                  className="px-4 py-2 rounded-md bg-[var(--color-navbar)] text-white hover:bg-[var(--color-navbar-hover)] disabled:opacity-50"
+                  className="group flex min-h-16 items-center justify-between gap-3 rounded-xl border border-[var(--border-color)] bg-white px-4 py-3 text-sm font-semibold text-[var(--color-text)] transition hover:border-[var(--color-navbar)] hover:bg-[var(--color-surface-muted)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-navbar)]"
                 >
-                  {category}
+                  <span>{category}</span>
+                  <ArrowRightIcon className="h-4 w-4 shrink-0 text-[var(--color-navbar)] transition-transform group-hover:translate-x-1" aria-hidden="true" />
                 </Link>
               ))}
             </div>
           </section>
+
+
+          <section className="mx-auto max-w-7xl px-4 pt-10">
+            <div className="overflow-hidden rounded-2xl border border-[var(--border-color)] p-6">
+              <h2 className="mb-5 text-xl font-bold text-[var(--color-text)]">Popularne marke automobila</h2>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
+              {startBrands.map((brand) => (
+                  <Link
+                      key={brand.name}
+                      href="/search"
+                      className="flex min-w-0 flex-col items-center justify-center gap-2 border-b border-r border-[var(--border-color)] px-3 py-6 text-center text-sm font-bold text-[var(--color-text)] transition hover:bg-black/5 focus-visible:outline-2 focus-visible:outline-[var(--color-navbar)] [&:nth-child(2n)]:border-r-0 sm:[&:nth-child(2n)]:border-r sm:[&:nth-child(3n)]:border-r-0 lg:[&:nth-child(3n)]:border-r lg:[&:nth-child(6n)]:border-r-0 [&:nth-child(n+9)]:border-b-0 sm:[&:nth-child(n+7)]:border-b-0"
+                  >
+                    <Image
+                        width={40}
+                        height={40}
+                        src={brand.logo}
+                        alt=""
+                        className="h-10 w-10 object-contain"
+                    />
+                    <span>{brand.name}</span>
+                  </Link>
+              ))}
+            </div>
+            </div>
+          </section>
+
+
+
 
 
 

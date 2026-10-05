@@ -14,6 +14,8 @@ import type { AdCardData } from '@/types/types';
 import {AdCard} from "@/components/adCard";
 import {resolve_api_ad_img} from "@/shared/functions";
 import {toAdCardData} from '@/shared/ad-data';
+import {fetchCurrentUser} from '@/app/auth/auth-guards';
+import {getSessionToken} from '@/shared/functions';
 
 
 type RangeValue = { min: string; max: string };
@@ -24,6 +26,18 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 
 
 export default function Search() {
+    const [currentUserId, setCurrentUserId] = useState<number | string | null>();
+    useEffect(() => {
+        let active = true;
+        if (!getSessionToken()) {
+            Promise.resolve().then(() => { if (active) setCurrentUserId(null); });
+        } else {
+            void fetchCurrentUser().then(user => {
+                if (active) setCurrentUserId(user.id);
+            }).catch(() => undefined);
+        }
+        return () => { active = false; };
+    }, []);
     {/*----FILTERS----*/}
     const [search, setSearch] = useState('');
     const [brands, setBrands] = useState<string[]>([]);
@@ -127,6 +141,7 @@ export default function Search() {
                     <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
                         {ads.map((ad) => (
                             <AdCard
+                                currentUserId={currentUserId}
                                 key={ad.id}
                                 ad={ad}
                                 href={`/ad/${ad.id}`}

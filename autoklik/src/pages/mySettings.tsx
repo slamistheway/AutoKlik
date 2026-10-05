@@ -105,7 +105,7 @@ export default function MySettings() {
     setSaveMessage('');
     try {
       const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
-      const response = await fetch(`${API_BASE_URL}/users/me`, {
+      const response = await fetch(`${API_BASE_URL}/me`, {
         method: 'PATCH',
         headers,
         body: JSON.stringify(profile),

@@ -105,7 +105,7 @@ export function SaveAdButton({
 
 
   return (
-    <span className="inline-flex flex-col items-center">
+    <span className={`inline-flex flex-col items-center ${variant === 'heart' ? 'w-full' : ''}`}>
       <button
         type="button"
         onClick={toggleSaved}
@@ -113,7 +113,7 @@ export function SaveAdButton({
         aria-label={isSaved ? 'Ukloni oglas iz spremljenih' : 'Spremi oglas'}
         aria-pressed={isSaved}
         title={message || undefined}
-        className={`${className} disabled:cursor-wait disabled:opacity-60`}
+        className={`${className} ${variant === 'heart' ? 'w-full' : ''} disabled:cursor-wait disabled:opacity-60`}
       >
         <Icon className={`h-5 w-5 ${isSaved ? 'fill-orange-500 text-orange-500' : ''}`} />
         {variant === 'heart' && <span>{isSaved ? 'Spremljeno' : 'Spremi'}</span>}

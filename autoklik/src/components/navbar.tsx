@@ -16,6 +16,7 @@ import {
   UserIcon,
   X
 } from 'lucide-react';
+import {MessageNotifications} from "@/components/message-notifications";
 
 const mobileLinkClass = 'block rounded-md px-3 py-2 text-base font-medium text-red-50 hover:bg-red-600 hover:text-white';
 
@@ -122,7 +123,9 @@ export function Navbar() {
             <div className="hidden items-center space-x-3 md:flex">
               <Link href="/mySavedAds" className="flex items-center gap-1 text-red-50 hover:text-red-200"><HeartIcon className="h-5 w-5" /><span>Spremljeno</span></Link>
               <Link href="/myMessages" className="flex items-center gap-1 text-red-50 hover:text-red-200"><MessageCircleIcon className="h-5 w-5" /><span>Poruke</span></Link>
-              <Link href="/myMessages" className="flex items-center gap-1 text-red-50 hover:text-red-200"><BellIcon className="h-5 w-5" /><span>Obavijesti</span></Link>
+              {currentUser &&
+                  <MessageNotifications/>
+              }
 
               {currentUser ? (
                 <div className="relative">

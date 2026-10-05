@@ -79,9 +79,11 @@ export default function MyProfilePage() {
         </header>
 
         <main className="min-h-screen bg-gray-50 px-4 py-10"><div className="mx-auto flex max-w-7xl flex-col gap-6 md:flex-row">
-          <aside className="h-fit w-full shrink-0 rounded-lg border border-gray-200 bg-white p-4 shadow-md md:w-56"><nav aria-label="Korisnički izbornik" className="flex flex-col gap-2">
+          <aside className="h-fit w-full shrink-0 rounded-lg border border-gray-200 bg-white p-4 shadow-md md:w-56">
+            <nav aria-label="Korisnički izbornik" className="flex flex-col gap-2">
             {profileNavigation.map(item => <Link key={item.href} href={item.href} aria-current={pathname === item.href ? 'page' : undefined} className={`rounded px-3 py-2 text-sm font-medium transition ${pathname === item.href ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-blue-100 hover:text-blue-700'}`}>{item.label}</Link>)}
-          </nav></aside>
+          </nav>
+          </aside>
           <section className="min-w-0 flex-1 rounded-lg border border-gray-200 bg-white p-5 shadow-md sm:p-6">
             <h1 className="text-2xl font-bold text-gray-900">Moj profil</h1>
             {error && <p role="alert" className="mt-4 rounded-md bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}

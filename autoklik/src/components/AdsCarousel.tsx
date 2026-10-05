@@ -8,10 +8,11 @@ import {AdCardData} from "@/types/types";
 interface AdsCarouselProps {
   ads: AdCardData[];
   errorMessage?: string;
+  currentUserId?: number | string | null;
 }
 
 
-export function AdsCarousel({ ads, errorMessage }: AdsCarouselProps) {
+export function AdsCarousel({ ads, errorMessage, currentUserId }: AdsCarouselProps) {
     const [page, setPage] = useState(0);
     const [pageSize, setPageSize] = useState(5);
 
@@ -81,7 +82,7 @@ export function AdsCarousel({ ads, errorMessage }: AdsCarouselProps) {
               className="grid w-full shrink-0 gap-4 grid-cols-3 lg:grid-cols-5"
             >
               {pageAds.map((ad) => (
-                <AdCard key={ad.id} ad={ad} href={`/ad/${ad.id}`} />
+                <AdCard key={ad.id} ad={ad} href={`/ad/${ad.id}`} currentUserId={currentUserId} />
               ))}
             </div>
           ))}

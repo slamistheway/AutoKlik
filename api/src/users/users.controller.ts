@@ -3,31 +3,68 @@ import {
     Body,
     Controller,
     Delete,
-    Get,
+    Get, Header, Logger, Param, ParseIntPipe,
     Patch,
     Post,
-    Request,
+    Request, StreamableFile,
     UploadedFile,
     UseGuards,
     UseInterceptors,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { mkdirSync } from 'fs';
 import { UpdateProfileDto } from '../dtos/update-profile.dto';
+import {RegisterDto} from "../dtos/register.dto";
+import {LoginDto} from "../dtos/login.dto";
+import * as messageImage from "./message-image";
 
 
 @Controller('users')
 export class UsersController {
-    constructor(private readonly usersService: UsersService) {}
+    private readonly logger = new Logger(UsersService.name);
+
+    constructor(
+        private readonly usersService: UsersService
+    ) {
+    }
 
     @UseGuards(JwtAuthGuard)
     @Get('me')
     getMe(@Request() req: any) {
         return this.usersService.getMe(Number(req.user.id));
+    }
+
+
+
+    @Post('register')
+    async register(@Body() dto: RegisterDto) {
+        this.logger.debug(`Register payload: ${JSON.stringify(dto)}`);
+        try {
+            return await this.usersService.register(dto);
+        } catch (err) {
+            this.logger.error('RegisterPage error', err?.stack ?? err);
+            throw err;
+        }
+    }
+
+    @Post('login')
+    async login(@Body() dto: LoginDto) {
+        this.logger.debug(
+            `Login payload: ${JSON.stringify({
+                identifier: dto.identifier ? '***' : '',
+                password: dto.password ? '***' : ''
+            })}`,
+        );
+        try {
+            return await this.usersService.login(dto);
+        } catch (err) {
+            this.logger.error('Login error', err?.stack ?? err);
+            throw err;
+        }
     }
 
 
@@ -38,7 +75,7 @@ export class UsersController {
             storage: diskStorage({
                 destination: (_req, _file, cb) => {
                     const uploadDir = './public/pfp';
-                    mkdirSync(uploadDir, { recursive: true });
+                    mkdirSync(uploadDir, {recursive: true});
                     cb(null, uploadDir);
                 },
                 filename: (_req, file, cb) => {
@@ -46,7 +83,7 @@ export class UsersController {
                     cb(null, `pfp-${uniqueSuffix}${extname(file.originalname)}`);
                 },
             }),
-            limits: { fileSize: 5 * 1024 * 1024 },
+            limits: {fileSize: 5 * 1024 * 1024},
             fileFilter: (_req, file, cb) => {
                 if (!file.mimetype.startsWith('image/')) {
                     cb(new BadRequestException('Dozvoljene su samo slikovne datoteke.'), false);
@@ -56,6 +93,7 @@ export class UsersController {
             },
         }),
     )
+
     updatePfp(@Request() req: any, @UploadedFile() file: Express.Multer.File) {
         if (!file) {
             throw new BadRequestException('Datoteka nije poslana.');
@@ -74,5 +112,77 @@ export class UsersController {
     @Delete('me')
     deleteMe(@Request() req: any) {
         return this.usersService.deleteMe(Number(req.user.id));
+    }
+
+
+    /*------------------------------------MESSAGGES-------------------------------------------------*/
+    @UseGuards(JwtAuthGuard)
+    @Get('getConversations')
+    async getConversations(@Request() req: any) {
+        try {
+            return await this.usersService.getConversations(Number(req.user.id));
+        } catch (err) {
+            this.logger.error('Get conversations error', err?.stack ?? err);
+            throw err;
+        }
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Post('addConversation')
+    async addConversation(@Request() req: any, @Body() body: { otherUserId: number }) {
+        const userId = Number(req.user.id);
+        const otherUserId = Number(body.otherUserId);
+        return await this.usersService.addConversation(userId, otherUserId);
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Post('loadConversation')
+    async loadConversation(@Request() req: any, @Body() body: { otherUserId: number }) {
+        const userId = Number(req.user.id);
+        const otherUserId = Number(body.otherUserId);
+        return await this.usersService.loadConversation(userId, otherUserId);
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Post('sendMessage')
+    async sendMessage(@Request() req: any, @Body() body: { conversationId: number; body: string }) {
+        return await this.usersService.sendMessage(Number(req.user.id), body.conversationId, body.body);
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Post('markMessagesRead')
+    async markMessagesRead(@Request() req: any, @Body() body: { conversationId: number; throughMessageId: number }) {
+        return await this.usersService.markMessagesRead(Number(req.user.id), body.conversationId, body.throughMessageId);
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Post('sendMessageImage')
+    @UseInterceptors(FileInterceptor('image', {
+        limits: {
+            fileSize: messageImage.MAX_MESSAGE_IMAGE_SIZE,
+            files: 1,
+            fields: 2,
+            fieldSize: 40000
+        }
+    }))
+    async sendMessageImage(@Request() req: any, @Body() body: {
+        conversationId: string;
+        body?: string
+    }, @UploadedFile() image?: messageImage.MessageImageUpload) {
+        return await this.usersService.sendMessage(Number(req.user.id), Number(body.conversationId), body.body ?? '', image);
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Get('messages/:messageId/image')
+    @Header('Cache-Control', 'private, no-store')
+    @Header('X-Content-Type-Options', 'nosniff')
+    async getMessageImage(@Request() req: any, @Param('messageId') messageId: string) {
+        const image = await this.usersService.getMessageImage(Number(req.user.id), Number(messageId));
+        return new StreamableFile(image.data, {type: image.mimeType, disposition: 'inline', length: image.data.length});
+    }
+
+    @Get(':userId')
+    getUser(@Param('userId', ParseIntPipe) userId: number) {
+        return this.usersService.getUser(userId);
     }
 }
