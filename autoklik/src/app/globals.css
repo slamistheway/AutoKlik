@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+@keyframes cookie-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 :root {
   --color-navbar: #7f1d1d;
   --color-navbar-hover: #991b1b;

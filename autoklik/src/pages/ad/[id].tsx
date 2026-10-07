@@ -10,9 +10,10 @@ import { Navbar } from '@/components/navbar';
 import { SaveAdButton } from '@/components/saveAdButton';
 import type { AdFullData, CurrentUser } from '@/types/types';
 import { toAdFullData } from '@/shared/ad-data';
-import {getSessionToken, resolve_api_ad_img} from "@/shared/functions";
+import {sessionCookie} from '@/components/cookies/cookies';
+import {resolve_api_ad_img} from "@/shared/functions";
 import {fetchCurrentUser} from "@/app/auth/auth-guards";
-import {getResponseMessage} from "@/pages/myProfile/account-api";
+import { getResponseMessage } from "@/pages/myProfile/account-api";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 
@@ -46,7 +47,7 @@ export default function AdPage() {
     if (!router.isReady || typeof router.query.id !== 'string') return;
     const controller = new AbortController();
 
-    const token = getSessionToken();
+    const token = sessionCookie.getSessionToken();
 
     const fetchAd = async () => {
       try {
@@ -131,7 +132,7 @@ export default function AdPage() {
 
 
   const deleteAd = (adId: number, setErrorMessage: (msg: string) => void) => {
-    const token = getSessionToken();
+    const token = sessionCookie.getSessionToken();
     if (!token) {
       console.warn('User is not authenticated. Cannot delete ad.');
       return;
@@ -242,14 +243,12 @@ export default function AdPage() {
                   }
 
                   <div className="mt-3 grid grid-cols-2 gap-3">
-                    {adPoster?.id != currentUser?.id &&
-                        <SaveAdButton
-                            adId={ad.id ?? Number(router.query.id)}
-                            checkSavedOnMount
-                            variant="heart"
-                            className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 px-3 py-2.5 text-sm text-gray-200 hover:bg-white/5"
-                        />
-                    }
+                    <SaveAdButton
+                        adId={ad.id ?? Number(router.query.id)}
+                        checkSavedOnMount
+                        variant="heart"
+                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 px-3 py-2.5 text-sm text-gray-200 hover:bg-white/5"
+                    />
 
                     {ad.userId === currentUser?.id && (
                       <button type="button" onClick={() => deleteAd(ad.id, setErrorMessage)} className="bg-red-500 inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 px-3 py-2.5 text-sm text-gray-200 hover:bg-white/5">

@@ -9,6 +9,7 @@ import {ChatImage} from '@/components/chat-image';
 import {CurrentUser} from "@/types/types";
 import Link from "next/link";
 import {usePathname} from "next/navigation";
+import {sessionCookie} from '@/components/cookies/cookies';
 import {ImageIcon, XIcon} from "lucide-react";
 
 const profileNavigation = [
@@ -68,7 +69,7 @@ export default function MyMessages() {
         event.preventDefault();
         const body = messageBody.trim();
         if (sendInProgress.current || loadingMessages || (!body && !selectedImage) || activeConversation === null || !user) return;
-        const token = localStorage.getItem('sessionApiToken');
+        const token = sessionCookie.getSessionToken();
         if (!token) {
             void router.replace('/login');
             return;
@@ -118,7 +119,7 @@ export default function MyMessages() {
     }, [imagePreview]);
 
     useEffect(() => {
-        const token = localStorage.getItem('sessionApiToken');
+        const token = sessionCookie.getSessionToken();
         if (!token) {
             void router.replace('/login');
             return;
@@ -154,7 +155,7 @@ export default function MyMessages() {
     }, [router]);
 
     useEffect(() => {
-        const token = localStorage.getItem('sessionApiToken');
+        const token = sessionCookie.getSessionToken();
         if (!token) return;
         const controller = new AbortController();
         let pending = false;
@@ -183,7 +184,7 @@ export default function MyMessages() {
 
     useEffect(() => {
         if (activeConversation === null) return;
-        const token = localStorage.getItem('sessionApiToken');
+        const token = sessionCookie.getSessionToken();
         if (!otherUserId || !token) return;
         const controller = new AbortController();
         const requestId = ++messageRequest.current;
@@ -253,7 +254,7 @@ export default function MyMessages() {
         if (!user || activeConversation === null || loadedConversation !== activeConversation || loadingMessages) return;
         const unread = messages.filter(message => message.senderId !== user.id && !message.readAt);
         if (!unread.length) return;
-        const token = localStorage.getItem('sessionApiToken');
+        const token = sessionCookie.getSessionToken();
         if (!token) return;
         const controller = new AbortController();
         let pending = false;

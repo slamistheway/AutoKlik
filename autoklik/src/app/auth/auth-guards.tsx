@@ -3,9 +3,8 @@
 import { useEffect, useState, type ComponentType } from 'react';
 import { useRouter } from 'next/router';
 import {CurrentUser} from "@/types/types";
+import {sessionCookie} from '@/components/cookies/cookies';
 
-const AUTH_STORAGE_KEY = 'autoklik.authenticated';
-const TOKEN_STORAGE_KEY = 'sessionApiToken';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 
 
@@ -14,15 +13,14 @@ export function isAuthenticated() {
   if (typeof window === 'undefined') return false;
 
   try {
-    return Boolean(window.localStorage.getItem(TOKEN_STORAGE_KEY)) &&
-      window.localStorage.getItem(AUTH_STORAGE_KEY) === 'true';
+    return Boolean(sessionCookie.getSessionToken());
   } catch {
     return false;
   }
 }
 
 export async function fetchCurrentUser(): Promise<CurrentUser> {
-  const token = window.localStorage.getItem(TOKEN_STORAGE_KEY);
+  const token = sessionCookie.getSessionToken();
   if (!token) throw new Error('Niste prijavljeni.');
 
   const response = await fetch(`${API_BASE_URL}/users/me`, {
@@ -36,9 +34,6 @@ export async function fetchCurrentUser(): Promise<CurrentUser> {
   return response.json() as Promise<CurrentUser>;
 }
 
-export function setAuthenticated() {
-  window.localStorage.setItem(AUTH_STORAGE_KEY, 'true');
-}
 
 export function authGuard<P extends object>(Page: ComponentType<P>) {
   function AuthenticatedPage(props: P) {
@@ -87,8 +82,7 @@ export function guestOnlyAuthGuard<P extends object>(Page: ComponentType<P>) {
 
 export function clearSessionToken() {
   if (typeof window === 'undefined') return;
-  window.localStorage.removeItem(TOKEN_STORAGE_KEY);
-  window.localStorage.removeItem(AUTH_STORAGE_KEY);
+  sessionCookie.removeSessionToken();
 }
 
 export function clearLocalStorage(){

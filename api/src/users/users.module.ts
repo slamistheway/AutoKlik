@@ -19,7 +19,7 @@ if (!process.env.JWT_SECRET) {
     imports: [
         JwtModule.register({
             secret: jwtSecret,
-            signOptions: { expiresIn: '1h' },
+            signOptions: { expiresIn: '24h' },
         }),
         DrizzleModule,
     ],

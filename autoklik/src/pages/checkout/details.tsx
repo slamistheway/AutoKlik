@@ -17,7 +17,8 @@ import FilterBrands from "@/components/filters/filter-brands";
 import FilterModels from "@/components/filters/filter-models";
 import FilterCounty from "@/components/filters/filter-county";
 import FilterColor from "@/components/filters/filter-color";
-import {getSessionToken} from "@/pages/myProfile/account-api";
+
+import {sessionCookie} from '@/components/cookies/cookies';
 
 
 function readFilesAsDataUrls(files: File[] | FileList): Promise<string[]> {
@@ -125,7 +126,7 @@ export default function DetailsPage() {
 
   useEffect(() => {
     const initialization = async () => {
-      const token = getSessionToken();
+      const token = sessionCookie.getSessionToken();
       if (!token) {
         await router.push(`/login`);
         return;

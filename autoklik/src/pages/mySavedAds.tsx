@@ -10,7 +10,8 @@ import Image from 'next/image';
 import { useEffect, useMemo, useState } from 'react';
 import { fetchCurrentUser } from '@/app/auth/auth-guards';
 import type { AdCardData, CurrentUser } from '@/types/types';
-import { API_BASE_URL, getResponseMessage, getSessionToken } from './myProfile/account-api';
+import { API_BASE_URL, getResponseMessage } from './myProfile/account-api';
+import {sessionCookie} from '@/components/cookies/cookies';
 import {resolve_api_ad_img} from "@/shared/functions";
 
 
@@ -65,7 +66,7 @@ export default function MySavedAds() {
 
     const fetchAll = async () => {
       try {
-        const token = getSessionToken();
+        const token = sessionCookie.getSessionToken();
         if (!token) {
           setError('Morate biti prijavljeni da biste vidjeli spremljene oglase.');
           await router.replace(`/login?returnUrl=${encodeURIComponent(router.asPath)}`);
@@ -138,7 +139,7 @@ export default function MySavedAds() {
   const pagedAds = ads.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const removeSavedAd = async (adId: number) => {
-    const token = getSessionToken();
+    const token = sessionCookie.getSessionToken();
     if (!token) {
       setError('Sesija je istekla. Prijavite se ponovo.');
       return;

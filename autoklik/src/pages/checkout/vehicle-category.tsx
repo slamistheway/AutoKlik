@@ -9,7 +9,8 @@ import CheckoutStepper from '@/pages/checkout/components/checkoutStepper';
 import CheckoutLeavePrompt from '@/pages/checkout/components/checkoutLeavePrompt';
 import * as checkoutState from './lib/checkout-state';
 import { CATEGORIES, SUBCATEGORIES } from './lib/checkout-data';
-import {getSessionToken} from "@/pages/myProfile/account-api";
+
+import {sessionCookie} from '@/components/cookies/cookies';
 
 export default function VehicleCategoryPage() {
   const router = useRouter();
@@ -21,7 +22,7 @@ export default function VehicleCategoryPage() {
 
   useEffect(() => {
     const initialization = async () => {
-      const token = getSessionToken();
+      const token = sessionCookie.getSessionToken();
       if (!token) {
         await router.push(`/login`);
         return;
@@ -35,7 +36,6 @@ export default function VehicleCategoryPage() {
       setSubcategory(savedCategory.subcategory);
       checkoutState.setCurrentStep(1);
       setIsHydrated(true);
-      console.log(localStorage)
     }
 
 /*

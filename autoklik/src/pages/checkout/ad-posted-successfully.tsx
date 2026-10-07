@@ -4,7 +4,8 @@ import { useRouter } from 'next/router';
 import { Navbar } from '@/components/navbar';
 import { Footer } from '@/components/footer';
 import {useEffect} from "react";
-import {getSessionToken} from "@/pages/myProfile/account-api";
+
+import {sessionCookie} from '@/components/cookies/cookies';
 
 
 export default function AdPostedSuccessfullyPage() {
@@ -13,7 +14,7 @@ export default function AdPostedSuccessfullyPage() {
   const adId = Number.isFinite(adIdParam) && adIdParam > 0 ? adIdParam : null;
 
   useEffect(() => {
-    const token = getSessionToken();
+    const token = sessionCookie.getSessionToken();
     if (!token) {
       router.push(`/login?returnUrl=${encodeURIComponent(router.asPath)}`);
       return;

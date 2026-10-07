@@ -9,7 +9,8 @@ import { clearSessionToken, fetchCurrentUser } from '@/app/auth/auth-guards';
 import type { CurrentUser } from '@/types/types';
 import { Footer } from '@/components/footer';
 import { Navbar } from '@/components/navbar';
-import { API_BASE_URL, getResponseMessage, getSessionToken } from './myProfile/account-api';
+import { API_BASE_URL, getResponseMessage } from './myProfile/account-api';
+import {sessionCookie} from '@/components/cookies/cookies';
 import {resolve_api_pfp_img} from "@/shared/functions";
 
 type ProfileField = 'firstName' | 'lastName' | 'phone' | 'city' | 'country';
@@ -95,7 +96,7 @@ export default function MySettings() {
   const saveProfile = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (isSaving) return;
-    const token = getSessionToken();
+    const token = sessionCookie.getSessionToken();
     if (!token) {
       setSaveMessage('Niste prijavljeni.');
       return;
@@ -143,7 +144,7 @@ export default function MySettings() {
     if (isDeleting || isSaving) return;
     if (!window.confirm('Jeste li sigurni da želite trajno izbrisati račun? Ovu radnju nije moguće poništiti.')) return;
 
-    const token = getSessionToken();
+    const token = sessionCookie.getSessionToken();
     if (!token) {
       setDeleteMessage('Niste prijavljeni.');
       return;

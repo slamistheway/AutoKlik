@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type MouseEvent } from 'react';
 import { Heart, Star } from 'lucide-react';
-import {getSessionToken} from "@/shared/functions";
+import {sessionCookie} from '@/components/cookies/cookies';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 
@@ -40,7 +40,7 @@ export function SaveAdButton({
 
   useEffect(() => {
     if (!checkSavedOnMount) return;
-    const token = getSessionToken();
+    const token = sessionCookie.getSessionToken();
     if (!token) {
       setIsChecking(false);
       return;
@@ -72,7 +72,7 @@ export function SaveAdButton({
     event.stopPropagation();
     if (isSaving) return;
 
-    const token = getSessionToken();
+    const token = sessionCookie.getSessionToken();
     if (!token) {
       const returnUrl = `${window.location.pathname}${window.location.search}`;
       window.location.assign(`/login?returnUrl=${encodeURIComponent(returnUrl)}`);

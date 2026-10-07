@@ -6,7 +6,8 @@ import { Navbar } from "@/components/navbar";
 import {ArrowRightIcon} from 'lucide-react'
 import './globals.css';
 import {useEffect, useState} from "react";
-import {API_BASE_URL, getSessionToken} from "@/pages/myProfile/account-api";
+import { API_BASE_URL } from "@/pages/myProfile/account-api";
+import {sessionCookie} from '@/components/cookies/cookies';
 import type {AdCardData} from "@/types/types";
 import {toAdCardData} from '@/shared/ad-data';
 import {resolve_api_ad_img} from "@/shared/functions";
@@ -44,7 +45,7 @@ export default function Home() {
 
   useEffect(() => {
     let active = true;
-    if (!getSessionToken()) {
+    if (!sessionCookie.getSessionToken()) {
       Promise.resolve().then(() => { if (active) setCurrentUserId(null); });
     } else {
       void fetchCurrentUser().then(user => {
@@ -57,7 +58,7 @@ export default function Home() {
 
   useEffect(() => {
     const controller = new AbortController();
-    const token = getSessionToken();
+    const token = sessionCookie.getSessionToken();
     const fetchAds = async (
       path: string,
       setAds: (ads: AdCardData[]) => void,
@@ -87,6 +88,13 @@ export default function Home() {
       fetchAds('all', setRecommendedAds, setRecommendedError),
     ]);
     return () => controller.abort();
+  }, []);
+
+
+
+  useEffect(() => {
+    sessionCookie.logCookies();
+    console.log(localStorage);
   }, []);
 
 
@@ -168,24 +176,24 @@ export default function Home() {
             <div className="overflow-hidden rounded-2xl border border-[var(--border-color)] p-6">
               <h2 className="mb-5 text-xl font-bold text-[var(--color-text)]">Popularne marke automobila</h2>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
-              {startBrands.map((brand) => (
-                  <Link
-                      key={brand.name}
-                      href="/search"
-                      className="flex min-w-0 flex-col items-center justify-center gap-2 border-b border-r border-[var(--border-color)] px-3 py-6 text-center text-sm font-bold text-[var(--color-text)] transition hover:bg-black/5 focus-visible:outline-2 focus-visible:outline-[var(--color-navbar)] [&:nth-child(2n)]:border-r-0 sm:[&:nth-child(2n)]:border-r sm:[&:nth-child(3n)]:border-r-0 lg:[&:nth-child(3n)]:border-r lg:[&:nth-child(6n)]:border-r-0 [&:nth-child(n+9)]:border-b-0 sm:[&:nth-child(n+7)]:border-b-0"
-                  >
-                    <Image
-                        width={40}
-                        height={40}
-                        src={brand.logo}
-                        alt=""
-                        className="h-10 w-10 object-contain"
-                    />
-                    <span>{brand.name}</span>
-                  </Link>
-              ))}
-            </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
+                {startBrands.map((brand) => (
+                    <Link
+                        key={brand.name}
+                        href="/search"
+                        className="flex min-w-0 flex-col items-center justify-center gap-2 border-b border-r border-[var(--border-color)] px-3 py-6 text-center text-sm font-bold text-[var(--color-text)] transition hover:bg-black/5 focus-visible:outline-2 focus-visible:outline-[var(--color-navbar)] [&:nth-child(2n)]:border-r-0 sm:[&:nth-child(2n)]:border-r sm:[&:nth-child(3n)]:border-r-0 lg:[&:nth-child(3n)]:border-r lg:[&:nth-child(6n)]:border-r-0 [&:nth-child(n+9)]:border-b-0 sm:[&:nth-child(n+7)]:border-b-0"
+                    >
+                      <Image
+                          width={120}
+                          height={120}
+                          src={brand.logo}
+                          alt=""
+                          className="w-auto h-auto object-contain"
+                      />
+                      <span>{brand.name}</span>
+                    </Link>
+                ))}
+              </div>
             </div>
           </section>
         </main>

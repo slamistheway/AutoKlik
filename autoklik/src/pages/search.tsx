@@ -15,7 +15,7 @@ import {AdCard} from "@/components/adCard";
 import {resolve_api_ad_img} from "@/shared/functions";
 import {toAdCardData} from '@/shared/ad-data';
 import {fetchCurrentUser} from '@/app/auth/auth-guards';
-import {getSessionToken} from '@/shared/functions';
+import {sessionCookie} from '@/components/cookies/cookies';
 
 
 type RangeValue = { min: string; max: string };
@@ -29,7 +29,7 @@ export default function Search() {
     const [currentUserId, setCurrentUserId] = useState<number | string | null>();
     useEffect(() => {
         let active = true;
-        if (!getSessionToken()) {
+        if (!sessionCookie.getSessionToken()) {
             Promise.resolve().then(() => { if (active) setCurrentUserId(null); });
         } else {
             void fetchCurrentUser().then(user => {
@@ -63,7 +63,7 @@ export default function Search() {
     useEffect(() => {
         const fetchAll = async () => {
             try {
-                const token = typeof window === 'undefined' ? null : window.localStorage.getItem('sessionApiToken');
+                const token = typeof window === 'undefined' ? null : sessionCookie.getSessionToken();
                 const pageFilters = new URLSearchParams(window.location.search);
                 const apiFilters = new URLSearchParams();
                 ['search', 'brands', 'models', 'yearMin', 'yearMax'].forEach(key => {

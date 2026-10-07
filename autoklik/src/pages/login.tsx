@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { Footer } from '@/components/footer';
 import { Navbar } from '@/components/navbar';
-import { guestOnlyAuthGuard, setAuthenticated } from '@/app/auth/auth-guards';
+import { guestOnlyAuthGuard } from '@/app/auth/auth-guards';
+import {sessionCookie} from '@/components/cookies/cookies';
 
 type ApiResponse = { message?: string; token?: string };
 
@@ -62,8 +63,7 @@ function LoginPage() {
       }
 
       if (payload.token) {
-        window.localStorage.setItem('sessionApiToken', payload.token);
-        setAuthenticated();
+        sessionCookie.setSessionToken(payload.token);
         const returnUrl = router.query.returnUrl;
         const destination = typeof returnUrl === 'string' && returnUrl.startsWith('/') && !returnUrl.startsWith('//')
           ? returnUrl

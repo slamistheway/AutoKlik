@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import {useEffect, useState} from 'react';
+import {sessionCookie} from '@/components/cookies/cookies';
 
 export function ChatImage({messageId, onLoad}: {messageId: number; onLoad?: () => void}) {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -12,7 +13,7 @@ export function ChatImage({messageId, onLoad}: {messageId: number; onLoad?: () =
     let url: string | null = null;
     const load = async () => {
       try {
-        const token = localStorage.getItem('sessionApiToken');
+        const token = sessionCookie.getSessionToken();
         if (!token) throw new Error('Missing session');
         const response = await fetch(`http://localhost:3001/users/messages/${messageId}/image`, {
           headers: {Authorization: `Bearer ${token}`}, signal: controller.signal,

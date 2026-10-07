@@ -1,5 +1,5 @@
 import {useState} from "react";
-import {API_BASE_URL} from "@/pages/myProfile/account-api";
+import { API_BASE_URL } from "@/pages/myProfile/account-api";
 
 
 export function resolve_api_pfp_img(path?: string | null) {
@@ -21,101 +21,6 @@ export function truncate(text: string, length = 100) {
 }
 
 
-
-export const pinSave = async (
-    argSaveID: string,
-    isPostOrComment: string
-): Promise<string> => {
-    try {
-        const res = await fetch(
-            `${API_BASE_URL}/scrapper/pinSave`,
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    arg_SaveID: argSaveID,
-                    isPostOrComment,
-                }),
-            }
-        );
-
-        if (!res.ok) {
-            const errBody = await res.json().catch(() => ({}));
-            throw new Error(
-                errBody?.message ?? "Pinning save failed"
-            );
-        }
-
-        const data: { message: string } = await res.json();
-        console.log(data.message);
-
-
-        return data.message;
-    } catch (err: any) {
-        return err.message;
-    }
-};
-
-
-
-
-
-export const deleteSave = async (
-    argSaveID: string,
-    argSaveType: 'post' | 'comment',
-    setPosts: React.Dispatch<React.SetStateAction<PostInterface[]>>,
-    setComments: React.Dispatch<React.SetStateAction<CommentInterface[]>>,
-    setAlls: React.Dispatch<React.SetStateAction<AllInterface[]>>,
-    setErrorMessage: (msg: string) => void,
-    setAlert_deleteForeignKeys: (visible: boolean) => void,
-    arg_withCommentsAlso?: string
-) => {
-    console.log(argSaveID, argSaveType);
-
-    try {
-        const res = await fetch(`http://localhost:3001/scrapper/deleteSave`, {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                arg_SaveID: argSaveID,
-                arg_saveType: argSaveType,
-                arg_withCommentsAlso,
-            }),
-        });
-
-        const returnData = await res.json();
-
-        if (!res.ok) {
-            throw new Error(returnData?.message);
-        }
-
-        console.log(returnData.message);
-        if (returnData.message.includes('The post already has saved comments tied to it')) {
-            setAlert_deleteForeignKeys(true);
-            return;
-        }
-
-        switch (argSaveType) {
-            case 'post':
-                setPosts((prev) => prev.filter((post) => post.id !== argSaveID));
-                break;
-            case 'comment':
-                setComments((prev) => prev.filter((comment) => comment.id !== argSaveID));
-                break;
-            default:
-                console.error('Unknown save type, but still deleted');
-        }
-    } catch (err: any) {
-        setErrorMessage(err?.message);
-    }
-};
-
-export function getSessionToken() {
-    if (typeof window === 'undefined') return null;
-    return window.localStorage.getItem('sessionApiToken');
-}
 
 export const addSaveToList = async (
     arg_ListID: string,

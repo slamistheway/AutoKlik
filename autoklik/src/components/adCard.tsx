@@ -45,13 +45,13 @@ export function AdCard({ ad, href, currentUserId }: AdCardProps) {
             </div>
           </div>
         </Link>
-        {currentUserId !== undefined && Number(ad.userId) !== Number(currentUserId) && <div className="absolute right-3 top-3">
+        <div className="absolute right-3 top-3">
         <SaveAdButton
           adId={ad.id}
           initialSaved={ad.is_saved}
           className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 bg-white/95 shadow-sm hover:bg-white"
         />
-        </div>}
+        </div>
       </div>
     </article>
   );

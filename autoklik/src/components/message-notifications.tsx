@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import {BellIcon, MessageSquareTextIcon} from 'lucide-react';
 import {useEffect, useState} from 'react';
+import {sessionCookie} from '@/components/cookies/cookies';
 
 type UnreadConversation = {id: number; username: string; unreadCount: number};
 
@@ -17,7 +18,7 @@ export function MessageNotifications() {
     let pending = false;
     const refresh = async () => {
       if (pending || document.visibilityState !== 'visible') return;
-      const token = localStorage.getItem('sessionApiToken');
+      const token = sessionCookie.getSessionToken();
       if (!token) {
         setConversations([]);
         return;

@@ -11,7 +11,8 @@ import Link from 'next/link';
 import { authGuard, fetchCurrentUser } from '@/app/auth/auth-guards';
 import type { CurrentUser } from '@/types/types';
 
-import { API_BASE_URL, getResponseMessage, getSessionToken } from './myProfile/account-api';
+import { API_BASE_URL, getResponseMessage } from './myProfile/account-api';
+import {sessionCookie} from '@/components/cookies/cookies';
 import { usePathname } from 'next/navigation'
 
 
@@ -47,7 +48,7 @@ export default function MyProfilePage() {
       }
 
       try {
-        const token = getSessionToken();
+        const token = sessionCookie.getSessionToken();
         if (!token) throw new Error('Sesija je istekla. Prijavite se ponovo.');
         const headers = { Authorization: `Bearer ${token}` };
         const [adsResponse, savedResponse] = await Promise.all([
