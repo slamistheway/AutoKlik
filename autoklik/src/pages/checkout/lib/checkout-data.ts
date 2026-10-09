@@ -51,6 +51,8 @@ const subcategoryLabels: Record<string, string> = Object.fromEntries(
   Object.values(SUBCATEGORIES).flat().map(({ value, label }) => [value, label]),
 );
 
+
+
 export const getCategoryLabel = (value: string) => categoryLabels[value] ?? value;
 export const getSubcategoryLabel = (value: string) => subcategoryLabels[value] ?? value;
 export const toFuelLabel = (value: string) => ({ petrol: 'Benzin', diesel: 'Dizel', electric: 'Električno', hybrid: 'Hibrid', lpg: 'Plin' }[value] ?? value);

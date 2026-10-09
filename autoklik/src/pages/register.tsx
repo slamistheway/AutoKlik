@@ -120,8 +120,8 @@ function RegisterPage() {
                 <input id="email" name="email" type="email" maxLength={255} value={email} onChange={event => setEmail(event.target.value)} autoComplete="email" required className={inputClass} placeholder="Unesi email adresu" />
               </div>
               <div>
-                <label htmlFor="password" className="mb-1 block text-sm font-medium">Lozinka</label>
-                <input id="password" name="password" type="password" minLength={8} maxLength={72} value={password} onChange={event => setPassword(event.target.value)} autoComplete="new-password" required className={inputClass} placeholder="Unesi lozinku" />
+                <label htmlFor="password" className="mb-1 block text-sm font-medium">Lozinka</label> {/*dodaj minLength={8} maxLength={72} u input field*/}
+                <input id="password" name="password" type="password" value={password} onChange={event => setPassword(event.target.value)} autoComplete="new-password" required className={inputClass} placeholder="Unesi lozinku" />
               </div>
             </div>
 

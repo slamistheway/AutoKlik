@@ -95,18 +95,25 @@ export function Navbar() {
     return `/search${query ? `?${query}` : ''}`;
   };
 
+  const canNavigate = (url: string) => {
+    return window.dispatchEvent(new CustomEvent('checkout:before-leave', { detail: url, cancelable: true }));
+  };
+
   const submitSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!canNavigate(getCarsUrl(true))) return;
     window.location.assign(new URL(getCarsUrl(true), window.location.origin).toString());
   };
 
   const submitFilters = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!canNavigate(getCarsUrl())) return;
     setIsFiltersOpen(false);
     window.location.assign(new URL(getCarsUrl(), window.location.origin).toString());
   };
 
   const onLogoutClick = () => {
+    if (!canNavigate('/')) return;
     clearSessionToken();
     setCurrentUser(null);
     closeMenus();

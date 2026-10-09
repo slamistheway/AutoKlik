@@ -9,12 +9,18 @@ type Props = {
 const STEPS = [1, 2, 3];
 
 function getStepLabel(step: number): string {
-  return step === 1 ? 'Kategorija' : step === 2 ? 'Detalji' : 'Placanje';
+  return step === 1 ? 'Kategorija' : step === 2 ? 'Detalji' : step === 3 ? 'Placanje' : "";
 }
 
 export default function CheckoutStepper({ currentStep, clickableSteps, onStepSelected }: Props) {
-  const isStepClickable = (step: number) => clickableSteps.includes(step);
-  const isStepDisabled = (step: number) => !isStepClickable(step);
+  const isStepClickable = (step: number) => {
+    return clickableSteps.includes(step);
+  };
+  const isStepDisabled = (step: number) => {
+    return !clickableSteps.includes(step);
+  };
+  console.log(`Current Step: ${currentStep}, Clickable Steps: ${clickableSteps.join(', ')}`);
+
 
   const onStepClick = (step: number) => {
     if (!isStepClickable(step)) return;

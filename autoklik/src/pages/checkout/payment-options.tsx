@@ -5,7 +5,6 @@ import { useRouter } from 'next/router';
 import { Navbar } from '@/components/navbar';
 import { Footer } from '@/components/footer';
 import CheckoutStepper from '@/pages/checkout/components/checkoutStepper';
-import CheckoutLeavePrompt from '@/pages/checkout/components/checkoutLeavePrompt';
 import { getCategoryLabel, getSubcategoryLabel } from './lib/checkout-data';
 import * as checkoutState from './lib/checkout-state';
 import { API_BASE_URL, getResponseMessage } from '../myProfile/account-api';
@@ -14,20 +13,16 @@ import { fetchCurrentUser } from '@/app/auth/auth-guards';
 
 export default function PaymentOptionsPage() {
   const router = useRouter();
-
   const categoryState = checkoutState.getCategoryState();
   const categoryLabel = getCategoryLabel(categoryState.category);
   const subcategoryLabel = getSubcategoryLabel(categoryState.subcategory);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [isHydrated, setIsHydrated] = useState(false);
-  const currentStep = checkoutState.getCurrentStep();
+  const [currentStep, setCurrentStep] = useState(1);
 
   const getClickableSteps = (): number[] => {
-    const steps = [1];
-    if (checkoutState.hasCategoryState()) steps.push(2);
-    if (checkoutState.hasCategoryState() && checkoutState.hasDetailsState()) steps.push(3);
-    return steps;
+    return [1, 2, 3];
   };
 
 
@@ -45,12 +40,15 @@ export default function PaymentOptionsPage() {
         return;
       }
 
-      checkoutState.setCurrentStep(3);
-      // Mark ready only after browser state has been restored to avoid a hydration mismatch.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setCurrentStep(checkoutState.getCurrentStep());
       setIsHydrated(true);
     }
 
+
+    console.log(localStorage.getItem('checkout.categoryState'));
+    console.log(localStorage.getItem('checkout.subcategory'));
+    console.log(localStorage.getItem('checkout.brand'));
+    console.log(localStorage);
 
     initialization();
   }, []);
@@ -67,6 +65,8 @@ export default function PaymentOptionsPage() {
     if (!getClickableSteps().includes(step)) return;
 
     if (step === 1) {
+      localStorage.removeItem('checkout.categoryState');
+      localStorage.removeItem('checkout.subcategory');
       checkoutState.clearDetailsState();
       checkoutState.setCurrentStep(1);
       router.push('/checkout/vehicle-category');
@@ -77,6 +77,99 @@ export default function PaymentOptionsPage() {
       goToDetails();
     }
   };
+
+  useEffect(() => {
+    if (!isHydrated) return;
+
+    const warning = 'Zelite li napustiti unos oglasa? Uneseni podaci bit ce obrisani.';
+
+    const isLeavingCheckout = (url: string) => {
+      const destination = new URL(url, window.location.origin);
+      return destination.origin !== window.location.origin ||
+        (destination.pathname !== '/checkout' && !destination.pathname.startsWith('/checkout/'));
+    };
+
+    let confirmedPopState = false;
+    let confirmedLinkUrl: string | null = null;
+    const currentHistoryState = window.history.state;
+    const currentUrl = router.asPath;
+
+    const clearCheckout = () => {
+      checkoutState.reset();
+    };
+
+    const warnBeforeLinkNavigation = (event: MouseEvent) => {
+      if (event.defaultPrevented || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+      const link = event.target instanceof Element ? event.target.closest('a[href]') : null;
+      if (!(link instanceof HTMLAnchorElement) || link.hasAttribute('download') || (link.target && link.target !== '_self')) return;
+
+      const destination = new URL(link.href, window.location.origin);
+      if (!['http:', 'https:'].includes(destination.protocol)) return;
+      if (destination.origin === window.location.origin && !isLeavingCheckout(destination.href)) return;
+
+      if (!window.confirm(warning)) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        return;
+      }
+
+      confirmedLinkUrl = destination.href;
+      clearCheckout();
+    };
+
+    const warnBeforeLeaving = (url: string, options: { shallow: boolean }) => {
+      if (confirmedLinkUrl === new URL(url, window.location.origin).href) {
+        confirmedLinkUrl = null;
+        return;
+      }
+      if (confirmedPopState) {
+        confirmedPopState = false;
+        return;
+      }
+
+      if (!isLeavingCheckout(url)) return;
+      if (window.confirm(warning)) {
+        clearCheckout();
+        return;
+      }
+
+      const error = Object.assign(new Error('Checkout navigation cancelled'), { cancelled: true });
+      router.events.emit('routeChangeError', error, url, options);
+      throw error;
+    };
+
+    router.beforePopState(({ as }) => {
+      if (!isLeavingCheckout(as)) return true;
+      if (window.confirm(warning)) {
+        clearCheckout();
+        confirmedPopState = true;
+        return true;
+      }
+      window.history.pushState(currentHistoryState, '', currentUrl);
+      return false;
+    });
+
+    const warnBeforeFullNavigation = (event: Event) => {
+      const url = (event as CustomEvent<string>).detail;
+      if (!isLeavingCheckout(url)) return;
+      if (!window.confirm(warning)) {
+        event.preventDefault();
+        return;
+      }
+      clearCheckout();
+    };
+    router.events.on('routeChangeStart', warnBeforeLeaving);
+    window.addEventListener('checkout:before-leave', warnBeforeFullNavigation);
+    document.addEventListener('click', warnBeforeLinkNavigation, true);
+    return () => {
+      router.events.off('routeChangeStart', warnBeforeLeaving);
+      window.removeEventListener('checkout:before-leave', warnBeforeFullNavigation);
+      document.removeEventListener('click', warnBeforeLinkNavigation, true);
+      router.beforePopState(() => true);
+    };
+  }, [isHydrated, router]);
+
+
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -146,7 +239,6 @@ export default function PaymentOptionsPage() {
 
   return (
     <>
-      <CheckoutLeavePrompt />
       <header>
         <Navbar />
       </header>
@@ -160,6 +252,12 @@ export default function PaymentOptionsPage() {
             clickableSteps={getClickableSteps()}
             onStepSelected={onStepSelected}
           />
+
+          {checkoutState.hasStoredDraftState() && (
+            <p role="note" className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              Refreshing will remove all inputted data.
+            </p>
+          )}
 
           <div className="rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700">
             Odabrana kategorija: <span className="font-semibold">{categoryLabel}</span> &gt;{' '}
