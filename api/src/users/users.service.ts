@@ -13,6 +13,7 @@ import {JwtService} from "@nestjs/jwt";
 import {MessageImageUpload, validateMessageImage} from './message-image';
 import {decryptMessageContent, encryptMessageContent, messageBodyContext} from "./message-crypto";
 import { LoginAttemptsService } from './login-attempts.service';
+import { AuditService } from '../audit/audit.service';
 import { createHash } from 'crypto';
 import { validateInput } from '../input-validation';
 import {LoginDto, RegisterDto, UpdateProfileDto} from "../dtos/user.dtos";
@@ -39,9 +40,10 @@ export class UsersService {
     @Inject('DRIZZLE_DB') private readonly db: NodePgDatabase<typeof schema>,
     private readonly jwtService: JwtService,
     private readonly loginAttempts: LoginAttemptsService,
+    private readonly auditService: AuditService,
   ) {}
 
-  async register(dto: RegisterDto) {
+  async register(dto: RegisterDto, ip: string | null) {
     dto = validateInput(dto, 'RegisterDto') as unknown as RegisterDto;
     const username = dto.username?.trim();
     const email = dto.email?.trim().toLowerCase();
@@ -57,16 +59,6 @@ export class UsersService {
     );
 
 
-    {/*DODAJ REGEXE OVDE KAD PROJEKT BUDE GOTOV*/}
-    if (
-        !username ||
-        !email ||
-        !password
-    ) {
-      this.logger.warn('Podaci za registraciju nisu ispravni');
-      throw new BadRequestException('Podaci za registraciju nisu ispravni');
-    }
-
     const hashedPassword = await passwordHasher.hash(password, 10);
     const pfp = 'default-pfp.jpg';
 
@@ -76,6 +68,8 @@ export class UsersService {
           .values({username, email, password: hashedPassword, pfp, firstName, lastName, phone, city, country,})
           .returning({ id: users.id, username: users.username });
 
+
+      await this.auditService.recordRegister(user.id, ip);
       this.logger.log(`User created: id=${user.id}, username=${user.username}`);
       return { message: 'Registracija uspješna.' };
     } catch (error) {
@@ -85,6 +79,7 @@ export class UsersService {
         detail?: string;
         stack?: string;
       };
+
       if (databaseError.code === '23505') {
         const uniqueField =
             `${databaseError.constraint ?? ''} ${databaseError.detail ?? ''}`.toLowerCase();
@@ -109,7 +104,7 @@ export class UsersService {
     }
   }
 
-  async login(dto: LoginDto) {
+  async login(dto: LoginDto, ip: string | null) {
     this.logger.debug('Login method called');
 
     const identifier = dto.identifier?.trim();
@@ -172,6 +167,7 @@ export class UsersService {
         );
       }
 
+      await this.auditService.recordLogin(user.id, ip);
       this.loginAttempts.reset(attemptKey);
       this.logger.log(
           `User logged in: id=${user.id}, username=${user.username}`,

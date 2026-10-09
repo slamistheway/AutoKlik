@@ -57,6 +57,7 @@ const ad: Rules = {
   payload: { ...number(), nullable: true },
   volume: { ...number(), nullable: true },
 };
+
 const schemas: Record<string, Rules> = {
   LoginDto: {
     identifier: text(255, true),
@@ -66,7 +67,7 @@ const schemas: Record<string, Rules> = {
     ...profile,
     username: { ...text(50, true), pattern: /^[A-Za-z0-9]+$/ },
     email: { ...text(255, true), pattern: /^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/ },
-    password: { kind: 'password', min: 8, max: 72, required: true },
+    password: { kind: 'password', min: 1, max: 72, required: true },
   },
   UpdateProfileDto: profile,
   CreateAdDto: ad,
@@ -108,12 +109,15 @@ export function validateInput(
   const rules = schemas[schema];
   if (!value || typeof value !== 'object' || Array.isArray(value))
     throw new BadRequestException('Zahtjev mora biti objekt.');
+
   const input = value as Record<string, unknown>;
   const output: Record<string, unknown> = {};
+
   for (const key of Object.keys(input)) {
     if (!Object.hasOwn(rules, key))
       throw new BadRequestException(`Nedopušteno polje: ${key}.`);
   }
+
   for (const [key, rule] of Object.entries(rules)) {
     const raw = input[key];
     const invalid = () => {

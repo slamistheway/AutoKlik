@@ -5,7 +5,6 @@ import { useRouter } from 'next/router';
 import { Navbar } from '@/components/navbar';
 import { Footer } from '@/components/footer';
 import CheckoutStepper from '@/pages/checkout/components/checkoutStepper';
-import CheckoutLeavePrompt from '@/pages/checkout/components/checkoutLeavePrompt';
 import { getCategoryLabel, getSubcategoryLabel } from './lib/checkout-data';
 import * as checkoutState from './lib/checkout-state';
 import { API_BASE_URL, getResponseMessage } from '../myProfile/account-api';
@@ -14,6 +13,17 @@ import { fetchCurrentUser } from '@/app/auth/auth-guards';
 
 export default function PaymentOptionsPage() {
   const router = useRouter();
+  useEffect(() => {
+    const clearCheckoutWhenLeaving = (url: string) => {
+      const nextPath = url.split('?')[0].split('#')[0];
+      if (!nextPath.startsWith('/checkout/')) {
+        checkoutState.reset();
+      }
+    };
+
+    router.events.on('routeChangeStart', clearCheckoutWhenLeaving);
+    return () => router.events.off('routeChangeStart', clearCheckoutWhenLeaving);
+  }, [router.events]);
 
   const categoryState = checkoutState.getCategoryState();
   const categoryLabel = getCategoryLabel(categoryState.category);
@@ -21,13 +31,10 @@ export default function PaymentOptionsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [isHydrated, setIsHydrated] = useState(false);
-  const currentStep = checkoutState.getCurrentStep();
+  const [currentStep, setCurrentStep] = useState(1);
 
   const getClickableSteps = (): number[] => {
-    const steps = [1];
-    if (checkoutState.hasCategoryState()) steps.push(2);
-    if (checkoutState.hasCategoryState() && checkoutState.hasDetailsState()) steps.push(3);
-    return steps;
+    return [1, 2, 3];
   };
 
 
@@ -45,12 +52,15 @@ export default function PaymentOptionsPage() {
         return;
       }
 
-      checkoutState.setCurrentStep(3);
-      // Mark ready only after browser state has been restored to avoid a hydration mismatch.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setCurrentStep(checkoutState.getCurrentStep());
       setIsHydrated(true);
     }
 
+
+    console.log(localStorage.getItem('checkout.categoryState'));
+    console.log(localStorage.getItem('checkout.subcategory'));
+    console.log(localStorage.getItem('checkout.brand'));
+    console.log(localStorage);
 
     initialization();
   }, []);
@@ -67,6 +77,8 @@ export default function PaymentOptionsPage() {
     if (!getClickableSteps().includes(step)) return;
 
     if (step === 1) {
+      localStorage.removeItem('checkout.categoryState');
+      localStorage.removeItem('checkout.subcategory');
       checkoutState.clearDetailsState();
       checkoutState.setCurrentStep(1);
       router.push('/checkout/vehicle-category');
@@ -146,7 +158,6 @@ export default function PaymentOptionsPage() {
 
   return (
     <>
-      <CheckoutLeavePrompt />
       <header>
         <Navbar />
       </header>
@@ -160,6 +171,12 @@ export default function PaymentOptionsPage() {
             clickableSteps={getClickableSteps()}
             onStepSelected={onStepSelected}
           />
+
+          {checkoutState.hasStoredDraftState() && (
+            <p role="note" className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              Refreshing will remove all inputted data.
+            </p>
+          )}
 
           <div className="rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700">
             Odabrana kategorija: <span className="font-semibold">{categoryLabel}</span> &gt;{' '}

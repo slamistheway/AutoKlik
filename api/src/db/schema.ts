@@ -180,3 +180,19 @@ export const messageImages = pgTable(
         check("message_images_size", sql`${table.size} > 0 and ${table.size} <= 5242880`),
     ],
 );
+
+
+export const audit = pgTable(
+    "audit",
+    {
+        id: bigserial("id", { mode: "number" }).primaryKey(),
+        userId: bigint("user_id", { mode: "number" }).references(() => users.id, { onDelete: "set null" }),
+        action: text("action").notNull(),
+        path: text("path").notNull(),
+        ip: text("ip"),
+        createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    },
+    (table) => [
+        index("audit_user_created_idx").on(table.userId, table.createdAt),
+    ],
+);

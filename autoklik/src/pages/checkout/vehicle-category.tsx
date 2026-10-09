@@ -6,7 +6,6 @@ import { useRouter } from 'next/router';
 import { Navbar } from '@/components/navbar';
 import { Footer } from '@/components/footer';
 import CheckoutStepper from '@/pages/checkout/components/checkoutStepper';
-import CheckoutLeavePrompt from '@/pages/checkout/components/checkoutLeavePrompt';
 import * as checkoutState from './lib/checkout-state';
 import { CATEGORIES, SUBCATEGORIES } from './lib/checkout-data';
 
@@ -14,9 +13,25 @@ import {sessionCookie} from '@/components/cookies/cookies';
 
 export default function VehicleCategoryPage() {
   const router = useRouter();
+  useEffect(() => {
+    const clearCheckoutWhenLeaving = (url: string) => {
+      const nextPath = url.split('?')[0].split('#')[0];
+      if (!nextPath.startsWith('/checkout/')) {
+        console.log("leaving checkout")
+        checkoutState.reset();
+        localStorage.setItem('ijaaaaaaaaaa', "true"); //ovo se ne izvrsava kad se leave checkout
+      }
+    };
+
+    localStorage.setItem('ijaaaaaaaaaa', "true");
+
+    router.events.on('routeChangeStart', clearCheckoutWhenLeaving);
+    return () => router.events.off('routeChangeStart', clearCheckoutWhenLeaving);
+  }, [router.events]);
 
   const [category, setCategory] = useState('');
   const [subcategory, setSubcategory] = useState('');
+  const [currentStep, setCurrentStep] = useState(1);
   const [submitted, setSubmitted] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
 
@@ -29,12 +44,13 @@ export default function VehicleCategoryPage() {
       }
 
       checkoutState.hydrate();
+      checkoutState.clearDetailsState();
       const savedCategory = checkoutState.getCategoryState();
       // Restore local storage after hydration to keep the server and first client render identical.
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setCategory(savedCategory.category);
-      setSubcategory(savedCategory.subcategory);
-      checkoutState.setCurrentStep(1);
+      localStorage.removeItem('checkout.categoryState');
+      localStorage.removeItem('checkout.subcategory');
+      setCurrentStep(checkoutState.getCurrentStep());
       setIsHydrated(true);
     }
 
@@ -45,11 +61,10 @@ export default function VehicleCategoryPage() {
       localStorage.clear();
     };
 */
+    console.log(localStorage)
 
     initialization();
   }, []);
-
-  const currentStep = 1;
 
   if (!isHydrated) return null;
 
@@ -97,7 +112,6 @@ export default function VehicleCategoryPage() {
 
   return (
     <>
-      <CheckoutLeavePrompt />
       <header>
         <Navbar />
       </header>

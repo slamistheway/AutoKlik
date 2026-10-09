@@ -45,7 +45,7 @@ export class UsersController {
     @Post('register')
     async register(@Body() dto: RegisterDto, @Request() req: ExpressRequest, @Res({ passthrough: true }) response: Response) {
         try {
-            return await this.registrationAttempts.execute(req.ip ?? req.socket.remoteAddress ?? 'unknown', () => this.usersService.register(dto));
+            return await this.registrationAttempts.execute(req.ip ?? req.socket.remoteAddress ?? 'unknown', () => this.usersService.register(dto, req.ip ?? req.socket.remoteAddress ?? 'unknown'));
         } catch (err) {
             if (err instanceof HttpException && err.getStatus() === 429) {
                 const body = err.getResponse() as { retryAfter?: number };
@@ -57,15 +57,9 @@ export class UsersController {
     }
 
     @Post('login')
-    async login(@Body() dto: LoginDto, @Res({ passthrough: true }) response: Response) {
-        this.logger.debug(
-            `Login payload: ${JSON.stringify({
-                identifier: dto.identifier ? '***' : '',
-                password: dto.password ? '***' : ''
-            })}`,
-        );
+    async login(@Body() dto: LoginDto, @Request() request: ExpressRequest, @Res({ passthrough: true }) response: Response) {
         try {
-            return await this.usersService.login(dto);
+            return await this.usersService.login(dto, request.ip ?? request.socket.remoteAddress ?? null);
         } catch (err) {
             if (err instanceof HttpException && err.getStatus() === 429) {
                 const body = err.getResponse() as { retryAfter?: number };

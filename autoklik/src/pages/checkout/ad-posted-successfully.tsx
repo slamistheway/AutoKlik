@@ -4,12 +4,24 @@ import { useRouter } from 'next/router';
 import { Navbar } from '@/components/navbar';
 import { Footer } from '@/components/footer';
 import {useEffect} from "react";
+import * as checkoutState from './lib/checkout-state';
 
 import {sessionCookie} from '@/components/cookies/cookies';
 
 
 export default function AdPostedSuccessfullyPage() {
   const router = useRouter();
+  useEffect(() => {
+    const clearCheckoutWhenLeaving = (url: string) => {
+      const nextPath = url.split('?')[0].split('#')[0];
+      if (!nextPath.startsWith('/checkout/')) {
+        checkoutState.reset();
+      }
+    };
+
+    router.events.on('routeChangeStart', clearCheckoutWhenLeaving);
+    return () => router.events.off('routeChangeStart', clearCheckoutWhenLeaving);
+  }, [router.events]);
   const adIdParam = Number(router.query.adId);
   const adId = Number.isFinite(adIdParam) && adIdParam > 0 ? adIdParam : null;
 
