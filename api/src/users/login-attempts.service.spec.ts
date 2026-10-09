@@ -6,6 +6,9 @@ import { UsersService } from './users.service';
 import { UsersController } from './users.controller';
 import { RegistrationAttemptsService } from './registration-attempts.service';
 import type { Response } from 'express';
+import type { Request } from 'express';
+import type { SessionsService } from './sessions.service';
+import type { AuditService } from '../audit/audit.service';
 
 jest.mock('bcrypt', () => ({ compare: jest.fn(), hash: jest.fn() }));
 
@@ -36,6 +39,7 @@ describe('failed login cooldown', () => {
       db as unknown as ConstructorParameters<typeof UsersService>[0],
       jwt as unknown as JwtService,
       new LoginAttemptsService(),
+      { recordLogin: jest.fn() } as unknown as AuditService,
     );
     compare.mockResolvedValue(false);
   });
@@ -116,10 +120,11 @@ describe('failed login cooldown', () => {
     const controller = new UsersController(
       service,
       new RegistrationAttemptsService(new LoginAttemptsService()),
+      {} as SessionsService,
     );
     const response = { setHeader: jest.fn() };
     await expect(
-      controller.login(dto, response as unknown as Response),
+      controller.login(dto, { ip: '192.0.2.1' } as Request, response as unknown as Response),
     ).rejects.toMatchObject({ status: 429 });
     expect(response.setHeader).toHaveBeenCalledWith('Retry-After', 900);
   });

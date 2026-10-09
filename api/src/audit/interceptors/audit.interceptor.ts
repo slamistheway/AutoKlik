@@ -25,6 +25,9 @@ export class AuditInterceptor implements NestInterceptor {
   intercept<T>(context: ExecutionContext, next: CallHandler<T>): Observable<T> {
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
     const { method, user } = request;
+    const path = request.originalUrl.split('?')[0].replace(/\/$/, '');
+    // Logout is recorded atomically with token revocation.
+    if (method === 'POST' && path === '/users/logout') return next.handle();
     if (!user || !['POST', 'PATCH', 'DELETE'].includes(method))
       return next.handle();
 
@@ -35,8 +38,12 @@ export class AuditInterceptor implements NestInterceptor {
 
         try {
           await this.auditService.record(
-            method,
-            request.originalUrl,
+            method === 'PATCH' && /^\/ads\/\d+$/.test(path) ? 'ad_update' :
+              method === 'PATCH' && path === '/users/me' ? 'profile_update' :
+              method === 'POST' && path === '/users/me/upload-pfp' ? 'profile_image_update' :
+              method === 'POST' && path === '/ads' ? 'ad_create' :
+              method === 'DELETE' && /^\/ads\/(?:delete\/)?\d+$/.test(path) ? 'ad_delete' : method,
+            path,
             userId,
             request.ip ?? request.socket.remoteAddress ?? null,
           );

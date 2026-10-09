@@ -36,6 +36,7 @@ export class AdsQueryDto {
 }
 
 export class UpdateAdDto {
+    retainedImages?: string;
     category?: string;
     subcategory?: string;
     brand?: string;

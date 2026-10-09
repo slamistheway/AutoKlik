@@ -10,9 +10,9 @@ import { eq, ilike } from 'drizzle-orm';
 import { PgDialect } from 'drizzle-orm/pg-core';
 import { users, ads } from './db/schema';
 import { InputValidationPipe, validateInput } from './input-validation';
-import { CreateAdDto } from './dtos/create-ad.dto';
-import { LoginDto } from './dtos/login.dto';
-import { AdsQueryDto, SendMessageDto } from './dtos/message.dto';
+import { CreateAdDto, AdsQueryDto } from './dtos/ad.dtos';
+import { LoginDto } from './dtos/user.dtos';
+import { SendMessageDto } from './dtos/message.dto';
 
 @Controller('validation-test')
 class ValidationController {

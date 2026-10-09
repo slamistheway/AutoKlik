@@ -48,7 +48,10 @@ export default function MySettings() {
   const [profile, setProfile] = useState<ProfileValues>(emptyProfile);
   const [editing, setEditing] = useState<Partial<Record<ProfileField, boolean>>>({});
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState('/default_pfp.jpg');
+  const [previewUrl, setPreviewUrl] = useState('');
+  useEffect(() => {
+    return () => { if (previewUrl) URL.revokeObjectURL(previewUrl); };
+  }, [previewUrl]);
   const [tab, setTab] = useState<'profile' | 'account'>('profile');
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -106,7 +109,7 @@ export default function MySettings() {
     setSaveMessage('');
     try {
       const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
-      const response = await fetch(`${API_BASE_URL}/me`, {
+      const response = await fetch(`${API_BASE_URL}/users/me`, {
         method: 'PATCH',
         headers,
         body: JSON.stringify(profile),
@@ -187,7 +190,7 @@ export default function MySettings() {
                   <div>
                     <label className="mb-2 block font-medium text-gray-700">Profilna slika</label>
                     <button type="button" onClick={() => fileInput.current?.click()} disabled={isSaving} className="relative h-24 w-24 overflow-hidden rounded-full bg-gray-200 disabled:opacity-60">
-                      <Image src={resolve_api_pfp_img("/".concat(String(user?.pfp)))} alt="Pregled profilne slike" width={96} height={96} unoptimized={Boolean(previewUrl)} className="h-full w-full object-cover" />
+                      <Image src={previewUrl || resolve_api_pfp_img(user?.pfp)} alt="Pregled profilne slike" width={96} height={96} unoptimized className="h-full w-full object-cover" />
                       <span className="absolute bottom-0 right-0 rounded-full bg-blue-600 px-2 py-1 text-xs text-white">Uredi</span>
                     </button>
                     <input ref={fileInput} type="file" accept="image/*" className="hidden" onChange={onFileSelected} />

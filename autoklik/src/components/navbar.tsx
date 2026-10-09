@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useEffect, useState, type FormEvent } from 'react';
-import { clearSessionToken, fetchCurrentUser } from '@/app/auth/auth-guards';
+import { logout, fetchCurrentUser } from '@/app/auth/auth-guards';
 import type { CurrentUser } from '@/types/types';
 import {
   BellIcon,
@@ -112,9 +112,14 @@ export function Navbar() {
     window.location.assign(new URL(getCarsUrl(), window.location.origin).toString());
   };
 
-  const onLogoutClick = () => {
+  const onLogoutClick = async () => {
     if (!canNavigate('/')) return;
-    clearSessionToken();
+    try {
+      await logout();
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : 'Odjava nije uspjela.');
+      return;
+    }
     setCurrentUser(null);
     closeMenus();
     window.location.assign(new URL('/', window.location.origin).toString());

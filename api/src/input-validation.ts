@@ -71,12 +71,12 @@ const schemas: Record<string, Rules> = {
   },
   UpdateProfileDto: profile,
   CreateAdDto: ad,
-  UpdateAdDto: Object.fromEntries(
-    Object.entries(ad).map(([key, rule]) => [
+  UpdateAdDto: { ...Object.fromEntries(
+    Object.entries(ad).filter(([key]) => key !== 'user_id').map(([key, rule]) => [
       key,
       { ...rule, required: false },
     ]),
-  ),
+  ), retainedImages: text(10000) },
   AdsQueryDto: {
     category: text(100),
     subcategory: text(100),

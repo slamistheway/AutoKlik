@@ -452,9 +452,45 @@ export class AdsService {
     return ad;
   }
 
-  update(id: number, _updateAdDto: UpdateAdDto) {
-    void _updateAdDto;
-    return `This action updates a #${id} ad`;
+  async update(id: number, userId: number, dto: UpdateAdDto, uploadedImages: string[] = []) {
+    if (!Number.isSafeInteger(id) || id <= 0 || !Number.isSafeInteger(userId) || userId <= 0) {
+      throw new BadRequestException('Neispravan oglas ili korisnik.');
+    }
+    const { retainedImages, price, ...fields } = dto;
+    for (const field of ['category', 'subcategory', 'brand', 'model', 'title'] as const) {
+      if (fields[field] !== undefined && !fields[field]?.trim()) throw new BadRequestException('Obavezna polja ne mogu biti prazna.');
+    }
+    if (!Object.keys(fields).length && price === undefined && retainedImages === undefined && !uploadedImages.length) {
+      throw new BadRequestException('Nema promjena za spremanje.');
+    }
+    let retained: string[] | undefined;
+    if (retainedImages !== undefined) {
+      try {
+        const parsed: unknown = JSON.parse(retainedImages);
+        if (!Array.isArray(parsed) || parsed.some(value => typeof value !== 'string') || new Set(parsed).size !== parsed.length) {
+          throw new Error('Invalid images');
+        }
+        retained = parsed as string[];
+      } catch { throw new BadRequestException('Neispravan popis slika.'); }
+    }
+    await this.db.transaction(async tx => {
+      const [owned] = await tx.select().from(ads).where(and(eq(ads.id, id), eq(ads.userId, userId))).for('update');
+      if (!owned) throw new NotFoundException('Oglas nije pronađen ili nije vaš.');
+      const existing = await tx.select().from(adImages).where(eq(adImages.adId, id)).orderBy(asc(adImages.id));
+      if (retained?.some(url => !existing.some(image => image.imageUrl === url))) {
+        throw new BadRequestException('Slika ne pripada ovom oglasu.');
+      }
+      const images = [...(retained ?? existing.map(image => image.imageUrl)), ...uploadedImages];
+      if (images.length > 10) throw new BadRequestException('Oglas može imati najviše 10 slika.');
+      await tx.update(ads).set({ ...fields, ...(price === undefined ? {} : { price: String(price) }),
+        dateLastUpdated: new Date(), ...(retained !== undefined || uploadedImages.length ? { previewImg: images[0] ?? null } : {}),
+      }).where(and(eq(ads.id, id), eq(ads.userId, userId)));
+      if (retained !== undefined || uploadedImages.length) {
+        await tx.delete(adImages).where(eq(adImages.adId, id));
+        if (images.length) await tx.insert(adImages).values(images.map(imageUrl => ({ adId: id, imageUrl })));
+      }
+    });
+    return this.findOne(id);
   }
 
   remove(id: number) {

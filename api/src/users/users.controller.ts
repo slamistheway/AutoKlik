@@ -12,6 +12,7 @@ import {
     UseInterceptors,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
+import { SessionsService } from './sessions.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -31,6 +32,7 @@ export class UsersController {
     constructor(
         private readonly usersService: UsersService,
         private readonly registrationAttempts: RegistrationAttemptsService,
+        private readonly sessions: SessionsService,
     ) {
     }
 
@@ -41,6 +43,12 @@ export class UsersController {
     }
 
 
+
+    @UseGuards(JwtAuthGuard)
+    @Post('logout')
+    logout(@Request() req: ExpressRequest & { user: { id: number; tokenHash: string; exp: number } }) {
+        return this.sessions.logout(req.user.tokenHash, req.user.id, req.user.exp, req.ip ?? req.socket.remoteAddress ?? null);
+    }
 
     @Post('register')
     async register(@Body() dto: RegisterDto, @Request() req: ExpressRequest, @Res({ passthrough: true }) response: Response) {

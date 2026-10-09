@@ -34,6 +34,20 @@ export async function fetchCurrentUser(): Promise<CurrentUser> {
   return response.json() as Promise<CurrentUser>;
 }
 
+export async function logout() {
+  const token = sessionCookie.getSessionToken();
+  if (token) {
+    const response = await fetch(`${API_BASE_URL}/users/logout`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok && response.status !== 401) {
+      throw new Error('Odjava nije uspjela. Pokušajte ponovno.');
+    }
+  }
+  clearSessionToken();
+}
+
 
 export function authGuard<P extends object>(Page: ComponentType<P>) {
   function AuthenticatedPage(props: P) {

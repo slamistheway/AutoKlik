@@ -8,6 +8,7 @@ import {JwtStrategy} from "./jwt.strategy";
 import { LoginAttemptsService } from './login-attempts.service';
 import { RegistrationAttemptsService } from './registration-attempts.service';
 import { AuditModule } from '../audit/audit.module';
+import { SessionsService } from './sessions.service';
 
 const jwtSecret = process.env.JWT_SECRET ?? 'dev_jwt_secret';
 if (!process.env.JWT_SECRET) {
@@ -26,7 +27,7 @@ if (!process.env.JWT_SECRET) {
         AuditModule,
     ],
     controllers: [UsersController],
-    providers: [UsersService, JwtStrategy, LoginAttemptsService, RegistrationAttemptsService],
+    providers: [UsersService, JwtStrategy, LoginAttemptsService, RegistrationAttemptsService, SessionsService],
     exports: [JwtModule],
 })
 export class UsersModule {}

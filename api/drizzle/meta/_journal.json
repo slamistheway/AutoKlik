@@ -64,6 +64,13 @@
       "when": 1791397274660,
       "tag": "0008_audit_logs",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791576585939,
+      "tag": "0009_logout_sessions",
+      "breakpoints": true
     }
   ]
 }

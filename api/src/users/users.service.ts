@@ -14,7 +14,7 @@ import {MessageImageUpload, validateMessageImage} from './message-image';
 import {decryptMessageContent, encryptMessageContent, messageBodyContext} from "./message-crypto";
 import { LoginAttemptsService } from './login-attempts.service';
 import { AuditService } from '../audit/audit.service';
-import { createHash } from 'crypto';
+import { createHash, randomUUID } from 'crypto';
 import { validateInput } from '../input-validation';
 import {LoginDto, RegisterDto, UpdateProfileDto} from "../dtos/user.dtos";
 
@@ -155,7 +155,7 @@ export class UsersService {
 
       let token: string;
       try {
-        token = this.jwtService.sign({ id: user.id, email: user.email });
+        token = this.jwtService.sign({ id: user.id, email: user.email, jti: randomUUID() });
       } catch (error) {
         const signingError = error as { stack?: string };
         this.logger.error(
@@ -263,21 +263,15 @@ export class UsersService {
       throw new BadRequestException('Neispravan korisnik.');
     }
 
-    const firstName = updateProfileDto.firstName?.trim() ?? '';
-    const lastName = updateProfileDto.lastName?.trim() ?? '';
-    const phone = updateProfileDto.phone?.trim() ?? '';
-    const city = updateProfileDto.city?.trim() ?? '';
-    const country = updateProfileDto.country?.trim() ?? '';
+    const changes: Partial<typeof users.$inferInsert> = {};
+    for (const field of ['firstName', 'lastName', 'phone', 'city', 'country'] as const) {
+      if (updateProfileDto[field] !== undefined) changes[field] = updateProfileDto[field]?.trim() || null;
+    }
+    if (!Object.keys(changes).length) throw new BadRequestException('Nema promjena za spremanje.');
 
     const [updatedUser] = await this.db
       .update(users)
-      .set({
-        firstName: firstName || null,
-        lastName: lastName || null,
-        phone: phone || null,
-        city: city || null,
-        country: country || null,
-      })
+      .set(changes)
       .where(eq(users.id, userId))
       .returning();
 

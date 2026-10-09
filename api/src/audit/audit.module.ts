@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
-import { APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
+import { AuthAuditExceptionFilter } from './auth-audit-exception.filter';
 import { DrizzleModule } from '../db/drizzle/drizzle.module';
 import { AuditService } from './audit.service';
 import { AuditController } from './audit.controller';
@@ -11,6 +12,7 @@ import { AuditInterceptor } from './interceptors/audit.interceptor';
     AuditService,
     AuditInterceptor,
     { provide: APP_INTERCEPTOR, useExisting: AuditInterceptor },
+    { provide: APP_FILTER, useClass: AuthAuditExceptionFilter },
   ],
   controllers: [AuditController],
   exports: [AuditService],

@@ -195,4 +195,9 @@ export const audit = pgTable(
     (table) => [
         index("audit_user_created_idx").on(table.userId, table.createdAt),
     ],
-);
+  );
+
+export const revokedTokens = pgTable('revoked_tokens', {
+  tokenHash: text('token_hash').primaryKey(),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+});

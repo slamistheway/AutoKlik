@@ -13,7 +13,7 @@ export class AuditService {
   async record(
       action: string,
       path: string,
-      userId: number,
+      userId: number | null,
       ip: string | null,
   ) {
     await this.db.insert(schema.audit).values({ action, path, userId, ip });
