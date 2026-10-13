@@ -1,6 +1,8 @@
 'use client';
 
 import {useEffect, useState} from 'react';
+import { useRouter } from 'next/router';
+import { CATEGORIES, SUBCATEGORIES } from './checkout/lib/checkout-data';
 import {Navbar} from "@/components/navbar";
 import {Footer} from "@/components/footer";
 import {ArrowRightIcon} from "lucide-react";
@@ -26,6 +28,9 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 
 
 export default function Search() {
+    const router = useRouter();
+    const [category, setCategory] = useState('');
+    const [subcategory, setSubcategory] = useState('');
     const [currentUserId, setCurrentUserId] = useState<number | string | null>();
     useEffect(() => {
         let active = true;
@@ -61,17 +66,22 @@ export default function Search() {
 
 
     useEffect(() => {
+        if (!router.isReady) return;
+        const controller = new AbortController();
         const fetchAll = async () => {
             try {
                 const token = typeof window === 'undefined' ? null : sessionCookie.getSessionToken();
                 const pageFilters = new URLSearchParams(window.location.search);
                 const apiFilters = new URLSearchParams();
-                ['search', 'brands', 'models', 'yearMin', 'yearMax'].forEach(key => {
+                ['search', 'brands', 'models', 'yearMin', 'yearMax', 'category', 'subcategory', 'fuel'].forEach(key => {
                     const value = pageFilters.get(key);
                     if (value) apiFilters.set(key, value);
                 });
                 const filterQuery = apiFilters.toString();
                 setSearch(pageFilters.get('search') ?? '');
+                setCategory(pageFilters.get('category') ?? '');
+                setSubcategory(pageFilters.get('subcategory') ?? '');
+                setGasType(pageFilters.get('fuel') ?? '');
                 setBrands(pageFilters.get('brands')?.split(',').filter(Boolean) ?? []);
                 setModels(pageFilters.get('models')?.split(',').filter(Boolean) ?? []);
                 setYears({
@@ -80,6 +90,7 @@ export default function Search() {
                 });
 
                 const allAdsRes = await fetch(`${API_BASE_URL}/ads/all${filterQuery ? `?${filterQuery}` : ''}`, {
+                    signal: controller.signal,
                     headers: token ? { Authorization: `Bearer ${token}` } : {},
                 });
 
@@ -89,16 +100,19 @@ export default function Search() {
                 }
 
                 const apiAds: unknown[] = await allAdsRes.json();
+                if (controller.signal.aborted) return;
                 setAds(apiAds.map(toAdCardData).map((ad: AdCardData) => ({ ...ad, previewImg: resolve_api_ad_img(ad.previewImg) })));
                 setErrorMessage('');
 
             } catch (err: unknown) {
+                if (controller.signal.aborted) return;
                 setErrorMessage(err instanceof Error ? err.message : 'Failed to load alls.');
             }
         };
 
-        fetchAll();
-    }, []);
+        void fetchAll();
+        return () => controller.abort();
+    }, [router.isReady, router.asPath]);
 
 
 
@@ -116,9 +130,33 @@ export default function Search() {
                     <hr className="my-6 border-gray-300" />
 
                     <h2 className="mb-5 text-xl font-semibold">Filteri</h2>
+                    {search && <p className="mb-4 text-sm text-gray-700">Pojam pretrage: <span className="font-semibold">{search}</span></p>}
+                    <div className="mb-5 grid gap-5 sm:grid-cols-2">
+                        <label className="text-sm font-medium">Kategorija
+                            <select value={category} onChange={event => {
+                                const params = new URLSearchParams(window.location.search);
+                                if (event.target.value) params.set('category', event.target.value); else params.delete('category');
+                                params.delete('subcategory'); params.delete('brands'); params.delete('models'); params.delete('fuel');
+                                void router.push(`/search?${params.toString()}`);
+                            }} className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2">
+                                <option value="">Sve kategorije</option>
+                                {CATEGORIES.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}
+                            </select>
+                        </label>
+                        <label className="text-sm font-medium">Podkategorija
+                            <select value={subcategory} disabled={!category} onChange={event => {
+                                const params = new URLSearchParams(window.location.search);
+                                if (event.target.value) params.set('subcategory', event.target.value); else params.delete('subcategory');
+                                void router.push(`/search?${params.toString()}`);
+                            }} className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 disabled:opacity-50">
+                                <option value="">Sve podkategorije</option>
+                                {(SUBCATEGORIES[category] ?? []).map(item => <option key={item.value} value={item.value}>{item.label}</option>)}
+                            </select>
+                        </label>
+                    </div>
                     <div className="grid grid-cols-1 gap-x-5 gap-y-6 sm:grid-cols-2 lg:grid-cols-4">
-                        <FilterBrands title="Marka" selectedVehicle_type="cars" mode="multi" value={brands} onChange={value => setBrands(Array.isArray(value) ? value : [])} />
-                        <FilterModels title="Model" selectedVehicle_type="cars" selectedBrands={brands} mode="multi" value={models} onChange={value => setModels(Array.isArray(value) ? value : [])} />
+                        <FilterBrands title="Marka" selectedVehicle_type={category === 'motorcycle' || category === 'van' ? category : 'cars'} mode="multi" value={brands} onChange={value => setBrands(Array.isArray(value) ? value : [])} />
+                        <FilterModels title="Model" selectedVehicle_type={category === 'motorcycle' || category === 'van' ? category : 'cars'} selectedBrands={brands} mode="multi" value={models} onChange={value => setModels(Array.isArray(value) ? value : [])} />
                         <FilterNumeric filterType="enginePower" mode="range" value={enginePower} onChange={value => setEnginePower(value as RangeValue)} />
                         <FilterNumeric filterType="price" mode="range" value={prices} onChange={value => setPrices(value as RangeValue)} />
                         <FilterNumeric filterType="year" mode="range" value={years} onChange={value => setYears(value as RangeValue)} />

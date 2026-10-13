@@ -9,12 +9,12 @@ import {and, eq, inArray, lte, ne, or, isNull, sql, desc} from 'drizzle-orm';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import * as schema from '../db/schema';
 import * as bcrypt from 'bcrypt';
-import {JwtService} from "@nestjs/jwt";
+import { BetterAuthService } from '../auth/better-auth.service';
 import {MessageImageUpload, validateMessageImage} from './message-image';
 import {decryptMessageContent, encryptMessageContent, messageBodyContext} from "./message-crypto";
 import { LoginAttemptsService } from './login-attempts.service';
 import { AuditService } from '../audit/audit.service';
-import { createHash, randomUUID } from 'crypto';
+import { createHash } from 'crypto';
 import { validateInput } from '../input-validation';
 import {LoginDto, RegisterDto, UpdateProfileDto} from "../dtos/user.dtos";
 
@@ -38,7 +38,7 @@ export class UsersService {
 
   constructor(
     @Inject('DRIZZLE_DB') private readonly db: NodePgDatabase<typeof schema>,
-    private readonly jwtService: JwtService,
+    private readonly auth: BetterAuthService,
     private readonly loginAttempts: LoginAttemptsService,
     private readonly auditService: AuditService,
   ) {}
@@ -63,12 +63,13 @@ export class UsersService {
     const pfp = 'default-pfp.jpg';
 
     try {
-      const [user] = await this.db
-          .insert(users)
-          .values({username, email, password: hashedPassword, pfp, firstName, lastName, phone, city, country,})
-          .returning({ id: users.id, username: users.username });
-
-
+      const user = await this.db.transaction(async tx => {
+        const [created] = await tx.insert(users)
+          .values({ username, email, password: hashedPassword, pfp, firstName, lastName, phone, city, country })
+          .returning();
+        await this.auth.createIdentity(created, tx);
+        return created;
+      });
       await this.auditService.recordRegister(user.id, ip);
       this.logger.log(`User created: id=${user.id}, username=${user.username}`);
       return { message: 'Registracija uspješna.' };
@@ -143,30 +144,18 @@ export class UsersService {
         throw new UnauthorizedException('Neispravni podaci za prijavu.');
       }
 
-      const isMatch = await passwordHasher.compare(password, user.password);
-      this.loginAttempts.assertAvailable(attemptKey);
-      if (!isMatch) {
-        this.loginAttempts.recordFailure(attemptKey);
-        this.logger.warn(
-            `Login failed: invalid password for user id=${user.id}`,
-        );
-        throw new UnauthorizedException('Neispravni podaci za prijavu.');
-      }
-
       let token: string;
       try {
-        token = this.jwtService.sign({ id: user.id, email: user.email, jti: randomUUID() });
+        const session = await this.auth.signIn(user, password, ip);
+        token = session.token;
       } catch (error) {
-        const signingError = error as { stack?: string };
-        this.logger.error(
-            'JWT sign error',
-            signingError.stack ?? String(error),
-        );
-        throw new InternalServerErrorException(
-            'Greška pri generiranju tokena.',
-        );
+        const authError = error as { statusCode?: number; status?: number | string };
+        if (authError.statusCode === 401 || authError.status === 401 || authError.status === 'UNAUTHORIZED') {
+          this.loginAttempts.recordFailure(attemptKey);
+          throw new UnauthorizedException('Neispravni podaci za prijavu.');
+        }
+        throw error;
       }
-
       await this.auditService.recordLogin(user.id, ip);
       this.loginAttempts.reset(attemptKey);
       this.logger.log(
@@ -304,6 +293,7 @@ export class UsersService {
       }
 
       await tx.delete(ads).where(eq(ads.userId, userId));
+      await tx.delete(schema.user).where(eq(schema.user.id, String(userId)));
 
       const [deletedUser] = await tx
         .delete(users)

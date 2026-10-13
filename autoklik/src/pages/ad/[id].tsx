@@ -8,7 +8,6 @@ import { ChevronLeft, ChevronRight, MapPin, Share2 } from 'lucide-react';
 import { Footer } from '@/components/footer';
 import { Navbar } from '@/components/navbar';
 import { SaveAdButton } from '@/components/saveAdButton';
-import EditAdForm from '@/components/edit-ad-form';
 import type { AdFullData, CurrentUser } from '@/types/types';
 import { toAdFullData } from '@/shared/ad-data';
 import {sessionCookie} from '@/components/cookies/cookies';
@@ -29,8 +28,6 @@ export default function AdPage() {
   const [errorMessage, setErrorMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [shareMessage, setShareMessage] = useState('');
-  const [editing, setEditing] = useState(false);
-  const [editMessage, setEditMessage] = useState('');
 
 
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
@@ -178,11 +175,6 @@ export default function AdPage() {
       <Navbar />
       <main className="min-h-screen bg-[#111114] px-4 py-6 text-white sm:px-6 lg:py-10">
           <div className="mx-auto max-w-7xl">
-            {ad && editing && Number(currentUser?.id) === ad.userId && <EditAdForm key={ad.id} ad={ad} onCancel={() => setEditing(false)} onSaved={updated => {
-              setAd(updated); setActiveImage(0); setEditing(false); setEditMessage('Promjene oglasa su spremljene.');
-            }} />}
-            {editMessage && <p role="status" className="mb-4 text-green-400">{editMessage}</p>}
-
           {isLoading && <div className="rounded-2xl border border-white/10 bg-[#1b1b20] p-8 text-gray-300">Učitavanje oglasa...</div>}
           {!isLoading && errorMessage && <div role="alert" className="rounded-2xl border border-red-400/30 bg-red-950/40 p-6 text-red-100">{errorMessage}</div>}
 
@@ -260,7 +252,7 @@ export default function AdPage() {
                     />
 
                     {ad.userId === Number(currentUser?.id) && (
-                      <button type="button" onClick={() => { setEditing(true); setEditMessage(''); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-3 py-2.5 text-sm text-white hover:bg-blue-700">Uredi oglas</button>
+                      <button type="button" onClick={() => { void router.push(`/ad/edit/${ad.id}`); }} className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-3 py-2.5 text-sm text-white hover:bg-blue-700">Uredi oglas</button>
                     )}
                     {ad.userId === currentUser?.id && (
                       <button type="button" onClick={() => deleteAd(ad.id, setErrorMessage)} className="bg-red-500 inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 px-3 py-2.5 text-sm text-gray-200 hover:bg-white/5">

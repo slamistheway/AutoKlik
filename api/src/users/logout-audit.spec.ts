@@ -1,15 +1,15 @@
 import { BadRequestException, UnauthorizedException } from '@nestjs/common';
 import type { INestApplication } from '@nestjs/common';
 import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
-import { JwtModule, JwtService } from '@nestjs/jwt';
+
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
-import { createHash } from 'crypto';
+
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
 import { RegistrationAttemptsService } from './registration-attempts.service';
-import { SessionsService } from './sessions.service';
-import { JwtStrategy } from './jwt.strategy';
+import { BetterAuthService } from '../auth/better-auth.service';
+
 import { AuditService } from '../audit/audit.service';
 import { AuditInterceptor } from '../audit/interceptors/audit.interceptor';
 import { AuthAuditExceptionFilter } from '../audit/auth-audit-exception.filter';
@@ -20,22 +20,36 @@ import { AdFetchRateLimitGuard } from '../ads/ad-fetch-rate-limit.guard';
 
 describe('Server logout and audit events', () => {
   let app: INestApplication;
-  let jwt: JwtService;
+  let sessionIssuer: { sign: (user: { id: number; jti?: string }) => string };
   let audit: { record: jest.Mock };
-  let sessions: { assertActive: jest.Mock; logout: jest.Mock };
+  let sessions: { authenticate: jest.Mock; logout: jest.Mock };
   let ads: { create: jest.Mock; deleteAd: jest.Mock; update: jest.Mock };
 
   beforeEach(async () => {
     const revoked = new Set<string>();
     audit = { record: jest.fn().mockResolvedValue(undefined) };
+    const identities = new Map<string, number>();
+    sessionIssuer = {
+      sign: (user) => {
+        const token = user.jti ?? `test-session-${identities.size}`;
+        identities.set(token, user.id);
+        return token;
+      },
+    };
     sessions = {
-      assertActive: jest.fn((hash: string) => {
-        if (revoked.has(hash)) throw new UnauthorizedException();
+      authenticate: jest.fn((req: { headers: { authorization?: string } }) => {
+        const token = req.headers.authorization?.replace(/^Bearer /, '');
+        return token && identities.has(token) && !revoked.has(token)
+          ? { id: identities.get(token), sessionId: token }
+          : null;
       }),
       logout: jest.fn(
-        async (hash: string, id: number, _expiry: number, ip: string) => {
-          revoked.add(hash);
-          await audit.record('logout', '/users/logout', id, ip);
+        async (req: {
+          user: { id: number; sessionId: string };
+          ip: string;
+        }) => {
+          revoked.add(req.user.sessionId);
+          await audit.record('logout', '/users/logout', req.user.id, req.ip);
           return { message: 'Odjava uspješna.' };
         },
       ),
@@ -46,16 +60,9 @@ describe('Server logout and audit events', () => {
       deleteAd: jest.fn().mockResolvedValue({ message: 'Deleted' }),
     };
     const module = await Test.createTestingModule({
-      imports: [
-        JwtModule.register({
-          secret: process.env.JWT_SECRET ?? 'dev_jwt_secret',
-          signOptions: { expiresIn: '1h' },
-        }),
-      ],
       controllers: [UsersController, AdsController],
       providers: [
-        JwtStrategy,
-        { provide: SessionsService, useValue: sessions },
+        { provide: BetterAuthService, useValue: sessions },
         { provide: AuditService, useValue: audit },
         { provide: AdsService, useValue: ads },
         {
@@ -87,7 +94,7 @@ describe('Server logout and audit events', () => {
       .overrideGuard(AdFetchRateLimitGuard)
       .useValue({ canActivate: () => true })
       .compile();
-    jwt = module.get(JwtService);
+
     app = module.createNestApplication();
     app.useGlobalPipes(new InputValidationPipe());
     await app.init();
@@ -98,8 +105,8 @@ describe('Server logout and audit events', () => {
   });
 
   it('revokes the current session, records logout once, and leaves other sessions active', async () => {
-    const token = jwt.sign({ id: 7, jti: 'session-one' });
-    const other = jwt.sign({ id: 7, jti: 'session-two' });
+    const token = sessionIssuer.sign({ id: 7, jti: 'session-one' });
+    const other = sessionIssuer.sign({ id: 7, jti: 'session-two' });
     await request(app.getHttpServer())
       .get('/users/me')
       .set('Authorization', `Bearer ${token}`)
@@ -109,10 +116,7 @@ describe('Server logout and audit events', () => {
       .set('Authorization', `Bearer ${token}`)
       .expect(201);
     expect(sessions.logout).toHaveBeenCalledWith(
-      createHash('sha256').update(token).digest('hex'),
-      7,
-      expect.any(Number),
-      expect.any(String),
+      expect.objectContaining({ user: { id: 7, sessionId: 'session-one' } }),
     );
     expect(audit.record).toHaveBeenCalledTimes(1);
     await request(app.getHttpServer())
@@ -152,7 +156,7 @@ describe('Server logout and audit events', () => {
   });
 
   it('audits successful ad mutations using the authenticated actor, and does not audit failed deletion as success', async () => {
-    const token = jwt.sign({ id: 7 });
+    const token = sessionIssuer.sign({ id: 7 });
     await request(app.getHttpServer())
       .post('/ads')
       .set('Authorization', `Bearer ${token}`)
@@ -194,31 +198,6 @@ describe('Server logout and audit events', () => {
     expect(audit.record).toHaveBeenCalledTimes(count);
   });
 
-  it('persists revocation and the logout audit in the same database transaction', async () => {
-    const values = jest.fn().mockReturnValue({
-      onConflictDoNothing: jest.fn().mockResolvedValue(undefined),
-    });
-    const insert = jest.fn().mockReturnValue({ values });
-    const transaction = jest.fn(
-      async (callback: (tx: unknown) => Promise<void>) => callback({ insert }),
-    );
-    const service = new SessionsService({
-      transaction,
-    } as unknown as ConstructorParameters<typeof SessionsService>[0]);
-    await service.logout('hashed-token', 7, 2000000000, '192.0.2.1');
-    expect(transaction).toHaveBeenCalledTimes(1);
-    expect(values).toHaveBeenCalledWith({
-      tokenHash: 'hashed-token',
-      expiresAt: new Date(2000000000000),
-    });
-    expect(values).toHaveBeenCalledWith({
-      action: 'logout',
-      path: '/users/logout',
-      userId: 7,
-      ip: '192.0.2.1',
-    });
-  });
-
   it('requires authentication for edits and audits the authenticated ad/profile actor', async () => {
     await request(app.getHttpServer())
       .patch('/ads/5')
@@ -228,7 +207,7 @@ describe('Server logout and audit events', () => {
       .patch('/users/me')
       .send({ firstName: 'Ana' })
       .expect(401);
-    const token = jwt.sign({ id: 7 });
+    const token = sessionIssuer.sign({ id: 7 });
     await request(app.getHttpServer())
       .patch('/ads/5')
       .set('Authorization', `Bearer ${token}`)
@@ -260,20 +239,5 @@ describe('Server logout and audit events', () => {
       .send({ title: 'Updated' })
       .expect(400);
     expect(audit.record).toHaveBeenCalledTimes(count);
-  });
-
-  it('rejects a token found in persistent revocation storage', async () => {
-    const limit = jest.fn().mockResolvedValue([{ tokenHash: 'revoked' }]);
-    const db = {
-      select: () => ({ from: () => ({ where: () => ({ limit }) }) }),
-    };
-    const service = new SessionsService(
-      db as unknown as ConstructorParameters<typeof SessionsService>[0],
-    );
-    await expect(service.assertActive('revoked')).rejects.toMatchObject({
-      status: 401,
-    });
-    limit.mockResolvedValueOnce([]);
-    await expect(service.assertActive('active')).resolves.toBeUndefined();
   });
 });

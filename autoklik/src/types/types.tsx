@@ -21,6 +21,7 @@ export type AdCardData = {
     model: string | '';
     year: number | null;
     price: string | '';
+    enginePower: number | null;
     kilometrage: number | null;
 
     fuel: string | '';
@@ -48,5 +49,6 @@ export type AdCardData = {
 };
 
 export type AdFullData = AdCardData & {
+    enginePower?: number | null;
     images: string[];
 };

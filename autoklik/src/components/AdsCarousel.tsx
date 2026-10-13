@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
-import { ArrowLeftIcon, ArrowRightIcon } from 'lucide-react';
+import {ArrowBigLeft, ArrowBigRight, ArrowLeftIcon, ArrowRightIcon} from 'lucide-react';
 import { AdCard } from '@/components/adCard';
 import {AdCardData} from "@/types/types";
 
@@ -61,22 +61,20 @@ export function AdsCarousel({ ads, errorMessage, currentUserId }: AdsCarouselPro
 
 
     return (
-    <div className="mt-6 grid grid-cols-[40px_minmax(0,1fr)_40px] items-stretch gap-3">
+    <div className="mt-3 grid grid-cols-[40px_minmax(0,1fr)_40px] items-stretch gap-3">
       <button
         type="button"
         onClick={goLeft}
         disabled={!canGoLeft}
         aria-label="Prethodna stranica oglasa"
-        className="flex h-full w-full items-center justify-center rounded-xl border border-gray-200 bg-white text-[var(--color-navbar)] shadow-sm transition enabled:hover:border-[var(--color-navbar)] enabled:hover:bg-[var(--color-navbar)] enabled:hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-navbar)] disabled:cursor-not-allowed disabled:text-gray-300 disabled:shadow-none"
+        className="w-full rounded-full my-auto mx-auto items-center  justify-center text-[var(--color-navbar)] transition enabled:hover:bg-[rgb(0,0,0,0.2)] enabled:hover:scale-120  focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-navbar)] disabled:text-gray-300 disabled:shadow-none"
       >
-        <ArrowLeftIcon className="h-5 w-5" aria-hidden="true" />
+          <ArrowBigLeft className="size-full" aria-hidden="true" />
       </button>
 
       <div className="overflow-hidden">
         {errorMessage && <p role="alert" className="mb-4 text-sm text-red-700">{errorMessage}</p>}
 
-        {/* Track: each page is 100% wide, holding two rows of ad cards. Sliding the track
-            left/right by one page width is what produces the "swipe out, swipe in" effect. */}
         <div
           className="flex transition-transform duration-500 ease-in-out"
           style={{ transform: `translateX(-${activePage * 100}%)` }}
@@ -99,9 +97,9 @@ export function AdsCarousel({ ads, errorMessage, currentUserId }: AdsCarouselPro
         onClick={goRight}
         disabled={!canGoRight}
         aria-label="Sljedeća stranica oglasa"
-        className="flex h-full w-full items-center justify-center rounded-xl border border-gray-200 bg-white text-[var(--color-navbar)] shadow-sm transition enabled:hover:border-[var(--color-navbar)] enabled:hover:bg-[var(--color-navbar)] enabled:hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-navbar)] disabled:cursor-not-allowed disabled:text-gray-300 disabled:shadow-none"
+        className="w-full rounded-full my-auto mx-auto items-center  justify-center text-[var(--color-navbar)] transition enabled:hover:bg-[rgb(0,0,0,0.2)] enabled:hover:scale-120  focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-navbar)] disabled:text-gray-300 disabled:shadow-none"
       >
-        <ArrowRightIcon className="h-5 w-5" aria-hidden="true" />
+          <ArrowBigRight className="size-full" aria-hidden="true" />
       </button>
     </div>
   );

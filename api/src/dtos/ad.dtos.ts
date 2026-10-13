@@ -24,6 +24,7 @@ export class CreateAdDto {
     year!: number;
 }
 export class AdsQueryDto {
+    fuel?: string;
     category?: string;
     subcategory?: string;
     brands?: string;
@@ -37,6 +38,7 @@ export class AdsQueryDto {
 
 export class UpdateAdDto {
     retainedImages?: string;
+    imageOrder?: string;
     category?: string;
     subcategory?: string;
     brand?: string;

@@ -530,6 +530,7 @@ export default function DetailsPage() {
                 <FilterCounty mode="single" value={adFormModel.county ? [adFormModel.county] : []} onChange={value => updateField('county', value[0] ?? '')} />
                 <FilterChoose filterType="gear" value={adFormModel.gearType} onChange={value => updateField('gearType', String(value))} />
                 <FilterChoose filterType="sellerType" value={adFormModel.sellerType} onChange={value => updateField('sellerType', String(value))} />
+                <FilterChoose filterType="fuel" value={adFormModel.fuel} onChange={value => updateField('fuel', String(value))} />
 
                 
                 {/*     <FilterChoose filterType="buyOrLease" value={buyOrLease} onChange={value => setBuyOrLease(String(value))} />

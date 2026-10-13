@@ -1,5 +1,5 @@
 import { Logger } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
+import type { BetterAuthService } from '../auth/better-auth.service';
 import * as bcrypt from 'bcrypt';
 import { LoginAttemptsService } from './login-attempts.service';
 import { UsersService } from './users.service';
@@ -7,7 +7,7 @@ import { UsersController } from './users.controller';
 import { RegistrationAttemptsService } from './registration-attempts.service';
 import type { Response } from 'express';
 import type { Request } from 'express';
-import type { SessionsService } from './sessions.service';
+
 import type { AuditService } from '../audit/audit.service';
 
 jest.mock('bcrypt', () => ({ compare: jest.fn(), hash: jest.fn() }));
@@ -34,10 +34,15 @@ describe('failed login cooldown', () => {
     const db = {
       select: () => ({ from: () => ({ where: () => ({ limit }) }) }),
     };
-    const jwt = { sign: jest.fn().mockReturnValue('token') };
+    const auth = {
+      signIn: jest.fn(async () => {
+        if (!(await compare())) throw { statusCode: 401 };
+        return { token: 'token' };
+      }),
+    };
     service = new UsersService(
       db as unknown as ConstructorParameters<typeof UsersService>[0],
-      jwt as unknown as JwtService,
+      auth as unknown as BetterAuthService,
       new LoginAttemptsService(),
       { recordLogin: jest.fn() } as unknown as AuditService,
     );
@@ -120,11 +125,15 @@ describe('failed login cooldown', () => {
     const controller = new UsersController(
       service,
       new RegistrationAttemptsService(new LoginAttemptsService()),
-      {} as SessionsService,
+      {} as BetterAuthService,
     );
     const response = { setHeader: jest.fn() };
     await expect(
-      controller.login(dto, { ip: '192.0.2.1' } as Request, response as unknown as Response),
+      controller.login(
+        dto,
+        { ip: '192.0.2.1' } as Request,
+        response as unknown as Response,
+      ),
     ).rejects.toMatchObject({ status: 429 });
     expect(response.setHeader).toHaveBeenCalledWith('Retry-After', 900);
   });

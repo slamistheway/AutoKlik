@@ -71,6 +71,20 @@
       "when": 1791576585939,
       "tag": "0009_logout_sessions",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791667925499,
+      "tag": "0010_concerned_nova",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1791900779481,
+      "tag": "0011_ad_engine_power",
+      "breakpoints": true
     }
   ]
 }

@@ -26,7 +26,7 @@ export class AuditInterceptor implements NestInterceptor {
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
     const { method, user } = request;
     const path = request.originalUrl.split('?')[0].replace(/\/$/, '');
-    // Logout is recorded atomically with token revocation.
+    // The authentication service records logout after revoking the session.
     if (method === 'POST' && path === '/users/logout') return next.handle();
     if (!user || !['POST', 'PATCH', 'DELETE'].includes(method))
       return next.handle();

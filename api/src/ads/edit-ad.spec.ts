@@ -113,6 +113,18 @@ describe('Published ad editing', () => {
     expect(set).not.toHaveBeenCalled();
   });
 
+  it('preserves mixed existing/new image order and rejects invalid ordering', async () => {
+    const { service, set, insertValues } = setup();
+    await service.update(5, 7, {
+      enginePower: 150,
+      retainedImages: '["ad-images/second.jpg"]',
+      imageOrder: '["new:0","ad-images/second.jpg"]',
+    }, ['ad-images/new.jpg']);
+    expect(set).toHaveBeenCalledWith(expect.objectContaining({ enginePower: 150, previewImg: 'ad-images/new.jpg' }));
+    expect(insertValues).toHaveBeenCalledWith([{ adId: 5, imageUrl: 'ad-images/new.jpg' }, { adId: 5, imageUrl: 'ad-images/second.jpg' }]);
+    await expect(service.update(5, 7, { retainedImages: '["ad-images/second.jpg"]', imageOrder: '["new:99"]' }, ['new.jpg'])).rejects.toMatchObject({ status: 400 });
+  });
+
   it('rejects ownership changes and empty mandatory fields', async () => {
     expect(() => validateInput({ user_id: 8 }, 'UpdateAdDto')).toThrow();
     await expect(

@@ -1,7 +1,11 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
-import Image from 'next/image';
+import { useRef, useState, type FormEvent } from 'react';
+import FilterBrands from '@/components/filters/filter-brands';
+import FilterModels from '@/components/filters/filter-models';
+import FilterNumeric from '@/components/filters/filter-numeric';
+import FilterChoose from '@/components/filters/filter-choose';
+import FilterCounty from '@/components/filters/filter-county';
 import type { AdFullData } from '@/types/types';
 import { toAdFullData } from '@/shared/ad-data';
 import { resolve_api_ad_img } from '@/shared/functions';
@@ -10,7 +14,7 @@ import { API_BASE_URL, getResponseMessage } from '@/pages/myProfile/account-api'
 
 const fields = [
   ['title', 'Naslov', 'text'], ['brand', 'Marka', 'text'], ['model', 'Model', 'text'],
-  ['year', 'Godina', 'number'], ['price', 'Cijena (€)', 'number'], ['kilometrage', 'Kilometraža', 'number'],
+  ['year', 'Godina', 'number'], ['price', 'Cijena (€)', 'number'], ['kilometrage', 'Kilometraža', 'number'], ['enginePower', 'Snaga motora', 'number'],
   ['fuel', 'Gorivo', 'text'], ['condition', 'Stanje', 'text'], ['county', 'Županija', 'text'],
   ['sellerType', 'Vrsta prodavača', 'text'], ['buyOrLease', 'Kupnja ili leasing', 'text'],
   ['gearType', 'Mjenjač', 'text'], ['color', 'Boja', 'text'], ['doorNumber', 'Broj vrata', 'number'],
@@ -24,22 +28,24 @@ export default function EditAdForm({ ad, onSaved, onCancel }: {
 }) {
   const [values, setValues] = useState(() => Object.fromEntries(fields.map(([key]) => [key, String(ad[key] ?? '')])) as Record<Field, string>);
   const [description, setDescription] = useState(ad.description);
-  const [retainedImages, setRetainedImages] = useState([...ad.images]);
-  const [files, setFiles] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [images, setImages] = useState<{ url: string; file?: File }[]>(() => ad.images.map(url => ({ url })));
+  const updateField = (key: Field, value: string) => setValues(current => ({ ...current, [key]: value }));
   const [saving, setSaving] = useState(false);
+  const [readingImages, setReadingImages] = useState(false);
   const [error, setError] = useState('');
 
   const moveImage = (index: number, direction: number) => {
     const target = index + direction;
-    if (target < 0 || target >= retainedImages.length) return;
-    const next = [...retainedImages];
+    if (target < 0 || target >= images.length) return;
+    const next = [...images];
     [next[index], next[target]] = [next[target], next[index]];
-    setRetainedImages(next);
+    setImages(next);
   };
 
   const save = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (saving) return;
+    if (saving || readingImages) return;
     const token = sessionCookie.getSessionToken();
     if (!token) { setError('Niste prijavljeni.'); return; }
     setSaving(true);
@@ -54,7 +60,9 @@ export default function EditAdForm({ ad, onSaved, onCancel }: {
         body.append(key, values[key]);
       }
       body.append('description', description);
-      body.append('retainedImages', JSON.stringify(retainedImages));
+      const files = images.filter(image => image.file).map(image => image.file!);
+      body.append('retainedImages', JSON.stringify(images.filter(image => !image.file).map(image => image.url)));
+      body.append('imageOrder', JSON.stringify(images.map(image => image.file ? `new:${files.indexOf(image.file)}` : image.url)));
       files.forEach(file => body.append('images', file));
       const response = await fetch(`${API_BASE_URL}/ads/${ad.id}`, {
         method: 'PATCH', headers: { Authorization: `Bearer ${token}` }, body,
@@ -70,47 +78,70 @@ export default function EditAdForm({ ad, onSaved, onCancel }: {
     <section className="mb-6 rounded-2xl bg-white p-5 text-gray-900 sm:p-6" aria-label="Uređivanje oglasa">
       <h2 className="mb-4 text-xl font-bold">Uredi oglas</h2>
       <form onSubmit={save}>
-        <fieldset disabled={saving} className="space-y-4 disabled:opacity-60">
-          <div className="grid gap-4 sm:grid-cols-2">
-            {fields.map(([key, label, type]) => (
-              <label key={key} className="block text-sm font-medium">
-                {label}
-                <input type={type} value={values[key]} required={['title', 'brand', 'model', 'year'].includes(key)}
-                  min={type === 'number' ? key === 'year' ? 1886 : 0 : undefined}
-                  max={key === 'year' ? 2100 : undefined} step={key === 'price' ? '0.01' : type === 'number' ? 1 : undefined}
-                  maxLength={key === 'title' ? 200 : type === 'text' ? 100 : undefined}
-                  onChange={event => setValues(current => ({ ...current, [key]: event.target.value }))}
-                  className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2" />
-              </label>
-            ))}
-          </div>
-          <label className="block text-sm font-medium">Opis
-            <textarea value={description} maxLength={10000} rows={6} onChange={event => setDescription(event.target.value)} className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2" />
-          </label>
+        <fieldset disabled={saving || readingImages} className="space-y-4 disabled:opacity-60">
           <div>
-            <p className="mb-2 font-medium">Slike (najviše 10, do 5 MB po slici)</p>
-            <div className="flex flex-wrap gap-3">
-              {retainedImages.map((url, index) => (
-                <div key={url} className="rounded-md border p-2">
-                  <Image src={resolve_api_ad_img(url)} alt={`Slika ${index + 1}`} width={120} height={90} unoptimized className="h-24 object-cover" />
-                  <div className="mt-2 flex gap-2 text-sm">
-                    <button type="button" disabled={index === 0} onClick={() => moveImage(index, -1)} aria-label="Pomakni sliku lijevo">←</button>
-                    <button type="button" disabled={index === retainedImages.length - 1} onClick={() => moveImage(index, 1)} aria-label="Pomakni sliku desno">→</button>
-                    <button type="button" onClick={() => setRetainedImages(current => current.filter(image => image !== url))}>Ukloni</button>
-                  </div>
-                </div>
-              ))}
+            <h1 className="block text-sm font-medium text-gray-700">Opći podaci</h1>
+            <div className="grid grid-cols-1 gap-x-5 gap-y-6 sm:grid-cols-2 lg:grid-cols-4">
+              <FilterBrands title="Marka" selectedVehicle_type={ad.category || 'cars'} mode="single" value={values.brand ? [values.brand] : []} onChange={value => updateField('brand', value[0] ?? '')} />
+              <FilterModels title="Model" selectedVehicle_type={ad.category || 'cars'} selectedBrands={values.brand ? [values.brand] : []} mode="single" value={values.model ? [values.model] : []} onChange={value => updateField('model', value[0] ?? '')} />
+              <FilterNumeric filterType="enginePower" mode="single" value={values.enginePower} onChange={value => updateField('enginePower', value)} />
+              <FilterNumeric filterType="price" mode="single" value={values.price} onChange={value => updateField('price', value)} />
+              <FilterNumeric filterType="year" mode="single" value={values.year} onChange={value => updateField('year', value)} />
+              <FilterNumeric filterType="kilometrage" mode="single" value={values.kilometrage} onChange={value => updateField('kilometrage', value)} />
+              <FilterChoose filterType="condition" value={values.condition} onChange={value => updateField('condition', value)} />
+              <FilterCounty mode="single" value={values.county ? [values.county] : []} onChange={value => updateField('county', value[0] ?? '')} />
+              <FilterChoose filterType="gear" value={values.gearType} onChange={value => updateField('gearType', value)} />
+              <FilterChoose filterType="sellerType" value={values.sellerType} onChange={value => updateField('sellerType', value)} />
+              <FilterChoose filterType="fuel" value={values.fuel} onChange={value => updateField('fuel', value)} />
             </div>
-            {files.map((file, index) => <div key={`${file.name}-${index}`} className="mt-2 text-sm">{file.name} <button type="button" onClick={() => setFiles(current => current.filter((_, position) => position !== index))}>Ukloni</button></div>)}
-            <input type="file" multiple accept="image/jpeg,image/png,image/webp" className="mt-3" onChange={event => {
+          </div>
+          <div className="flex flex-col gap-4">
+            <button type="button" onClick={() => fileInputRef.current?.click()} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition w-fit">Odaberite slike</button>
+            <input ref={fileInputRef} type="file" multiple accept="image/jpeg,image/png,image/webp" className="hidden" onChange={async event => {
               const selected = Array.from(event.target.files ?? []);
               event.target.value = '';
               if (selected.some(file => file.size > 5 * 1024 * 1024 || !['image/jpeg', 'image/png', 'image/webp'].includes(file.type))) {
                 setError('Odaberite JPEG, PNG ili WebP slike do 5 MB.'); return;
               }
-              if (retainedImages.length + files.length + selected.length > 10) { setError('Oglas može imati najviše 10 slika.'); return; }
-              setFiles(current => [...current, ...selected]); setError('');
+              if (images.length + selected.length > 10) { setError('Oglas može imati najviše 10 slika.'); return; }
+              setReadingImages(true);
+              try {
+                const previews = await Promise.all(selected.map(file => new Promise<{ url: string; file: File }>((resolve, reject) => {
+                  const reader = new FileReader();
+                  reader.onload = () => resolve({ url: String(reader.result), file });
+                  reader.onerror = () => reject(new Error('Slika se nije mogla učitati.'));
+                  reader.readAsDataURL(file);
+                })));
+                setImages(current => [...current, ...previews]); setError('');
+              } catch (error) { setError(error instanceof Error ? error.message : 'Slike se nisu mogle učitati.'); }
+              finally { setReadingImages(false); }
             }} />
+            <div className="rounded-lg border-2 border-dashed p-4 min-h-[220px] bg-gray-50 border-gray-300">
+              {images.length > 0 ? <>
+                <h1 className="mb-3 font-medium">Fotografije pridružene uz oglas</h1>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {images.map((image, index) => <div key={`${image.url}-${index}`} className="border rounded-lg overflow-hidden p-2 bg-white shadow-sm">
+                    <div className="w-full aspect-[4/3] border rounded-lg overflow-hidden bg-black flex items-center justify-center">
+                      <img src={image.file ? image.url : resolve_api_ad_img(image.url)} alt={`Fotografija ${index + 1}`} className="w-full h-full object-contain" />
+                    </div>
+                    <div className="mt-2 flex w-full flex-wrap items-center gap-2 overflow-hidden">
+                      <span className={`px-4 py-1 border rounded ${index === 0 ? 'bg-amber-300' : ''}`}>{index + 1}</span>
+                      <button type="button" onClick={() => moveImage(index, -1)} disabled={index === 0} aria-label="Pomakni sliku lijevo" className="px-4 py-1 border rounded disabled:opacity-50">←</button>
+                      <button type="button" onClick={() => moveImage(index, 1)} disabled={index === images.length - 1} aria-label="Pomakni sliku desno" className="px-4 py-1 border rounded disabled:opacity-50">→</button>
+                      <button type="button" onClick={() => setImages(current => current.filter((_, position) => position !== index))} className="px-4 py-1 border rounded text-red-600 max-w-full">Delete</button>
+                    </div>
+                  </div>)}
+                </div>
+              </> : <div className="flex min-h-[170px] items-center justify-center text-gray-500">Priložite fotografije.</div>}
+            </div>
+          </div>
+          <div>
+            <label htmlFor="title" className="block text-sm font-medium text-gray-700">Naslov</label>
+            <input id="title" name="title" type="text" required minLength={5} maxLength={200} value={values.title} onChange={event => updateField('title', event.target.value)} className="mt-1 block w-full rounded-md border px-3 py-2 focus:border-red-600 focus:outline-none border-gray-300" />
+          </div>
+          <div>
+            <label htmlFor="description" className="block text-sm font-medium text-gray-700">Description</label>
+            <textarea id="description" name="description" required minLength={10} maxLength={10000} rows={5} value={description} onChange={event => setDescription(event.target.value)} className="mt-1 block w-full rounded-md border px-3 py-2 focus:border-red-600 focus:outline-none border-gray-300" />
           </div>
           {error && <p role="alert" className="text-red-700">{error}</p>}
           <div className="flex gap-3">

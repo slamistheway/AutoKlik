@@ -14,8 +14,8 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { AdsService } from './ads.service';
-import { JwtAuthGuard } from '../users/guards/jwt-auth.guard';
-import { OptionalJwtAuthGuard } from '../users/guards/optional-jwt-auth.guard';
+import { SessionAuthGuard } from '../auth/session-auth.guard';
+import { OptionalSessionAuthGuard } from '../auth/session-auth.guard';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { mkdirSync } from 'fs';
@@ -76,7 +76,7 @@ export class AdsController {
   /*-------------------------------------------CREATE---------------------------------------------*/
   /*-------------------------------------------CREATE---------------------------------------------*/
   /*-------------------------------------------CREATE---------------------------------------------*/
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(SessionAuthGuard)
   @UseInterceptors(FilesInterceptor('images', 10, { storage: adImageStorage }))
   @Post()
   create(
@@ -115,14 +115,14 @@ export class AdsController {
     );
   }
 
-  @UseGuards(JwtAuthGuard, AdFetchRateLimitGuard)
+  @UseGuards(SessionAuthGuard, AdFetchRateLimitGuard)
   @Get('me')
   @SkipThrottle({ default: true, burst: true })
   findMyAds(@Req() req: any) {
     return this.adService.fetchAllAdsByUserId(Number(req.user?.id));
   }
 
-  @UseGuards(JwtAuthGuard, AdFetchRateLimitGuard)
+  @UseGuards(SessionAuthGuard, AdFetchRateLimitGuard)
   @Get('me/saved')
   @SkipThrottle({ default: true, burst: true })
   findMySavedAds(@Req() req: any) {
@@ -133,7 +133,7 @@ export class AdsController {
   /*-------------------------------------------READ---------------------------------------------*/
   /*-------------------------------------------READ---------------------------------------------*/
   /*-------------------------------------------READ---------------------------------------------*/
-  @UseGuards(OptionalJwtAuthGuard, AdFetchRateLimitGuard)
+  @UseGuards(OptionalSessionAuthGuard, AdFetchRateLimitGuard)
   @Get('all')
   @SkipThrottle({ default: true, burst: true })
   findAllAds(
@@ -144,6 +144,7 @@ export class AdsController {
     const filters = {
       category: query.category,
       subcategory: query.subcategory,
+      fuel: query.fuel,
       brands: query.brands,
       models: query.models,
       yearMin: query.yearMin === undefined ? undefined : String(query.yearMin),
@@ -154,22 +155,29 @@ export class AdsController {
     return this.adService.findAllAds(req.user?.id, filters);
   }
 
-  @UseGuards(OptionalJwtAuthGuard, AdFetchRateLimitGuard)
+  @UseGuards(OptionalSessionAuthGuard, AdFetchRateLimitGuard)
   @Get('featured')
   @SkipThrottle({ default: true, burst: true })
   findFeaturedAds(@Req() req: any,) {
     return this.adService.findFeaturedAds(req.user?.id);
   }
 
+  @UseGuards(OptionalSessionAuthGuard, AdFetchRateLimitGuard)
+  @Get('recommended')
+  @SkipThrottle({ default: true, burst: true })
+  findRecommendedAds(@Req() req: any) {
+    return this.adService.findRecommendedAds(req.user?.id);
+  }
 
-  @UseGuards(OptionalJwtAuthGuard, AdFetchRateLimitGuard)
+
+  @UseGuards(OptionalSessionAuthGuard, AdFetchRateLimitGuard)
   @Get(':id')
   @SkipThrottle({ default: true, burst: true })
   findOne(@Param('id') id: string) {
     return this.adService.findOne(+id);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(SessionAuthGuard)
   @UseInterceptors(FilesInterceptor('images', 10, {
     storage: adImageStorage,
     limits: { fileSize: 5 * 1024 * 1024 },
@@ -186,24 +194,24 @@ export class AdsController {
     return this.adService.update(+id, Number(req.user?.id), updateAdDto, files.map(file => `ad-images/${file.filename}`));
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(SessionAuthGuard)
   @Delete(':id')
   remove(@Param('id') id: string, @Req() req: any) {
     return this.adService.deleteAd(+id, Number(req.user?.id));
   }
 
   /*--------------------------SAVING ADS FOR USERS---------------------------------*/
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(SessionAuthGuard)
   @Post('save/:adId')
   saveAd(@Param('adId') adId: string, @Req() req: any) {
     return this.adService.saveAd(Number(req.user?.id), +adId);
   }
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(SessionAuthGuard)
   @Delete('save/:adId')
   unsaveAd(@Param('adId') adId: string, @Req() req: any) {
     return this.adService.unsaveAd(Number(req.user?.id), +adId);
   }
-  @UseGuards(JwtAuthGuard, AdFetchRateLimitGuard)
+  @UseGuards(SessionAuthGuard, AdFetchRateLimitGuard)
   @Get('saved/:adId')
   @SkipThrottle({ default: true, burst: true })
   checkIfSaved(@Param('adId') adId: string, @Req() req: any) {
@@ -216,7 +224,7 @@ export class AdsController {
   /*-------------------------------------------DELETE---------------------------------------------*/
 
   /*--------------------------DELETING ADS---------------------------------*/
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(SessionAuthGuard)
   @Delete('delete/:adId')
   deleteAd(@Param('adId') adId: string, @Req() req: any) {
     return this.adService.deleteAd(+adId, Number(req.user?.id));

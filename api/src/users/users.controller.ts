@@ -12,8 +12,8 @@ import {
     UseInterceptors,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { SessionsService } from './sessions.service';
-import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { BetterAuthService } from '../auth/better-auth.service';
+import { SessionAuthGuard } from '../auth/session-auth.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
@@ -23,6 +23,8 @@ import type { Response, Request as ExpressRequest } from 'express';
 import { RegistrationAttemptsService } from './registration-attempts.service';
 import { ConversationDto, SendMessageDto, MessageImageDto, ReadMessagesDto } from '../dtos/message.dto';
 import {LoginDto, RegisterDto, UpdateProfileDto} from "../dtos/user.dtos";
+import { ForgotPasswordDto, ResetPasswordDto } from '../dtos/user.dtos';
+import { Throttle } from '@nestjs/throttler';
 
 
 @Controller('users')
@@ -32,11 +34,11 @@ export class UsersController {
     constructor(
         private readonly usersService: UsersService,
         private readonly registrationAttempts: RegistrationAttemptsService,
-        private readonly sessions: SessionsService,
+        private readonly auth: BetterAuthService,
     ) {
     }
 
-    @UseGuards(JwtAuthGuard)
+    @UseGuards(SessionAuthGuard)
     @Get('me')
     getMe(@Request() req: any) {
         return this.usersService.getMe(Number(req.user.id));
@@ -44,10 +46,22 @@ export class UsersController {
 
 
 
-    @UseGuards(JwtAuthGuard)
+    @UseGuards(SessionAuthGuard)
     @Post('logout')
-    logout(@Request() req: ExpressRequest & { user: { id: number; tokenHash: string; exp: number } }) {
-        return this.sessions.logout(req.user.tokenHash, req.user.id, req.user.exp, req.ip ?? req.socket.remoteAddress ?? null);
+    logout(@Request() req: ExpressRequest & { user: { id: number; sessionId: string } }) {
+        return this.auth.logout(req);
+    }
+
+    @Post('forgot-password')
+    @Throttle({ default: { limit: 5, ttl: 60000, blockDuration: 60000, generateKey: (_context, tracker) => `password-reset-request:${tracker}` } })
+    forgotPassword(@Body() dto: ForgotPasswordDto) {
+        return this.auth.forgotPassword(dto.email);
+    }
+
+    @Post('reset-password')
+    @Throttle({ default: { limit: 10, ttl: 60000, blockDuration: 60000, generateKey: (_context, tracker) => `password-reset-confirm:${tracker}` } })
+    resetPassword(@Body() dto: ResetPasswordDto) {
+        return this.auth.resetPassword(dto.token, dto.newPassword);
     }
 
     @Post('register')
@@ -79,7 +93,7 @@ export class UsersController {
     }
 
 
-    @UseGuards(JwtAuthGuard)
+    @UseGuards(SessionAuthGuard)
     @Post('me/upload-pfp')
     @UseInterceptors(
         FileInterceptor('file', {
@@ -113,13 +127,13 @@ export class UsersController {
         return this.usersService.updatePfp(Number(req.user.id), `pfp/${file.filename}`);
     }
 
-    @UseGuards(JwtAuthGuard)
+    @UseGuards(SessionAuthGuard)
     @Patch('me')
     updateMe(@Request() req: any, @Body() updateProfileDto: UpdateProfileDto) {
         return this.usersService.updateProfile(Number(req.user.id), updateProfileDto);
     }
 
-    @UseGuards(JwtAuthGuard)
+    @UseGuards(SessionAuthGuard)
     @Delete('me')
     deleteMe(@Request() req: any) {
         return this.usersService.deleteMe(Number(req.user.id));
@@ -127,7 +141,7 @@ export class UsersController {
 
 
     /*------------------------------------MESSAGGES-------------------------------------------------*/
-    @UseGuards(JwtAuthGuard)
+    @UseGuards(SessionAuthGuard)
     @Get('getConversations')
     async getConversations(@Request() req: any) {
         try {
@@ -138,7 +152,7 @@ export class UsersController {
         }
     }
 
-    @UseGuards(JwtAuthGuard)
+    @UseGuards(SessionAuthGuard)
     @Post('addConversation')
     async addConversation(@Request() req: any, @Body() body: ConversationDto) {
         const userId = Number(req.user.id);
@@ -146,7 +160,7 @@ export class UsersController {
         return await this.usersService.addConversation(userId, otherUserId);
     }
 
-    @UseGuards(JwtAuthGuard)
+    @UseGuards(SessionAuthGuard)
     @Post('loadConversation')
     async loadConversation(@Request() req: any, @Body() body: ConversationDto) {
         const userId = Number(req.user.id);
@@ -154,19 +168,19 @@ export class UsersController {
         return await this.usersService.loadConversation(userId, otherUserId);
     }
 
-    @UseGuards(JwtAuthGuard)
+    @UseGuards(SessionAuthGuard)
     @Post('sendMessage')
     async sendMessage(@Request() req: any, @Body() body: SendMessageDto) {
         return await this.usersService.sendMessage(Number(req.user.id), body.conversationId, body.body);
     }
 
-    @UseGuards(JwtAuthGuard)
+    @UseGuards(SessionAuthGuard)
     @Post('markMessagesRead')
     async markMessagesRead(@Request() req: any, @Body() body: ReadMessagesDto) {
         return await this.usersService.markMessagesRead(Number(req.user.id), body.conversationId, body.throughMessageId);
     }
 
-    @UseGuards(JwtAuthGuard)
+    @UseGuards(SessionAuthGuard)
     @Post('sendMessageImage')
     @UseInterceptors(FileInterceptor('image', {
         limits: {
@@ -180,7 +194,7 @@ export class UsersController {
         return await this.usersService.sendMessage(Number(req.user.id), Number(body.conversationId), body.body ?? '', image);
     }
 
-    @UseGuards(JwtAuthGuard)
+    @UseGuards(SessionAuthGuard)
     @Get('messages/:messageId/image')
     @Header('Cache-Control', 'private, no-store')
     @Header('X-Content-Type-Options', 'nosniff')

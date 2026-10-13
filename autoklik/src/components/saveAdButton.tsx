@@ -91,6 +91,7 @@ export function SaveAdButton({
       }
       const nextSaved = !isSaved;
       setIsSaved(nextSaved);
+      window.dispatchEvent(new Event('saved-ads-changed'));
       setMessage(nextSaved ? 'Oglas je spremljen.' : 'Oglas je uklonjen iz spremljenih.');
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Oglas nije moguće spremiti.');

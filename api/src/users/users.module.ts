@@ -2,32 +2,14 @@ import { Module } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { UsersController } from './users.controller';
 import { DrizzleModule } from '../db/drizzle/drizzle.module';
-import {NodePgDatabase} from "drizzle-orm/node-postgres";
-import {JwtModule} from "@nestjs/jwt";
-import {JwtStrategy} from "./jwt.strategy";
 import { LoginAttemptsService } from './login-attempts.service';
 import { RegistrationAttemptsService } from './registration-attempts.service';
 import { AuditModule } from '../audit/audit.module';
-import { SessionsService } from './sessions.service';
-
-const jwtSecret = process.env.JWT_SECRET ?? 'dev_jwt_secret';
-if (!process.env.JWT_SECRET) {
-    console.warn(
-        'Warning: JWT_SECRET is not set. Using development fallback secret. Do not use in production.',
-    );
-}
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
-    imports: [
-        JwtModule.register({
-            secret: jwtSecret,
-            signOptions: { expiresIn: '24h' },
-        }),
-        DrizzleModule,
-        AuditModule,
-    ],
+    imports: [DrizzleModule, AuditModule, AuthModule],
     controllers: [UsersController],
-    providers: [UsersService, JwtStrategy, LoginAttemptsService, RegistrationAttemptsService, SessionsService],
-    exports: [JwtModule],
+    providers: [UsersService, LoginAttemptsService, RegistrationAttemptsService],
 })
 export class UsersModule {}

@@ -13,6 +13,7 @@ type ApiAdData = {
   year?: number | null;
   price?: string | null;
   kilometrage?: number | null;
+  engine_power?: number | null;
   fuel?: string | null;
   condition?: string | null;
   county?: string | null;
@@ -68,5 +69,5 @@ export function toAdCardData(data: unknown): AdCardData {
 
 export function toAdFullData(data: unknown): AdFullData {
   const ad = data as ApiAdData;
-  return { ...toAdCardData(ad), images: ad.images ?? [] };
+  return { ...toAdCardData(ad), enginePower: ad.engine_power ?? null, images: ad.images ?? [] };
 }

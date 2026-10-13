@@ -5,7 +5,9 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import {and, asc, desc, eq, gte, ilike, inArray, lte, or, type SQL,} from 'drizzle-orm';
+import {and, asc, desc, eq, gte, ilike, inArray, lte, ne, notInArray, or, sql, type SQL,} from 'drizzle-orm';
+// import { gt } from 'drizzle-orm';
+// import { buildRecommendationPreferences } from './recommendation-preferences';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { CreateAdDto, UpdateAdDto } from '../dtos/ad.dtos';
 import * as schema from '../db/schema';
@@ -49,6 +51,7 @@ export class AdsService {
       description: ad.description,
       price: ad.price,
       kilometrage: ad.kilometrage,
+      engine_power: ad.enginePower,
       fuel: ad.fuel,
       condition: ad.condition,
       county: ad.county,
@@ -112,6 +115,7 @@ export class AdsService {
   private buildFilterConditions(filters: {
     category?: string;
     subcategory?: string;
+    fuel?: string;
     brands?: string;
     models?: string;
     yearMin?: string;
@@ -128,6 +132,7 @@ export class AdsService {
     const search = filters.search?.trim();
 
     if (category) conditions.push(eq(ads.category, category));
+    if (filters.fuel?.trim()) conditions.push(eq(ads.fuel, filters.fuel.trim()));
     if (subcategory) conditions.push(eq(ads.subcategory, subcategory));
     if (brands.length > 0) conditions.push(inArray(ads.brand, brands));
     if (models.length > 0) conditions.push(inArray(ads.model, models));
@@ -219,6 +224,7 @@ export class AdsService {
           model: model,
           price: String(createAdDto.price),
           kilometrage: createAdDto.kilometrage,
+          enginePower: createAdDto.enginePower ?? null,
           year: year ?? null,
           fuel: createAdDto.fuel || null,
           condition: createAdDto.condition || null,
@@ -273,6 +279,7 @@ export class AdsService {
     filters: {
       category?: string;
       subcategory?: string;
+      fuel?: string;
       brands?: string;
       models?: string;
       yearMin?: string;
@@ -322,6 +329,47 @@ export class AdsService {
         ...ad,
         is_saved: hasUserId ? savedAdIds.has(ad.id) : false,
       }));
+  }
+
+  async findRecommendedAds(userId?: number) {
+    const authenticated = Number.isSafeInteger(userId) && Boolean(userId && userId > 0);
+    // Preference ranking is temporarily disabled; recommendations use random ads.
+    /*
+    const saved = authenticated ? await this.db.select({ ad: ads }).from(savedAds)
+      .innerJoin(ads, eq(ads.id, savedAds.adId))
+      .where(eq(savedAds.userId, userId!)).orderBy(desc(savedAds.dateSaved)).limit(100) : [];
+    const preferences = buildRecommendationPreferences(saved.map(row => row.ad));
+    const terms = preferences.signals.map(({ field, value, weight }) =>
+      sql<number>`case when lower(trim(${ads[field]})) = ${value} then ${weight}::float8 else 0 end`);
+    if (preferences.price !== null) {
+      terms.push(sql<number>`case when ${ads.price} > 0 then greatest(0, 1 - abs(${ads.price}::float8 - ${preferences.price}::float8) / ${preferences.price}::float8) * 2 else 0 end`);
+    }
+    const score = terms.length ? sql<number>`${sql.join(terms, sql` + `)}` : sql<number>`0::float8`;
+    */
+    const eligibility: SQL[] = [];
+    if (authenticated) {
+      const savedIds = this.db.select({ id: savedAds.adId }).from(savedAds).where(eq(savedAds.userId, userId!));
+      eligibility.push(ne(ads.userId, userId!), notInArray(ads.id, savedIds));
+    }
+    /*
+    const ids = terms.length ? await this.db.select({ id: ads.id }).from(ads)
+      .where(and(...eligibility, gt(score, 0)))
+      .orderBy(desc(score), desc(ads.dateCreated), desc(ads.id)).limit(30) : [];
+    */
+    const ids: { id: number }[] = [];
+    if (ids.length < 30) {
+      const random = await this.db.select({ id: ads.id }).from(ads)
+        .where(and(...eligibility, ids.length ? notInArray(ads.id, ids.map(row => row.id)) : undefined))
+        .orderBy(sql`random()`).limit(30 - ids.length);
+      ids.push(...random);
+    }
+    if (!ids.length) return [];
+    const rows = await this.getAdsWithRelations(inArray(ads.id, ids.map(row => row.id)));
+    const mapped = new Map(this.mapJoinedAds(rows).map(ad => [ad.id, ad]));
+    return ids.flatMap(({ id }) => {
+      const ad = mapped.get(id);
+      return ad ? [{ ...ad, is_saved: false }] : [];
+    });
   }
 
   async fetchSavedAds(userId: number | string) {
@@ -456,7 +504,7 @@ export class AdsService {
     if (!Number.isSafeInteger(id) || id <= 0 || !Number.isSafeInteger(userId) || userId <= 0) {
       throw new BadRequestException('Neispravan oglas ili korisnik.');
     }
-    const { retainedImages, price, ...fields } = dto;
+    const { retainedImages, imageOrder, price, ...fields } = dto;
     for (const field of ['category', 'subcategory', 'brand', 'model', 'title'] as const) {
       if (fields[field] !== undefined && !fields[field]?.trim()) throw new BadRequestException('Obavezna polja ne mogu biti prazna.');
     }
@@ -480,7 +528,19 @@ export class AdsService {
       if (retained?.some(url => !existing.some(image => image.imageUrl === url))) {
         throw new BadRequestException('Slika ne pripada ovom oglasu.');
       }
-      const images = [...(retained ?? existing.map(image => image.imageUrl)), ...uploadedImages];
+      let images = [...(retained ?? existing.map(image => image.imageUrl)), ...uploadedImages];
+      if (imageOrder !== undefined) {
+        let order: unknown;
+        try { order = JSON.parse(imageOrder); } catch { throw new BadRequestException('Neispravan redoslijed slika.'); }
+        const entries = new Map([
+          ...(retained ?? existing.map(image => image.imageUrl)).map(url => [url, url] as const),
+          ...uploadedImages.map((url, index) => [`new:${index}`, url] as const),
+        ]);
+        if (!Array.isArray(order) || order.length !== entries.size || new Set(order).size !== order.length || order.some(key => typeof key !== 'string' || !entries.has(key))) {
+          throw new BadRequestException('Neispravan redoslijed slika.');
+        }
+        images = (order as string[]).map(key => entries.get(key)!);
+      }
       if (images.length > 10) throw new BadRequestException('Oglas može imati najviše 10 slika.');
       await tx.update(ads).set({ ...fields, ...(price === undefined ? {} : { price: String(price) }),
         dateLastUpdated: new Date(), ...(retained !== undefined || uploadedImages.length ? { previewImg: images[0] ?? null } : {}),

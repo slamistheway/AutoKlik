@@ -59,6 +59,11 @@ const ad: Rules = {
 };
 
 const schemas: Record<string, Rules> = {
+  ForgotPasswordDto: { email: { ...text(255, true), pattern: /^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/ } },
+  ResetPasswordDto: {
+    token: text(512, true),
+    newPassword: { kind: 'password', min: 8, max: 72, required: true },
+  },
   LoginDto: {
     identifier: text(255, true),
     password: { kind: 'password', min: 1, max: 72, required: true },
@@ -76,8 +81,9 @@ const schemas: Record<string, Rules> = {
       key,
       { ...rule, required: false },
     ]),
-  ), retainedImages: text(10000) },
+  ), retainedImages: text(10000), imageOrder: text(10000) },
   AdsQueryDto: {
+    fuel: text(100),
     category: text(100),
     subcategory: text(100),
     brands: text(2000),

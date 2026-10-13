@@ -1,14 +1,13 @@
 import type { ExecutionContext, INestApplication } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { JwtModule, JwtService } from '@nestjs/jwt';
+
 import { Test } from '@nestjs/testing';
 import { ThrottlerModule, ThrottlerStorageService } from '@nestjs/throttler';
 import request from 'supertest';
 import { AdFetchRateLimitGuard } from './ad-fetch-rate-limit.guard';
 import { AdsController } from './ads.controller';
 import { AdsService } from './ads.service';
-import { JwtStrategy } from '../users/jwt.strategy';
-import { SessionsService } from '../users/sessions.service';
+import { BetterAuthService } from '../auth/better-auth.service';
 
 describe('Ad fetching limits', () => {
   let storage: ThrottlerStorageService;
@@ -88,26 +87,29 @@ describe('Ad fetching limits', () => {
 
 describe('Ad fetching authentication and guard wiring', () => {
   let app: INestApplication;
-  let jwt: JwtService;
 
   beforeEach(async () => {
     const module = await Test.createTestingModule({
-      imports: [
-        ThrottlerModule.forRoot([{ ttl: 60000, limit: 120 }]),
-        JwtModule.register({
-          secret: process.env.JWT_SECRET ?? 'dev_jwt_secret',
-        }),
-      ],
+      imports: [ThrottlerModule.forRoot([{ ttl: 60000, limit: 120 }])],
       controllers: [AdsController],
       providers: [
-        { provide: SessionsService, useValue: { assertActive: jest.fn() } },
-        JwtStrategy,
+        {
+          provide: BetterAuthService,
+          useValue: {
+            authenticate: (req: { headers: { authorization?: string } }) =>
+              req.headers.authorization === 'Bearer valid-session'
+                ? { id: 42 }
+                : null,
+          },
+        },
+
         AdFetchRateLimitGuard,
         {
           provide: AdsService,
           useValue: {
             findAllAds: () => [],
             findFeaturedAds: () => [],
+            findRecommendedAds: () => [],
             findOne: () => ({}),
             fetchAllAdsByUserId: () => [],
             fetchSavedAds: () => [],
@@ -117,7 +119,7 @@ describe('Ad fetching authentication and guard wiring', () => {
       ],
     }).compile();
     app = module.createNestApplication();
-    jwt = module.get(JwtService);
+
     await app.init();
   });
 
@@ -125,17 +127,18 @@ describe('Ad fetching authentication and guard wiring', () => {
     await app.close();
   });
 
-  it('verifies JWTs before granting 140 reads and shares the quota with private ad reads', async () => {
-    const token = jwt.sign({ id: 42 }, { expiresIn: '1h' });
+  it('verifies sessions before granting 140 reads and shares the quota with private ad reads', async () => {
+    const token = 'valid-session';
     for (let index = 0; index < 140; index++) {
       const route = [
         '/ads/all',
         '/ads/featured',
+        '/ads/recommended',
         '/ads/1',
         '/ads/me',
         '/ads/me/saved',
         '/ads/saved/1',
-      ][index % 6];
+      ][index % 7];
       await request(app.getHttpServer())
         .get(route)
         .set('Authorization', `Bearer ${token}`)
@@ -149,7 +152,7 @@ describe('Ad fetching authentication and guard wiring', () => {
   });
 
   it('counts invalid and expired tokens as anonymous and cannot bypass 70 reads by changing routes', async () => {
-    const expired = jwt.sign({ id: 42 }, { expiresIn: -1 });
+    const expired = 'expired-session';
     for (let index = 0; index < 70; index++) {
       await request(app.getHttpServer())
         .get(index % 2 ? '/ads/all' : '/ads/featured')
