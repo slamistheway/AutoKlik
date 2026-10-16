@@ -4,6 +4,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { Navbar } from '@/components/navbar';
+import { AdDraftList } from '@/components/ad-draft-list';
 import { Footer } from '@/components/footer';
 import CheckoutStepper from '@/pages/checkout/components/checkoutStepper';
 import * as checkoutState from './lib/checkout-state';
@@ -140,6 +141,8 @@ export default function VehicleCategoryPage() {
             clickableSteps={getClickableSteps()}
             onStepSelected={onStepSelected}
           />
+
+          <AdDraftList />
 
           <form onSubmit={onSubmit} className="space-y-4">
             {/* Step 1: Kategorija */}

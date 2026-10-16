@@ -59,6 +59,7 @@ const ad: Rules = {
 };
 
 const schemas: Record<string, Rules> = {
+  AdStatusDto: { status: { ...text(10, true), pattern: /^(active|sold|hidden)$/ } },
   ForgotPasswordDto: { email: { ...text(255, true), pattern: /^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/ } },
   ResetPasswordDto: {
     token: text(512, true),

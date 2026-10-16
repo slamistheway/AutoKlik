@@ -3,6 +3,7 @@
 import { useRouter as useAccountRouter } from 'next/router';
 import type { ReactNode } from 'react';
 import { Footer } from '@/components/footer';
+import { CompareAdButton } from '@/components/compare-controls';
 import { Navbar } from '@/components/navbar';
 
 import Link from 'next/link';
@@ -12,6 +13,7 @@ import { fetchCurrentUser } from '@/app/auth/auth-guards';
 import type { AdCardData, CurrentUser } from '@/types/types';
 import { API_BASE_URL, getResponseMessage } from './myProfile/account-api';
 import {sessionCookie} from '@/components/cookies/cookies';
+import { adStatusLabels, getAdStatus } from '@/shared/ad-status';
 import {resolve_api_ad_img} from "@/shared/functions";
 
 
@@ -20,6 +22,8 @@ const PAGE_SIZE = 5;
 
 type SavedAdResponse = {
   ad_id: number;
+  status?: AdCardData['status'];
+  expires_at?: string | null;
   user_id: number;
   category: string | null;
   subcategory: string | null;
@@ -36,6 +40,7 @@ type SavedAdResponse = {
 
 const accountNavigation = [
   { href: '/myProfile', label: 'Moj profil' },
+  { href: '/myAds', label: 'Moji oglasi' },
   { href: '/myMessages', label: 'Poruke' },
   { href: '/mySavedAds', label: 'Spremljeni oglasi' },
   { href: '/mySettings', label: 'Postavke' },
@@ -90,6 +95,9 @@ export default function MySavedAds() {
         setUser(currentUser);
         setAds(apiAds.map(ad => ({
           id: ad.ad_id,
+          status: ad.status,
+          expiresAt: ad.expires_at,
+          enginePower: null,
           userId: ad.user_id,
           title: ad.title ?? 'Oglas bez naslova',
           year: ad.year,
@@ -211,12 +219,14 @@ export default function MySavedAds() {
                                   {ad.title || 'Oglas bez naslova'}
                                 </Link>
                                 <p className="mt-1 text-xs text-gray-500">{ad.brand} {ad.model}</p>
+                                {getAdStatus(ad) !== 'active' && <p className="mt-1 text-sm font-semibold text-amber-700">{adStatusLabels[getAdStatus(ad)]}</p>}
                                 <p className="mt-1 text-xs text-gray-500">Godište: {ad.year ?? '—'}</p>
                               </div>
                               <button type="button" onClick={() => void removeSavedAd(ad.id)} aria-label="Ukloni iz spremljenih oglasa" className="shrink-0 rounded-lg border border-gray-300 px-3 py-2 text-lg transition hover:bg-red-50">
                                 ❤️
                               </button>
                             </div>
+                            <CompareAdButton adId={ad.id} />
                             <div className="mt-auto border-t border-gray-100 pt-2 text-xs text-gray-500">Spremljeno: {formatDate(ad.savedAt || null)}</div>
                           </div>
                         </article>

@@ -7,6 +7,10 @@ import { useRouter } from 'next/router';
 import { ChevronLeft, ChevronRight, MapPin, Share2 } from 'lucide-react';
 import { Footer } from '@/components/footer';
 import { Navbar } from '@/components/navbar';
+import { AdStatusControls } from '@/components/ad-status-controls';
+import { adStatusLabels, getAdStatus } from '@/shared/ad-status';
+import { recordAdView } from '@/lib/recently-viewed';
+import { CompareAdButton } from '@/components/compare-controls';
 import { SaveAdButton } from '@/components/saveAdButton';
 import type { AdFullData, CurrentUser } from '@/types/types';
 import { toAdFullData } from '@/shared/ad-data';
@@ -63,7 +67,10 @@ export default function AdPage() {
         }
 
         const result = toAdFullData(await response.json());
+        if (controller.signal.aborted) return;
         setAd(result);
+        setActiveImage(0);
+        recordAdView(result.id);
 
         setErrorMessage('');
         if (result.userId != null && Number.isInteger(result.userId) && result.userId > 0) {
@@ -113,7 +120,7 @@ export default function AdPage() {
         return;
       }
     };
-    void loadProfile();
+    if (token) void loadProfile();
 
 
     void fetchAd();
@@ -121,6 +128,13 @@ export default function AdPage() {
   }, [router.isReady, router.query.id]);
   
 
+
+  useEffect(() => {
+    if (!ad?.expiresAt || ad.status !== 'active') return;
+    const remaining = Date.parse(ad.expiresAt) - Date.now();
+    const timer = window.setTimeout(() => setAd(current => current?.id === ad.id && current.status === 'active' ? { ...current, status: 'expired' } : current), Math.max(0, remaining));
+    return () => window.clearTimeout(timer);
+  }, [ad?.id, ad?.status, ad?.expiresAt]);
 
   const shareAd = async () => {
     try {
@@ -222,6 +236,8 @@ export default function AdPage() {
                 <aside className="rounded-2xl border border-white/10 bg-[#1b1b20] p-5 lg:sticky lg:top-5">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-orange-400">{ad.brand} {ad.model}</p>
                   <h1 className="mt-2 text-2xl font-bold leading-tight">{ad.title || 'Oglas bez naslova'}</h1>
+                  <p role="status" className="mt-3 text-sm font-semibold text-orange-300">{adStatusLabels[getAdStatus(ad)]}{getAdStatus(ad) !== 'active' ? ' — oglas nije dostupan za upite.' : ''}</p>
+                  {ad.userId === Number(currentUser?.id) && <AdStatusControls ad={ad} onChange={updated => setAd(current => current ? { ...current, ...updated } : current)} />}
                   <p className="mt-5 text-3xl font-extrabold text-white">{formatPrice(ad.price)}</p>
                   <div className="mt-4 flex flex-wrap gap-2 text-xs">
                     {ad.condition && <span className="rounded-full bg-orange-500/15 px-3 py-1 text-orange-300">{ad.condition}</span>}
@@ -237,7 +253,7 @@ export default function AdPage() {
                     <p className="mt-1 font-semibold">{ad.sellerUsername || 'Privatni oglašivač'}</p>
                   </div>
 
-                  { adPoster?.id != currentUser?.id &&
+                  { getAdStatus(ad) === 'active' && adPoster?.id != currentUser?.id &&
                     <button type="button" onClick={() => goToMessageUser(adPoster?.id, adPoster?.username)} className="mt-4 w-full rounded-xl bg-orange-600 px-4 py-3 font-bold text-white transition hover:bg-orange-500">
                       Pošalji poruku
                     </button>
@@ -264,6 +280,7 @@ export default function AdPage() {
                       <Share2 className="h-4 w-4" /> Podijeli
                     </button>
                   </div>
+                  <CompareAdButton adId={ad.id} className="mt-3" />
                   {shareMessage && <p role="status" className="mt-2 text-center text-xs text-gray-400">{shareMessage}</p>}
                 </aside>
               </div>

@@ -77,7 +77,8 @@ describe('Saved-ad recommendations', () => {
     );
     expect(query.sql).toContain('"ads"."user_id" <>');
     expect(query.sql).toContain('not in (select 42)');
-    expect(query.params).toEqual([7]);
+    expect(query.sql).toContain('"ads"."expires_at" > now()');
+    expect(query.params).toEqual(['active', 7]);
     expect(
       dialect.sqlToQuery(
         (savedWhere.mock.calls as unknown[][])[0][0] as Parameters<

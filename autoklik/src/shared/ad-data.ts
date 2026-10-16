@@ -2,6 +2,8 @@ import type { AdFullData, AdCardData } from '@/types/types';
 
 type ApiAdData = {
   id: number;
+  status?: AdCardData['status'];
+  expires_at?: string | null;
   user_id: number;
   seller_username?: string | null;
   category?: string | null;
@@ -37,6 +39,8 @@ export function toAdCardData(data: unknown): AdCardData {
   const ad = data as ApiAdData;
   return {
     id: ad.id,
+    status: ad.status ?? 'active',
+    expiresAt: ad.expires_at ?? null,
     userId: ad.user_id,
     category: ad.category ?? '',
     subcategory: ad.subcategory ?? '',
@@ -47,6 +51,7 @@ export function toAdCardData(data: unknown): AdCardData {
     year: ad.year ?? null,
     price: ad.price ?? '',
     kilometrage: ad.kilometrage ?? null,
+    enginePower: ad.engine_power ?? null,
     fuel: ad.fuel ?? '',
     condition: ad.condition ?? '',
     county: ad.county ?? '',

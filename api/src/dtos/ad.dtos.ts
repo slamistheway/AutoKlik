@@ -64,3 +64,7 @@ export class UpdateAdDto {
 }
 
 
+export class AdStatusDto {
+    status: 'active' | 'sold' | 'hidden';
+}
+

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from "next/link";
+import { RecentlyViewedAds } from '@/components/recently-viewed-ads';
 import { Footer } from "@/components/footer";
 import { Navbar } from "@/components/navbar";
 import {
@@ -234,6 +235,8 @@ export default function Home() {
 
 
         <main className="bg-[var(--color-accent-soft)] font-semibold">
+          <RecentlyViewedAds />
+
           <section className="mx-auto max-w-7xl px-4 pt-10">
             <div className="mb-5 flex items-end justify-between gap-4">
               <h2 className="text-xl font-bold text-[var(--color-text)]">

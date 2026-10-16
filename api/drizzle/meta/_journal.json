@@ -85,6 +85,13 @@
       "when": 1791900779481,
       "tag": "0011_ad_engine_power",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1792163262984,
+      "tag": "0012_ad_availability",
+      "breakpoints": true
     }
   ]
 }

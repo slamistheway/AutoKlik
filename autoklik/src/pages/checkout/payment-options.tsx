@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
+import { useCheckoutLeaveModal } from '@/components/checkout-leave-modal';
 import { Navbar } from '@/components/navbar';
 import { Footer } from '@/components/footer';
 import CheckoutStepper from '@/pages/checkout/components/checkoutStepper';
@@ -13,6 +14,7 @@ import { fetchCurrentUser } from '@/app/auth/auth-guards';
 
 export default function PaymentOptionsPage() {
   const router = useRouter();
+  const { requestLeave, leaveModal } = useCheckoutLeaveModal();
   const categoryState = checkoutState.getCategoryState();
   const categoryLabel = getCategoryLabel(categoryState.category);
   const subcategoryLabel = getSubcategoryLabel(categoryState.subcategory);
@@ -81,15 +83,12 @@ export default function PaymentOptionsPage() {
   useEffect(() => {
     if (!isHydrated) return;
 
-    const warning = 'Zelite li napustiti unos oglasa? Uneseni podaci bit ce obrisani.';
-
     const isLeavingCheckout = (url: string) => {
       const destination = new URL(url, window.location.origin);
       return destination.origin !== window.location.origin ||
         (destination.pathname !== '/checkout' && !destination.pathname.startsWith('/checkout/'));
     };
 
-    let confirmedPopState = false;
     let confirmedLinkUrl: string | null = null;
     const currentHistoryState = window.history.state;
     const currentUrl = router.asPath;
@@ -107,14 +106,13 @@ export default function PaymentOptionsPage() {
       if (!['http:', 'https:'].includes(destination.protocol)) return;
       if (destination.origin === window.location.origin && !isLeavingCheckout(destination.href)) return;
 
-      if (!window.confirm(warning)) {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        return;
-      }
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      requestLeave(() => {
+        clearCheckout();
+        window.location.assign(destination.href);
+      });
 
-      confirmedLinkUrl = destination.href;
-      clearCheckout();
     };
 
     const warnBeforeLeaving = (url: string, options: { shallow: boolean }) => {
@@ -122,17 +120,14 @@ export default function PaymentOptionsPage() {
         confirmedLinkUrl = null;
         return;
       }
-      if (confirmedPopState) {
-        confirmedPopState = false;
-        return;
-      }
 
       if (!isLeavingCheckout(url)) return;
-      if (window.confirm(warning)) {
-        clearCheckout();
-        return;
-      }
 
+      requestLeave(() => {
+        confirmedLinkUrl = new URL(url, window.location.origin).href;
+        clearCheckout();
+        void router.push(url);
+      });
       const error = Object.assign(new Error('Checkout navigation cancelled'), { cancelled: true });
       router.events.emit('routeChangeError', error, url, options);
       throw error;
@@ -140,23 +135,25 @@ export default function PaymentOptionsPage() {
 
     router.beforePopState(({ as }) => {
       if (!isLeavingCheckout(as)) return true;
-      if (window.confirm(warning)) {
-        clearCheckout();
-        confirmedPopState = true;
-        return true;
-      }
       window.history.pushState(currentHistoryState, '', currentUrl);
+      requestLeave(() => {
+        clearCheckout();
+        window.location.assign(as);
+      });
       return false;
     });
 
     const warnBeforeFullNavigation = (event: Event) => {
       const url = (event as CustomEvent<string>).detail;
       if (!isLeavingCheckout(url)) return;
-      if (!window.confirm(warning)) {
-        event.preventDefault();
-        return;
-      }
-      clearCheckout();
+      event.preventDefault();
+      requestLeave(() => {
+        clearCheckout();
+        const resume = (event as CustomEvent<string> & { resume?: () => void }).resume;
+        if (resume) resume();
+        else window.location.assign(url);
+      });
+
     };
     router.events.on('routeChangeStart', warnBeforeLeaving);
     window.addEventListener('checkout:before-leave', warnBeforeFullNavigation);
@@ -167,7 +164,7 @@ export default function PaymentOptionsPage() {
       document.removeEventListener('click', warnBeforeLinkNavigation, true);
       router.beforePopState(() => true);
     };
-  }, [isHydrated, router]);
+  }, [isHydrated, router, requestLeave]);
 
 
 
@@ -239,6 +236,7 @@ export default function PaymentOptionsPage() {
 
   return (
     <>
+      {leaveModal}
       <header>
         <Navbar />
       </header>

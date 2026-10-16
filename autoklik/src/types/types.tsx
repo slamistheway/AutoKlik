@@ -13,6 +13,8 @@ export type CurrentUser = {
 
 export type AdCardData = {
     id: number;
+    status?: 'active' | 'sold' | 'hidden' | 'expired';
+    expiresAt?: string | null;
     userId: number;
 
     category: string | '';

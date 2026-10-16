@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
+import { useCheckoutLeaveModal } from '@/components/checkout-leave-modal';
 import { Navbar } from '@/components/navbar';
 import { Footer } from '@/components/footer';
 import CheckoutStepper from '@/pages/checkout/components/checkoutStepper';
@@ -72,6 +73,7 @@ function inputValue(value: number | null) {
 
 export default function DetailsPage() {
   const router = useRouter();
+  const { requestLeave, leaveModal } = useCheckoutLeaveModal();
 
 
 
@@ -175,8 +177,6 @@ export default function DetailsPage() {
     const hasEnoughInputs = () => checkoutState.hasAtLeastFourStoredInputs();
     if (!isHydrated) return;
 
-    const warning = 'Zelite li napustiti unos oglasa? Unijeli ste podatke u najmanje cetiri polja.';
-
     const isLeavingCheckout = (url: string) => {
       const destination = new URL(url, window.location.origin);
       return destination.origin !== window.location.origin ||
@@ -201,9 +201,13 @@ export default function DetailsPage() {
       if (!['http:', 'https:'].includes(destination.protocol)) return;
       if (destination.origin === window.location.origin && !isLeavingCheckout(destination.href)) return;
 
-      if (hasEnoughInputs() && !window.confirm(warning)) {
+      if (hasEnoughInputs()) {
         event.preventDefault();
         event.stopImmediatePropagation();
+        requestLeave(() => {
+          clearCheckout();
+          window.location.assign(destination.href);
+        });
         return;
       }
 
@@ -222,11 +226,16 @@ export default function DetailsPage() {
       }
 
       if (!isLeavingCheckout(url)) return;
-      if (!hasEnoughInputs() || window.confirm(warning)) {
+      if (!hasEnoughInputs()) {
         clearCheckout();
         return;
       }
 
+      requestLeave(() => {
+        confirmedLinkUrl = new URL(url, window.location.origin).href;
+        clearCheckout();
+        void router.push(url);
+      });
       const error = Object.assign(new Error('Checkout navigation cancelled'), { cancelled: true });
       router.events.emit('routeChangeError', error, url, options);
       throw error;
@@ -234,20 +243,30 @@ export default function DetailsPage() {
 
     router.beforePopState(({ as }) => {
       if (!isLeavingCheckout(as)) return true;
-      if (!hasEnoughInputs() || window.confirm(warning)) {
+      if (!hasEnoughInputs()) {
         clearCheckout();
         confirmedPopState = true;
         return true;
       }
       window.history.pushState(currentHistoryState, '', currentUrl);
+      requestLeave(() => {
+        clearCheckout();
+        window.location.assign(as);
+      });
       return false;
     });
 
     const warnBeforeFullNavigation = (event: Event) => {
       const url = (event as CustomEvent<string>).detail;
       if (!isLeavingCheckout(url)) return;
-      if (hasEnoughInputs() && !window.confirm(warning)) {
+      if (hasEnoughInputs()) {
         event.preventDefault();
+        requestLeave(() => {
+          clearCheckout();
+          const resume = (event as CustomEvent<string> & { resume?: () => void }).resume;
+          if (resume) resume();
+          else window.location.assign(url);
+        });
         return;
       }
       clearCheckout();
@@ -261,7 +280,7 @@ export default function DetailsPage() {
       document.removeEventListener('click', warnBeforeLinkNavigation, true);
       router.beforePopState(() => true);
     };
-  }, [isHydrated, router]);
+  }, [isHydrated, router, requestLeave]);
 
   if (!isHydrated) return null;
 
@@ -496,6 +515,7 @@ export default function DetailsPage() {
 
   return (
     <>
+      {leaveModal}
 
       <header>
         <Navbar />

@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "concurrently \"npm run dev --prefix autoklik\" \"npm run start:dev --prefix api\""
+    "dev": "concurrently \"npm run dev --prefix autoklik\" \"npm run start:dev --prefix api\"",
+    "dev:admin": "concurrently \"npm run dev --prefix autoklik-admin\" \"npm run start:dev --prefix api\""
   },
   "keywords": [],
   "author": "",

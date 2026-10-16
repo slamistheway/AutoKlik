@@ -66,6 +66,8 @@ export const ads = pgTable("ads", {
     previewImg: text("preview_img"),
 
     featured: boolean("featured").default(false),
+    status: text("status").$type<'active' | 'sold' | 'hidden'>().notNull().default('active'),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull().default(sql`now() + interval '3 days'`),
 
     dateCreated: timestamp("date_created", { withTimezone: false }).defaultNow(),
     dateLastUpdated: timestamp("date_last_updated", { withTimezone: false }).defaultNow(),

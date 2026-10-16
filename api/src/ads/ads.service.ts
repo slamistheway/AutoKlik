@@ -11,6 +11,7 @@ import {and, asc, desc, eq, gte, ilike, inArray, lte, ne, notInArray, or, sql, t
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { CreateAdDto, UpdateAdDto } from '../dtos/ad.dtos';
 import * as schema from '../db/schema';
+import { activeAdsCondition, effectiveAdStatus } from './ad-status';
 
 const { ads, adImages, savedAds, users } = schema;
 type Ad = typeof ads.$inferSelect;
@@ -41,6 +42,8 @@ export class AdsService {
   ) {
     return {
       id: ad.id,
+      status: effectiveAdStatus(ad),
+      expires_at: ad.expiresAt,
       user_id: ad.userId,
       seller_username: sellerUsername ?? '',
       category: ad.category,
@@ -292,7 +295,7 @@ export class AdsService {
 
     const hasUserId = Number.isFinite(normalizedUserId) && normalizedUserId > 0;
     const MAX_RECENT_ADS = 30;
-    const filterConditions = this.buildFilterConditions(filters);
+    const filterConditions = [activeAdsCondition(), ...this.buildFilterConditions(filters)];
     const idRows = await this.db
       .select({ id: ads.id })
       .from(ads)
@@ -346,7 +349,7 @@ export class AdsService {
     }
     const score = terms.length ? sql<number>`${sql.join(terms, sql` + `)}` : sql<number>`0::float8`;
     */
-    const eligibility: SQL[] = [];
+    const eligibility: SQL[] = [activeAdsCondition()!];
     if (authenticated) {
       const savedIds = this.db.select({ id: savedAds.adId }).from(savedAds).where(eq(savedAds.userId, userId!));
       eligibility.push(ne(ads.userId, userId!), notInArray(ads.id, savedIds));
@@ -391,7 +394,7 @@ export class AdsService {
       .from(savedAds)
       .innerJoin(ads, eq(ads.id, savedAds.adId))
       .leftJoin(adImages, eq(adImages.adId, ads.id))
-      .where(eq(savedAds.userId, normalizedUserId))
+      .where(and(eq(savedAds.userId, normalizedUserId), ne(ads.status, 'hidden')))
       .orderBy(desc(savedAds.dateSaved), asc(adImages.createdAt));
 
     const grouped = new Map<
@@ -409,6 +412,8 @@ export class AdsService {
 
     return [...grouped.values()].map(({ ad, savedAt, images }) => ({
       ad_id: ad.id,
+      status: effectiveAdStatus(ad),
+      expires_at: ad.expiresAt,
       user_id: ad.userId,
       category: ad.category,
       subcategory: ad.subcategory,
@@ -435,7 +440,7 @@ export class AdsService {
     const idRows = await this.db
         .select({ id: ads.id })
         .from(ads)
-        .where(eq(ads.featured, true))
+        .where(and(eq(ads.featured, true), activeAdsCondition()))
         .limit(MAX_RECENT_ADS);
 
     const adIds = idRows.map((row) => row.id);
@@ -489,8 +494,8 @@ export class AdsService {
     return this.mapJoinedAds(rows);
   }
 
-  async findOne(id: number) {
-    const rows = await this.getAdsWithRelations(eq(ads.id, id));
+  async findOne(id: number, userId?: number) {
+    const rows = await this.getAdsWithRelations(and(eq(ads.id, id), or(ne(ads.status, 'hidden'), userId ? eq(ads.userId, userId) : undefined)));
     const [ad] = this.mapJoinedAds(rows);
 
     if (!ad) {
@@ -498,6 +503,24 @@ export class AdsService {
     }
 
     return ad;
+  }
+
+  async findRecentlyViewed(ids: number[]) {
+    if (!ids.length) return [];
+    const rows = await this.getAdsWithRelations(and(inArray(ads.id, ids), ne(ads.status, 'hidden')));
+    const mapped = new Map(this.mapJoinedAds(rows).map(ad => [ad.id, ad]));
+    return ids.flatMap(id => mapped.has(id) ? [mapped.get(id)!] : []);
+  }
+
+  async updateStatus(id: number, userId: number, status: string) {
+    if (!Number.isSafeInteger(id) || id <= 0 || !Number.isSafeInteger(userId) || userId <= 0 || !['active', 'sold', 'hidden'].includes(status)) {
+      throw new BadRequestException('Neispravan oglas ili status.');
+    }
+    const [updated] = await this.db.update(ads).set({
+      status: status as 'active' | 'sold' | 'hidden', dateLastUpdated: new Date(),
+    }).where(and(eq(ads.id, id), eq(ads.userId, userId))).returning({ id: ads.id });
+    if (!updated) throw new NotFoundException('Oglas nije pronađen ili nije vaš.');
+    return this.findOne(id, userId);
   }
 
   async update(id: number, userId: number, dto: UpdateAdDto, uploadedImages: string[] = []) {
@@ -550,7 +573,7 @@ export class AdsService {
         if (images.length) await tx.insert(adImages).values(images.map(imageUrl => ({ adId: id, imageUrl })));
       }
     });
-    return this.findOne(id);
+    return this.findOne(id, userId);
   }
 
   remove(id: number) {

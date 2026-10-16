@@ -26,6 +26,7 @@ export interface CheckoutDetailsState {
 
 
 const STEP_KEY = 'checkout.currentStep';
+const DRAFT_KEY = 'checkout.draftId';
 const CATEGORY_KEY = 'checkout.categoryState';
 const SUBCATEGORIES_KEY = 'checkout.subcategory';
 const BRANDS_KEY = 'checkout.brand';
@@ -224,6 +225,7 @@ export function clearDetailsState() {
   detailsState = emptyDetails();
   imageSaveVersion++;
   if (typeof window !== 'undefined') {
+    window.localStorage.removeItem(DRAFT_KEY);
     for (const key of [...Object.values(detailKeys), IMAGES_KEY]) window.localStorage.removeItem(key);
   }
 }
@@ -234,6 +236,15 @@ export function setCurrentStep(step: number) {
   if (typeof window !== 'undefined') window.localStorage.setItem(STEP_KEY, String(step));
 }
 export function getCurrentStep() { return currentStep; }
+
+export function setDraftId(id: string) {
+  if (typeof window !== 'undefined') window.localStorage.setItem(DRAFT_KEY, JSON.stringify(id));
+}
+export function getDraftId() {
+  if (typeof window === 'undefined') return null;
+  const id = readStoredValue(DRAFT_KEY);
+  return typeof id === 'string' && id ? id : null;
+}
 
 
 export function reset() {

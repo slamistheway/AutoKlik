@@ -1,6 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { SaveAdButton } from './saveAdButton';
+import { CompareAdButton } from './compare-controls';
+import { adStatusLabels, getAdStatus } from '@/shared/ad-status';
 
 import '../app/globals.css';
 import type {AdCardData} from '@/types/types';
@@ -19,8 +21,8 @@ export function AdCard({ ad, href, currentUserId }: AdCardProps) {
 
   return (
     <article className="relative overflow-hidden border border-gray-200 bg-white shadow-sm transition hover:shadow-lg ">
-      <div className="h-full ">
-        <Link href={href} className="group block h-full">
+      <div className="flex h-full flex-col">
+        <Link href={href} className="group block flex-1">
           <div className="relative aspect-[9/6] overflow-hidden bg-gray-100">
             <Image
               loading="eager"
@@ -31,6 +33,7 @@ export function AdCard({ ad, href, currentUserId }: AdCardProps) {
               unoptimized={ad.previewImg === '/default_ad_img.png' || /^https?:\/\//i.test(ad.previewImg)}
               className="h-full w-full object-cover"
             />
+            {getAdStatus(ad) !== 'active' && <span className="absolute left-2 top-2 rounded-md bg-gray-900 px-2 py-1 text-xs font-semibold text-white">{adStatusLabels[getAdStatus(ad)]}</span>}
           </div>
           <div className="flex flex-col px-4 pt-2">
             <h3 className="truncate font-bold text-gray-900">{ad.title}</h3>
@@ -52,6 +55,7 @@ export function AdCard({ ad, href, currentUserId }: AdCardProps) {
           className="flex h-7 aspect-square items-center justify-center rounded-lg border border-gray-300 bg-white/95 shadow-sm hover:bg-white"
         />
         </div>
+        <CompareAdButton adId={ad.id} className="mt-2 px-3 pb-3" />
       </div>
     </article>
   );

@@ -34,6 +34,7 @@ const emptyProfile: ProfileValues = {
 
 const accountNavigation = [
   { href: '/myProfile', label: 'Moj profil' },
+  { href: '/myAds', label: 'Moji oglasi' },
   { href: '/myMessages', label: 'Poruke' },
   { href: '/mySavedAds', label: 'Spremljeni oglasi' },
   { href: '/mySettings', label: 'Postavke' },

@@ -20,7 +20,7 @@ import { FilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { mkdirSync } from 'fs';
 import { extname, join } from 'path';
-import {AdsQueryDto, CreateAdDto, UpdateAdDto} from "../dtos/ad.dtos";
+import {AdStatusDto, AdsQueryDto, CreateAdDto, UpdateAdDto} from "../dtos/ad.dtos";
 import { SkipThrottle } from '@nestjs/throttler';
 import { AdFetchRateLimitGuard } from './ad-fetch-rate-limit.guard';
 
@@ -171,10 +171,28 @@ export class AdsController {
 
 
   @UseGuards(OptionalSessionAuthGuard, AdFetchRateLimitGuard)
+  @Get('recently-viewed')
+  @SkipThrottle({ default: true, burst: true })
+  findRecentlyViewed(@Query('ids') ids: string) {
+    if (typeof ids !== 'string' || !/^\d+(,\d+){0,19}$/.test(ids) || ids.length > 240) {
+      throw new BadRequestException('Neispravan popis oglasa.');
+    }
+    const parsed = [...new Set(ids.split(',').map(Number))];
+    if (parsed.some(id => !Number.isSafeInteger(id) || id <= 0)) throw new BadRequestException('Neispravan oglas.');
+    return this.adService.findRecentlyViewed(parsed);
+  }
+
+  @UseGuards(SessionAuthGuard)
+  @Patch(':id/status')
+  updateStatus(@Param('id') id: string, @Body() body: AdStatusDto, @Req() req: any) {
+    return this.adService.updateStatus(+id, Number(req.user?.id), body.status);
+  }
+
+  @UseGuards(OptionalSessionAuthGuard, AdFetchRateLimitGuard)
   @Get(':id')
   @SkipThrottle({ default: true, burst: true })
-  findOne(@Param('id') id: string) {
-    return this.adService.findOne(+id);
+  findOne(@Param('id') id: string, @Req() req: any) {
+    return this.adService.findOne(+id, req.user?.id);
   }
 
   @UseGuards(SessionAuthGuard)

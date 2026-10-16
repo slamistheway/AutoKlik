@@ -9,31 +9,32 @@ interface AdsCarouselProps {
   ads: AdCardData[];
   errorMessage?: string;
   currentUserId?: number | string | null;
+  rows?: 1 | 2;
 }
 
 
-export function AdsCarousel({ ads, errorMessage, currentUserId }: AdsCarouselProps) {
+export function AdsCarousel({ ads, errorMessage, currentUserId, rows = 2 }: AdsCarouselProps) {
     const [page, setPage] = useState(0);
-    const [pageSize, setPageSize] = useState(10);
+    const [pageSize, setPageSize] = useState(rows === 1 ? 3 : 10);
 
     useEffect(() => {
         const lgMedia = window.matchMedia('(min-width: 1024px)');
 
         const handleMediaChange = (e: MediaQueryListEvent) => {
-            setPageSize(e.matches ? 10 : 6);
+            setPageSize((e.matches ? 5 : 3) * rows);
             setPage(0);
         };
 
         lgMedia.addEventListener('change', handleMediaChange);
 
 
-        const frame = window.requestAnimationFrame(() => setPageSize(lgMedia.matches ? 10 : 6));
+        const frame = window.requestAnimationFrame(() => setPageSize((lgMedia.matches ? 5 : 3) * rows));
 
         return () => {
             window.cancelAnimationFrame(frame);
             lgMedia.removeEventListener('change', handleMediaChange);
         };
-    }, []);
+    }, [rows]);
 
 
 
@@ -82,7 +83,7 @@ export function AdsCarousel({ ads, errorMessage, currentUserId }: AdsCarouselPro
           {pages.map((pageAds, pageIndex) => (
             <div
               key={pageIndex}
-              className="grid w-full shrink-0 gap-4 grid-cols-3 grid-rows-2 lg:grid-cols-5"
+              className={`grid w-full shrink-0 gap-4 grid-cols-3 lg:grid-cols-5 ${rows === 1 ? 'grid-rows-1' : 'grid-rows-2'}`}
             >
               {pageAds.map((ad) => (
                 <AdCard key={ad.id} ad={ad} href={`/ad/${ad.id}`} currentUserId={currentUserId} />
