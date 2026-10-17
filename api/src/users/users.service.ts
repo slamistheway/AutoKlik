@@ -1,5 +1,5 @@
 import {
-  BadRequestException, ConflictException,
+  BadRequestException, ConflictException, ForbiddenException,
   Inject, HttpException,
   Injectable, InternalServerErrorException,
   Logger,
@@ -17,6 +17,8 @@ import { AuditService } from '../audit/audit.service';
 import { createHash } from 'crypto';
 import { validateInput } from '../input-validation';
 import {LoginDto, RegisterDto, UpdateProfileDto} from "../dtos/user.dtos";
+import { assertNotBlocked } from '../auth/account-access';
+import { scamSignals } from './scam-signals';
 
 
 const { users, ads, adImages, savedAds, conversations, messages, messageImages } = schema;
@@ -53,6 +55,7 @@ export class UsersService {
     const phone = dto.phone?.trim() || null;
     const city = dto.city?.trim() || null;
     const country = dto.country?.trim() || null;
+    await assertNotBlocked(this.db, { email, phone }, ip);
 
     this.logger.debug(
         `Received register request: username="${username}", email="${email}"`,
@@ -198,6 +201,9 @@ export class UsersService {
       phone: user.phone,
       city: user.city,
       country: user.country,
+      sellerVerified: user.sellerVerified,
+      badges: user.badges,
+      dealerStatus: user.dealerStatus,
     };
   }
 
@@ -257,6 +263,7 @@ export class UsersService {
       if (updateProfileDto[field] !== undefined) changes[field] = updateProfileDto[field]?.trim() || null;
     }
     if (!Object.keys(changes).length) throw new BadRequestException('Nema promjena za spremanje.');
+    if (changes.phone) await assertNotBlocked(this.db, { phone: changes.phone }, null);
 
     const [updatedUser] = await this.db
       .update(users)
@@ -278,6 +285,8 @@ export class UsersService {
     }
 
     await this.db.transaction(async (tx) => {
+      const [staff] = await tx.select({ role: users.role }).from(users).where(eq(users.id, userId));
+      if (staff && ['admin', 'moderator'].includes(staff.role)) throw new BadRequestException('Brisanje računa osoblja mora obaviti drugi administrator.');
       // Remove saved entries created by this user.
       await tx.delete(savedAds).where(eq(savedAds.userId, userId));
 
@@ -314,7 +323,29 @@ export class UsersService {
 
 
   /*-------------------------MESSAGES-----------------------*/
+  private blockCondition(userId: number, otherUserId: number) {
+    const blocks = schema.userBlocks;
+    return or(and(eq(blocks.blockerId, userId), eq(blocks.blockedId, otherUserId)), and(eq(blocks.blockerId, otherUserId), eq(blocks.blockedId, userId)));
+  }
+
+  async setUserBlocked(userId: number, otherUserId: number, blocked: boolean) {
+    if (!Number.isSafeInteger(otherUserId) || otherUserId <= 0 || userId === otherUserId) throw new BadRequestException('Neispravan korisnik.');
+    const [recipient] = await this.db.select({id: users.id}).from(users).where(eq(users.id, otherUserId)).limit(1);
+    if (!recipient) throw new NotFoundException('Korisnik nije pronađen.');
+    await this.db.transaction(async tx => {
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`chat:${Math.min(userId, otherUserId)}:${Math.max(userId, otherUserId)}`}, 0))`);
+      if (blocked) await tx.insert(schema.userBlocks).values({blockerId: userId, blockedId: otherUserId}).onConflictDoNothing();
+      else await tx.delete(schema.userBlocks).where(and(eq(schema.userBlocks.blockerId, userId), eq(schema.userBlocks.blockedId, otherUserId)));
+      await tx.execute(sql`select pg_notify('message_updates', ${JSON.stringify([userId, otherUserId])})`);
+    });
+    return {blocked};
+  }
+
   async addConversation(userId: number, otherUserId: number) {
+    const [recipient] = await this.db.select({ id: users.id }).from(users).where(and(eq(users.id, otherUserId), eq(users.accountStatus, 'active'))).limit(1);
+    if (!recipient || userId === otherUserId) throw new NotFoundException('Primatelj nije dostupan.');
+    const [block] = await this.db.select().from(schema.userBlocks).where(this.blockCondition(userId, otherUserId)).limit(1);
+    if (block) throw new ForbiddenException('Slanje poruka ovom korisniku nije dostupno.');
     const a = Math.min(userId, otherUserId);
     const b = Math.max(userId, otherUserId);
 
@@ -349,11 +380,12 @@ export class UsersService {
     const mimeType = image ? validateMessageImage(image) : null;
 
     const [conversation] = await this.db
-        .select({ id: conversations.id })
+        .select({ id: conversations.id, userAid: conversations.userAid, userBid: conversations.userBid })
         .from(conversations)
         .where(and(
             eq(conversations.id, conversationId),
             or(eq(conversations.userAid, userId), eq(conversations.userBid, userId)),
+            sql`exists (select 1 from ${users} where ${users.id} = case when ${conversations.userAid} = ${userId} then ${conversations.userBid} else ${conversations.userAid} end and ${users.accountStatus} = 'active')`,
         ))
         .limit(1);
 
@@ -363,6 +395,10 @@ export class UsersService {
 
     const encryptedBody = encryptMessageContent(Buffer.from(body.trim(), 'utf8'), messageBodyContext(conversationId, userId));
     return await this.db.transaction(async tx => {
+      const otherUserId = conversation.userAid === userId ? conversation.userBid : conversation.userAid;
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`chat:${Math.min(userId, otherUserId)}:${Math.max(userId, otherUserId)}`}, 0))`);
+      const [block] = await tx.select().from(schema.userBlocks).where(this.blockCondition(userId, otherUserId)).limit(1);
+      if (block) throw new ForbiddenException('Slanje poruka ovom korisniku nije dostupno.');
       const [message] = await tx.insert(messages)
           .values({ conversationId: conversation.id, senderId: userId, body: encryptedBody, encryptionVersion: 1 })
           .returning({ id: messages.id, senderId: messages.senderId, createdAt: messages.createdAt, readAt: messages.readAt });
@@ -374,10 +410,12 @@ export class UsersService {
           size: image.buffer.length,
         });
       }
+      const signals = scamSignals(body);
+      if (signals.length) await tx.insert(schema.moderationReports).values({ targetType: 'message', targetId: message.id, subjectUserId: userId, source: 'automated', reason: 'Automatski sigurnosni pregled: ' + signals.join(', '), signals });
+      await tx.execute(sql`select pg_notify('message_updates', ${JSON.stringify([conversation.userAid, conversation.userBid])})`);
       return {...message, body: body.trim(), hasImage: Boolean(image)};
     });
   }
-  F
   async getMessageImage(userId: number, messageId: number) {
     if (!Number.isSafeInteger(messageId) || messageId <= 0) throw new BadRequestException('Neispravna poruka.');
     const [image] = await this.db.select({encryptedData: messageImages.encryptedData, mimeType: messageImages.mimeType})
@@ -395,7 +433,7 @@ export class UsersService {
       throw new BadRequestException('Podaci za čitanje poruka nisu ispravni.');
     }
 
-    const [conversation] = await this.db.select({id: conversations.id})
+    const [conversation] = await this.db.select({id: conversations.id, userAid: conversations.userAid, userBid: conversations.userBid})
         .from(conversations)
         .where(and(eq(conversations.id, conversationId), or(eq(conversations.userAid, userId), eq(conversations.userBid, userId))))
         .limit(1);
@@ -410,6 +448,7 @@ export class UsersService {
             lte(messages.id, throughMessageId),
         ))
         .returning({id: messages.id, readAt: messages.readAt});
+    if (updated.length) await this.db.execute(sql`select pg_notify('message_updates', ${JSON.stringify([conversation.userAid, conversation.userBid])})`);
     return {messages: updated};
   }
 
@@ -472,6 +511,8 @@ export class UsersService {
             pfp: users.pfp,
             createdAt: conversations.createdAt,
             unreadCount: sql<number>`(select count(*)::int from ${messages} where ${messages.conversationId} = ${conversations.id} and ${messages.senderId} <> ${userId} and ${messages.readAt} is null)`.mapWith(Number),
+            blockedByMe: sql<boolean>`exists (select 1 from ${schema.userBlocks} where ${schema.userBlocks.blockerId} = ${userId} and ${schema.userBlocks.blockedId} = ${users.id})`,
+            messagingBlocked: sql<boolean>`exists (select 1 from ${schema.userBlocks} where (${schema.userBlocks.blockerId} = ${userId} and ${schema.userBlocks.blockedId} = ${users.id}) or (${schema.userBlocks.blockerId} = ${users.id} and ${schema.userBlocks.blockedId} = ${userId}))`,
           })
           .from(conversations)
           .innerJoin(users, or(

@@ -25,6 +25,7 @@ import { ConversationDto, SendMessageDto, MessageImageDto, ReadMessagesDto } fro
 import {LoginDto, RegisterDto, UpdateProfileDto} from "../dtos/user.dtos";
 import { ForgotPasswordDto, ResetPasswordDto } from '../dtos/user.dtos';
 import { Throttle } from '@nestjs/throttler';
+import { MessageEventsService } from './message-events.service';
 
 
 @Controller('users')
@@ -35,6 +36,7 @@ export class UsersController {
         private readonly usersService: UsersService,
         private readonly registrationAttempts: RegistrationAttemptsService,
         private readonly auth: BetterAuthService,
+        private readonly messageEvents: MessageEventsService,
     ) {
     }
 
@@ -141,6 +143,43 @@ export class UsersController {
 
 
     /*------------------------------------MESSAGGES-------------------------------------------------*/
+    @UseGuards(SessionAuthGuard)
+    @Get('message-events')
+    messageStream(@Request() req: ExpressRequest & { user: { id: number } }, @Res() response: Response) {
+        response.setHeader('Content-Type', 'text/event-stream');
+        response.setHeader('Cache-Control', 'private, no-cache, no-transform');
+        response.setHeader('X-Accel-Buffering', 'no');
+        response.flushHeaders();
+        const write = () => {
+            if (!response.writableEnded && !response.write('data: update\n\n')) response.end();
+        };
+        const subscription = this.messageEvents.forUser(Number(req.user.id)).subscribe(write);
+        write();
+        let checking = false;
+        const heartbeat = setInterval(async () => {
+            if (checking) return;
+            checking = true;
+            try {
+                if (!await this.auth.authenticate(req)) response.end();
+                else if (!response.writableEnded) response.write(': heartbeat\n\n');
+            } catch { response.end(); }
+            finally { checking = false; }
+        }, 30000);
+        response.on('close', () => { clearInterval(heartbeat); subscription.unsubscribe(); });
+    }
+
+    @UseGuards(SessionAuthGuard)
+    @Post('blockUser')
+    blockUser(@Request() req: any, @Body() body: ConversationDto) {
+        return this.usersService.setUserBlocked(Number(req.user.id), body.otherUserId, true);
+    }
+
+    @UseGuards(SessionAuthGuard)
+    @Post('unblockUser')
+    unblockUser(@Request() req: any, @Body() body: ConversationDto) {
+        return this.usersService.setUserBlocked(Number(req.user.id), body.otherUserId, false);
+    }
+
     @UseGuards(SessionAuthGuard)
     @Get('getConversations')
     async getConversations(@Request() req: any) {

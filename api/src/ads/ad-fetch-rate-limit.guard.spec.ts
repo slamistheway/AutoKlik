@@ -7,6 +7,7 @@ import request from 'supertest';
 import { AdFetchRateLimitGuard } from './ad-fetch-rate-limit.guard';
 import { AdsController } from './ads.controller';
 import { AdsService } from './ads.service';
+import { SavedSearchesService } from './saved-searches.service';
 import { BetterAuthService } from '../auth/better-auth.service';
 
 describe('Ad fetching limits', () => {
@@ -104,10 +105,12 @@ describe('Ad fetching authentication and guard wiring', () => {
         },
 
         AdFetchRateLimitGuard,
+        { provide: SavedSearchesService, useValue: {} },
         {
           provide: AdsService,
           useValue: {
             findAllAds: () => [],
+            search: () => ({items: [], total: 0, page: 1, pageSize: 24, totalPages: 0}),
             findFeaturedAds: () => [],
             findRecommendedAds: () => [],
             findOne: () => ({}),

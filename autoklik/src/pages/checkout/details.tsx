@@ -9,6 +9,7 @@ import CheckoutStepper from '@/pages/checkout/components/checkoutStepper';
 
 import {getCategoryLabel, getSubcategoryLabel,} from './lib/checkout-data';
 import * as checkoutState from './lib/checkout-state';
+import { VehicleExtraFields } from '@/components/vehicle-extra-fields';
 import FilterChoose from "@/components/filters/filter-choose";
 import FilterNumeric from "@/components/filters/filter-numeric";
 import FilterBrands from "@/components/filters/filter-brands";
@@ -50,9 +51,14 @@ interface AdFormData {
   county: string;
   fuel: string;
   enginePower: string;
+  engineSize: string;
   condition: string;
   sellerType: string;
   buyOrLease: string;
+  driveType: string;
+  gearCount: string;
+  fuelConsumption: string;
+  warranty: string;
   gearType: string;
   color: string;
   doorNumber: string;
@@ -90,9 +96,14 @@ export default function DetailsPage() {
     county: savedDetails.county,
     fuel: savedDetails.fuel,
     enginePower: savedDetails.enginePower,
+    engineSize: savedDetails.engineSize,
     condition: savedDetails.condition,
     sellerType: savedDetails.sellerType,
     buyOrLease: savedDetails.buyOrLease,
+    driveType: savedDetails.driveType ?? '',
+    gearCount: inputValue(savedDetails.gearCount),
+    fuelConsumption: inputValue(savedDetails.fuelConsumption),
+    warranty: savedDetails.warranty ?? '',
     gearType: savedDetails.gearType ?? '',
     color: savedDetails.color ?? '',
     doorNumber: inputValue(savedDetails.doorNumber),
@@ -137,9 +148,14 @@ export default function DetailsPage() {
         county: restoredDetails.county,
         fuel: restoredDetails.fuel,
         enginePower: restoredDetails.enginePower,
+        engineSize: restoredDetails.engineSize,
         condition: restoredDetails.condition,
         sellerType: restoredDetails.sellerType,
         buyOrLease: restoredDetails.buyOrLease,
+        driveType: restoredDetails.driveType ?? '',
+        gearCount: inputValue(restoredDetails.gearCount),
+        fuelConsumption: inputValue(restoredDetails.fuelConsumption),
+        warranty: restoredDetails.warranty ?? '',
         gearType: restoredDetails.gearType ?? '',
         color: restoredDetails.color ?? '',
         doorNumber: inputValue(restoredDetails.doorNumber),
@@ -289,6 +305,7 @@ export default function DetailsPage() {
       brand: model.brand,
       model: model.model,
       enginePower: model.enginePower,
+      engineSize: model.engineSize,
       year: parsePositiveNumber(model.year),
       price: parsePositiveNumber(model.price),
       kilometrage: parsePositiveNumber(model.kilometrage),
@@ -297,6 +314,10 @@ export default function DetailsPage() {
       county: model.county,
       sellerType: model.sellerType,
       buyOrLease: model.buyOrLease,
+      driveType: model.driveType || null,
+      gearCount: model.gearCount === '' ? null : Number(model.gearCount),
+      fuelConsumption: model.fuelConsumption === '' ? null : Number(model.fuelConsumption),
+      warranty: model.warranty || null,
       gearType: model.gearType || null,
       color: model.color || null,
       doorNumber: parsePositiveNumber(model.doorNumber),
@@ -479,6 +500,7 @@ export default function DetailsPage() {
       brand: 'Toyota',
       model: 'Corolla',
       enginePower: '150',
+      engineSize: '2000',
       price: '10000',
       year: '2020',
       kilometrage: '20000',
@@ -543,11 +565,13 @@ export default function DetailsPage() {
                 <FilterBrands title="Marka" selectedVehicle_type="cars" mode="single" value={adFormModel.brand ? [adFormModel.brand] : []} onChange={value => updateField('brand', value[0] ?? '')} />
                 <FilterModels title="Model" selectedVehicle_type="cars" selectedBrands={adFormModel.brand ? [adFormModel.brand] : []} mode="single" value={adFormModel.model ? [adFormModel.model] : []} onChange={value => updateField('model', value[0] ?? '')} />
                 <FilterNumeric filterType="enginePower" mode="single" value={adFormModel.enginePower} onChange={value => updateField('enginePower', value)} />
+                <FilterNumeric filterType="engineSize" mode="single" value={adFormModel.engineSize} onChange={value => updateField('engineSize', value)} />
                 <FilterNumeric filterType="price" mode="single" value={adFormModel.price} onChange={value => updateField('price', value)} />
                 <FilterNumeric filterType="year" mode="single" value={adFormModel.year} onChange={value => updateField('year', value)} />
                 <FilterNumeric filterType="kilometrage" mode="single" value={adFormModel.kilometrage} onChange={value => updateField('kilometrage', value)} />
                 <FilterChoose filterType="condition" value={adFormModel.condition} onChange={value => updateField('condition', String(value))} />
                 <FilterCounty mode="single" value={adFormModel.county ? [adFormModel.county] : []} onChange={value => updateField('county', value[0] ?? '')} />
+                <VehicleExtraFields values={adFormModel} onChange={updateField} />
                 <FilterChoose filterType="gear" value={adFormModel.gearType} onChange={value => updateField('gearType', String(value))} />
                 <FilterChoose filterType="sellerType" value={adFormModel.sellerType} onChange={value => updateField('sellerType', String(value))} />
                 <FilterChoose filterType="fuel" value={adFormModel.fuel} onChange={value => updateField('fuel', String(value))} />

@@ -1,5 +1,7 @@
 'use client';
 
+import { getAdPath } from '@/shared/ad-seo';
+
 import { useEffect, useState } from 'react';
 import { Navbar } from '@/components/navbar';
 import { Footer } from '@/components/footer';
@@ -67,7 +69,7 @@ export default function HistoryPage() {
               {!result?.total && <p className="mt-6 text-gray-600">Još niste pregledali nijedan oglas.</p>}
               {Boolean(result?.total) && !result?.ads.length && <p className="mt-6 text-gray-600">Oglasi na ovoj stranici više nisu dostupni.</p>}
               <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                {result?.ads.map(ad => <AdCard key={ad.id} ad={ad} href={`/ad/${ad.id}`} />)}
+                {result?.ads.map(ad => <AdCard key={ad.id} ad={ad} href={getAdPath(ad)} />)}
               </div>
             </>
           )}

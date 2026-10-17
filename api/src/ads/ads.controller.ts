@@ -23,6 +23,7 @@ import { extname, join } from 'path';
 import {AdStatusDto, AdsQueryDto, CreateAdDto, UpdateAdDto} from "../dtos/ad.dtos";
 import { SkipThrottle } from '@nestjs/throttler';
 import { AdFetchRateLimitGuard } from './ad-fetch-rate-limit.guard';
+import { SavedSearchesService } from './saved-searches.service';
 
 const adImageUploadPath = join(process.cwd(), 'public', 'ad-images');
 
@@ -43,7 +44,7 @@ const adImageStorage = diskStorage({
 
 @Controller('ads')
 export class AdsController {
-  constructor(private readonly adService: AdsService) {}
+  constructor(private readonly adService: AdsService, private readonly savedSearches: SavedSearchesService) {}
 
 
   private readonly logger = new Logger(AdsController.name);
@@ -108,6 +109,10 @@ export class AdsController {
         weight: nullableInteger(createAdDto.weight),
         payload: nullableInteger(createAdDto.payload),
         volume: nullableInteger(createAdDto.volume),
+        driveType: createAdDto.driveType || null,
+        gearCount: nullableInteger(createAdDto.gearCount),
+        fuelConsumption: nullableNumber(createAdDto.fuelConsumption),
+        warranty: createAdDto.warranty || null,
         gearType: createAdDto.gearType || null,
         color: createAdDto.color || null,
       },
@@ -133,6 +138,18 @@ export class AdsController {
   /*-------------------------------------------READ---------------------------------------------*/
   /*-------------------------------------------READ---------------------------------------------*/
   /*-------------------------------------------READ---------------------------------------------*/
+  @UseGuards(SessionAuthGuard)
+  @Get('price-drop-notifications')
+  getPriceDropNotifications(@Req() req: any) {
+    return this.adService.getPriceDropNotifications(Number(req.user?.id));
+  }
+
+  @UseGuards(SessionAuthGuard)
+  @Patch('price-drop-notifications/:id/read')
+  readPriceDropNotification(@Param('id') id: string, @Req() req: any) {
+    return this.adService.readPriceDropNotification(+id, Number(req.user?.id));
+  }
+
   @UseGuards(OptionalSessionAuthGuard, AdFetchRateLimitGuard)
   @Get('all')
   @SkipThrottle({ default: true, burst: true })
@@ -153,6 +170,42 @@ export class AdsController {
     };
 
     return this.adService.findAllAds(req.user?.id, filters);
+  }
+
+  @UseGuards(OptionalSessionAuthGuard, AdFetchRateLimitGuard)
+  @Get('search')
+  @SkipThrottle({ default: true, burst: true })
+  search(@Query() query: Record<string, string>, @Req() req: any) {
+    return this.adService.search(query, req.user?.id);
+  }
+
+  @UseGuards(SessionAuthGuard)
+  @Get('saved-searches')
+  listSearches(@Req() req: any) { return this.savedSearches.list(Number(req.user.id)); }
+
+  @UseGuards(SessionAuthGuard)
+  @Post('saved-searches')
+  saveSearch(@Req() req: any, @Body() body: Record<string, unknown>) { return this.savedSearches.create(Number(req.user.id), body); }
+
+  @UseGuards(SessionAuthGuard)
+  @Patch('saved-searches/:id')
+  updateSearch(@Req() req: any, @Param('id') id: string, @Body() body: Record<string, unknown>) { return this.savedSearches.update(Number(req.user.id), +id, body); }
+
+  @UseGuards(SessionAuthGuard)
+  @Delete('saved-searches/:id')
+  deleteSearch(@Req() req: any, @Param('id') id: string) { return this.savedSearches.remove(Number(req.user.id), +id); }
+
+  @UseGuards(SessionAuthGuard)
+  @Get('search-alerts')
+  searchAlerts(@Req() req: any) { return this.savedSearches.alerts(Number(req.user.id)); }
+
+  @UseGuards(SessionAuthGuard)
+  @Patch('search-alerts/:id/read')
+  readSearchAlert(@Req() req: any, @Param('id') id: string) { return this.savedSearches.readAlert(Number(req.user.id), +id); }
+
+  @Get('sitemap')
+  sitemap(@Query() query: Record<string, string>) {
+    return this.adService.sitemap(query);
   }
 
   @UseGuards(OptionalSessionAuthGuard, AdFetchRateLimitGuard)
@@ -180,6 +233,19 @@ export class AdsController {
     const parsed = [...new Set(ids.split(',').map(Number))];
     if (parsed.some(id => !Number.isSafeInteger(id) || id <= 0)) throw new BadRequestException('Neispravan oglas.');
     return this.adService.findRecentlyViewed(parsed);
+  }
+
+  @UseGuards(OptionalSessionAuthGuard, AdFetchRateLimitGuard)
+  @Get('seller/:sellerId')
+  @SkipThrottle({ default: true, burst: true })
+  findSellerProfile(@Param('sellerId') sellerId: string, @Query('page') page: string | undefined, @Query('status') status: string | undefined, @Req() req: any) {
+    return this.adService.findSellerProfile(+sellerId, page === undefined ? 1 : Number(page), status ?? 'all', req.user?.id);
+  }
+
+  @UseGuards(SessionAuthGuard)
+  @Post(':id/view')
+  recordView(@Param('id') id: string, @Req() req: any) {
+    return this.adService.recordView(+id, Number(req.user?.id));
   }
 
   @UseGuards(SessionAuthGuard)

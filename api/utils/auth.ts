@@ -14,7 +14,7 @@ if (!process.env.BETTER_AUTH_SECRET || process.env.BETTER_AUTH_SECRET.length < 3
 export const auth = betterAuth({
     secret: process.env.BETTER_AUTH_SECRET,
     baseURL: process.env.BETTER_AUTH_URL ?? 'http://localhost:3001',
-    trustedOrigins: [process.env.FRONTEND_URL ?? 'http://localhost:3000', 'http://localhost:4200'],
+    trustedOrigins: [process.env.FRONTEND_URL ?? 'http://localhost:3000', 'http://localhost:4200', process.env.ADMIN_URL ?? 'http://localhost:3003'],
     plugins: [bearer()],
     emailAndPassword: {
         enabled: true,
@@ -27,7 +27,7 @@ export const auth = betterAuth({
                 const [credential] = await tx.select({ password: schema.account.password }).from(schema.account)
                     .where(and(eq(schema.account.userId, user.id), eq(schema.account.providerId, 'credential'))).limit(1);
                 if (!credential?.password) throw new Error('Credential account is missing');
-                await tx.update(schema.users).set({ password: credential.password }).where(eq(schema.users.id, Number(user.id)));
+                await tx.update(schema.users).set({ password: credential.password, passwordResetRequired: false }).where(eq(schema.users.id, Number(user.id)));
                 await tx.insert(schema.audit).values({ action: 'password_reset', path: '/users/reset-password', userId: Number(user.id), ip: null });
             });
         },

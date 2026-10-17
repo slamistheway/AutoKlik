@@ -1,196 +1,121 @@
 'use client';
 
 import {useEffect, useState} from 'react';
-import { useRouter } from 'next/router';
-import { CATEGORIES, SUBCATEGORIES } from './checkout/lib/checkout-data';
-import {Navbar} from "@/components/navbar";
-import {Footer} from "@/components/footer";
-import {ArrowRightIcon} from "lucide-react";
-import FilterChoose from "@/components/filters/filter-choose";
-import FilterNumeric from "@/components/filters/filter-numeric";
-import FilterBrands from "@/components/filters/filter-brands";
-import FilterModels from "@/components/filters/filter-models";
-import FilterCounty from "@/components/filters/filter-county";
-import FilterColor from "@/components/filters/filter-color";
-import type { AdCardData } from '@/types/types';
-import {AdCard} from "@/components/adCard";
-import {resolve_api_ad_img} from "@/shared/functions";
+import {useRouter} from 'next/router';
+import {Navbar} from '@/components/navbar';
+import {Footer} from '@/components/footer';
+import {SearchFilterFields} from '@/components/search-filter-fields';
+import {SavedSearches} from '@/components/saved-searches';
+import type {AdCardData} from '@/types/types';
+import {AdCard} from '@/components/adCard';
+import {resolve_api_ad_img} from '@/shared/functions';
 import {toAdCardData} from '@/shared/ad-data';
 import {fetchCurrentUser} from '@/app/auth/auth-guards';
 import {sessionCookie} from '@/components/cookies/cookies';
-
-
-type RangeValue = { min: string; max: string };
+import {getAdPath} from '@/shared/ad-seo';
+import {removeSearchFilter, searchChips, searchParams, sortOptions} from '@/shared/search-state';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
-
-
-
+type Results = {items: unknown[]; total: number; page: number; pageSize: number; totalPages: number};
 
 export default function Search() {
     const router = useRouter();
-    const [category, setCategory] = useState('');
-    const [subcategory, setSubcategory] = useState('');
-    const [currentUserId, setCurrentUserId] = useState<number | string | null>();
+    const [currentUserId, setCurrentUserId] = useState<number | string | null>(null);
+    const [draft, setDraft] = useState<Record<string, string>>({});
+    const [ads, setAds] = useState<AdCardData[]>([]);
+    const [result, setResult] = useState<Omit<Results, 'items'>>({total: 0, page: 1, pageSize: 24, totalPages: 0});
+    const [loading, setLoading] = useState(true);
+    const [errorMessage, setErrorMessage] = useState('');
+    const query = router.isReady ? router.asPath.split('?')[1]?.split('#')[0] ?? '' : '';
+    const applied = searchParams(Object.fromEntries(new URLSearchParams(query)), true);
+    const appliedFilters = searchParams(Object.fromEntries(applied)).toString();
+    const chips = searchChips(applied);
+    const navigate = (params: URLSearchParams) => { void router.push('/search?' + params.toString()); };
+
     useEffect(() => {
         let active = true;
-        if (!sessionCookie.getSessionToken()) {
-            Promise.resolve().then(() => { if (active) setCurrentUserId(null); });
-        } else {
-            void fetchCurrentUser().then(user => {
-                if (active) setCurrentUserId(user.id);
-            }).catch(() => undefined);
-        }
+        if (sessionCookie.getSessionToken()) void fetchCurrentUser().then(user => {
+            if (active) setCurrentUserId(user.id);
+        }).catch(() => undefined);
         return () => { active = false; };
     }, []);
-    {/*----FILTERS----*/}
-    const [search, setSearch] = useState('');
-    const [brands, setBrands] = useState<string[]>([]);
-    const [models, setModels] = useState<string[]>([]);
-    const [prices, setPrices] = useState<RangeValue>({ min: '', max: '' });
-    const [years, setYears] = useState<RangeValue>({ min: '', max: '' });
-    const [kilometrage, setKilometrage] = useState<RangeValue>({ min: '', max: '' });
-    const [enginePower, setEnginePower] = useState<RangeValue>({ min: '', max: '' });
-    const [engineSize, setEngineSize] = useState<RangeValue>({ min: '', max: '' });
-    const [condition, setCondition] = useState('');
-    const [counties, setCounties] = useState<string[]>([]);
-    const [buyOrLease, setBuyOrLease] = useState('');
-    const [sellerType, setSellerType] = useState('');
-    const [gasType, setGasType] = useState('');
-    const [gearType, setGearType] = useState('');
-    const [colors, setColors] = useState<string[]>([]);
-    const [doorNumber, setDoorNumber] = useState('');
-
-    const [ads, setAds] = useState<AdCardData[]>([]);
-    const [errorMessage, setErrorMessage] = useState('');
-
 
     useEffect(() => {
         if (!router.isReady) return;
         const controller = new AbortController();
-        const fetchAll = async () => {
+        const load = async () => {
+            const params = searchParams(Object.fromEntries(new URLSearchParams(query)), true);
+            setDraft(Object.fromEntries(params));
+            setLoading(true); setErrorMessage(''); setAds([]);
             try {
-                const token = typeof window === 'undefined' ? null : sessionCookie.getSessionToken();
-                const pageFilters = new URLSearchParams(window.location.search);
-                const apiFilters = new URLSearchParams();
-                ['search', 'brands', 'models', 'yearMin', 'yearMax', 'category', 'subcategory', 'fuel'].forEach(key => {
-                    const value = pageFilters.get(key);
-                    if (value) apiFilters.set(key, value);
+                const token = sessionCookie.getSessionToken();
+                const response = await fetch(`${API_BASE_URL}/ads/search?${params}`, {
+                    signal: controller.signal, headers: token ? {Authorization: `Bearer ${token}`} : {},
                 });
-                const filterQuery = apiFilters.toString();
-                setSearch(pageFilters.get('search') ?? '');
-                setCategory(pageFilters.get('category') ?? '');
-                setSubcategory(pageFilters.get('subcategory') ?? '');
-                setGasType(pageFilters.get('fuel') ?? '');
-                setBrands(pageFilters.get('brands')?.split(',').filter(Boolean) ?? []);
-                setModels(pageFilters.get('models')?.split(',').filter(Boolean) ?? []);
-                setYears({
-                    min: pageFilters.get('yearMin') ?? '',
-                    max: pageFilters.get('yearMax') ?? '',
-                });
-
-                const allAdsRes = await fetch(`${API_BASE_URL}/ads/all${filterQuery ? `?${filterQuery}` : ''}`, {
-                    signal: controller.signal,
-                    headers: token ? { Authorization: `Bearer ${token}` } : {},
-                });
-
-                if (!allAdsRes.ok) {
-                    const errBody = await allAdsRes.json().catch(() => ({}));
-                    throw new Error(errBody?.message ?? 'Failed to load saves.');
-                }
-
-                const apiAds: unknown[] = await allAdsRes.json();
+                const payload = await response.json();
+                if (!response.ok) throw new Error(payload.message ?? 'Oglasi nisu dostupni.');
                 if (controller.signal.aborted) return;
-                setAds(apiAds.map(toAdCardData).map((ad: AdCardData) => ({ ...ad, previewImg: resolve_api_ad_img(ad.previewImg) })));
-                setErrorMessage('');
-
-            } catch (err: unknown) {
-                if (controller.signal.aborted) return;
-                setErrorMessage(err instanceof Error ? err.message : 'Failed to load alls.');
-            }
+                const data = payload as Results;
+                setAds(data.items.map(toAdCardData).map(ad => ({...ad, previewImg: resolve_api_ad_img(ad.previewImg)})));
+                setResult({total: data.total, page: data.page, pageSize: data.pageSize, totalPages: data.totalPages});
+            } catch (error) {
+                if (!controller.signal.aborted) setErrorMessage(error instanceof Error ? error.message : 'Oglasi nisu dostupni.');
+            } finally { if (!controller.signal.aborted) setLoading(false); }
         };
-
-        void fetchAll();
+        void load();
         return () => controller.abort();
-    }, [router.isReady, router.asPath]);
+    }, [router.isReady, query, currentUserId]);
 
-
+    const page = (value: number) => {
+        const params = new URLSearchParams(applied);
+        params.set('page', String(value));
+        navigate(params);
+    };
 
     return (
         <>
-            <header>
-                <Navbar />
-            </header>
-
+            <header><Navbar /></header>
             <main>
                 <section className="mx-auto mt-5 w-11/12 max-w-6xl rounded-2xl border border-gray-200 bg-gray-100 p-5 md:p-8">
                     <h1 className="text-2xl font-bold">Pretraživanje</h1>
-                    <p className="mt-1 text-gray-600">Pretražite oglase po željenim kriterijima.</p>
-
+                    <p className="mt-1 text-gray-600">Odaberite filtre i primijenite ih za prikaz oglasa.</p>
                     <hr className="my-6 border-gray-300" />
-
-                    <h2 className="mb-5 text-xl font-semibold">Filteri</h2>
-                    {search && <p className="mb-4 text-sm text-gray-700">Pojam pretrage: <span className="font-semibold">{search}</span></p>}
-                    <div className="mb-5 grid gap-5 sm:grid-cols-2">
-                        <label className="text-sm font-medium">Kategorija
-                            <select value={category} onChange={event => {
-                                const params = new URLSearchParams(window.location.search);
-                                if (event.target.value) params.set('category', event.target.value); else params.delete('category');
-                                params.delete('subcategory'); params.delete('brands'); params.delete('models'); params.delete('fuel');
-                                void router.push(`/search?${params.toString()}`);
-                            }} className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2">
-                                <option value="">Sve kategorije</option>
-                                {CATEGORIES.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}
-                            </select>
-                        </label>
-                        <label className="text-sm font-medium">Podkategorija
-                            <select value={subcategory} disabled={!category} onChange={event => {
-                                const params = new URLSearchParams(window.location.search);
-                                if (event.target.value) params.set('subcategory', event.target.value); else params.delete('subcategory');
-                                void router.push(`/search?${params.toString()}`);
-                            }} className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 disabled:opacity-50">
-                                <option value="">Sve podkategorije</option>
-                                {(SUBCATEGORIES[category] ?? []).map(item => <option key={item.value} value={item.value}>{item.label}</option>)}
-                            </select>
-                        </label>
-                    </div>
-                    <div className="grid grid-cols-1 gap-x-5 gap-y-6 sm:grid-cols-2 lg:grid-cols-4">
-                        <FilterBrands title="Marka" selectedVehicle_type={category === 'motorcycle' || category === 'van' ? category : 'cars'} mode="multi" value={brands} onChange={value => setBrands(Array.isArray(value) ? value : [])} />
-                        <FilterModels title="Model" selectedVehicle_type={category === 'motorcycle' || category === 'van' ? category : 'cars'} selectedBrands={brands} mode="multi" value={models} onChange={value => setModels(Array.isArray(value) ? value : [])} />
-                        <FilterNumeric filterType="enginePower" mode="range" value={enginePower} onChange={value => setEnginePower(value as RangeValue)} />
-                        <FilterNumeric filterType="price" mode="range" value={prices} onChange={value => setPrices(value as RangeValue)} />
-                        <FilterNumeric filterType="year" mode="range" value={years} onChange={value => setYears(value as RangeValue)} />
-                        <FilterNumeric filterType="kilometrage" mode="range" value={kilometrage} onChange={value => setKilometrage(value as RangeValue)} />
-                        <FilterChoose filterType="condition" value={condition} onChange={value => setCondition(String(value))} />
-                        <FilterCounty mode="multi" value={counties} onChange={value => setCounties(Array.isArray(value) ? value : [])} />
-                        <FilterChoose filterType="buyOrLease" value={buyOrLease} onChange={value => setBuyOrLease(String(value))} />
-                        <FilterChoose filterType="sellerType" value={sellerType} onChange={value => setSellerType(String(value))} />
-                        <FilterNumeric filterType="engineSize" mode="range" value={engineSize} onChange={value => setEngineSize(value as RangeValue)} />
-                        <FilterChoose filterType="fuel" value={gasType} onChange={value => setGasType(String(value))} />
-                        <FilterChoose filterType="gear" value={gearType} onChange={value => setGearType(String(value))} />
-                        <FilterColor mode="multi" value={colors} onChange={value => setColors(Array.isArray(value) ? value : [])} />
-                        <FilterChoose filterType="doorNumber" value={doorNumber} onChange={value => setDoorNumber(String(value))} />
-                    </div>
+                    <form onSubmit={event => {
+                        event.preventDefault();
+                        const params = searchParams({...draft, sort: applied.get('sort') ?? 'newest'}, true);
+                        params.delete('page');
+                        navigate(params);
+                    }}>
+                        <h2 className="mb-5 text-xl font-semibold">Filteri</h2>
+                        <SearchFilterFields draft={draft} setDraft={setDraft} />
+                        <button type="submit" className="mt-6 rounded-md bg-blue-700 px-5 py-2 font-semibold text-white">Primijeni filtre</button>
+                    </form>
+                    <SavedSearches filters={appliedFilters} signedIn={currentUserId !== null} />
                 </section>
-
-                <section className="mx-auto my-10 w-11/12 max-w-6xl">
-                    <h2 className="mb-5 text-2xl font-bold">Oglasi</h2>
-                    {errorMessage && <p role="alert" className="mb-4 text-sm text-red-700">{errorMessage}</p>}
-                    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-                        {ads.map((ad) => (
-                            <AdCard
-                                currentUserId={currentUserId}
-                                key={ad.id}
-                                ad={ad}
-                                href={`/ad/${ad.id}`}
-                            />
-                        ))}
+                <section className="mx-auto my-10 w-11/12 max-w-6xl" aria-busy={loading}>
+                    <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+                        <h2 className="text-2xl font-bold">Oglasi{!loading && !errorMessage && ` (${result.total})`}</h2>
+                        <label className="text-sm">Sortiranje <select value={applied.get('sort') ?? 'newest'} onChange={event => {
+                            const params = new URLSearchParams(applied); params.set('sort', event.target.value); params.delete('page'); navigate(params);
+                        }} className="rounded-md border border-gray-300 bg-white px-3 py-2">{sortOptions.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
                     </div>
+                    {chips.length > 0 && <div className="mb-5 flex flex-wrap gap-2" aria-label="Primijenjeni filtri">
+                        {chips.map(chip => <button key={chip.key + chip.value} type="button" aria-label={`Ukloni ${chip.label}`} onClick={() => navigate(removeSearchFilter(applied, chip.key, chip.value))} className="rounded-full border border-gray-300 bg-gray-100 px-3 py-1 text-sm">{chip.label} ×</button>)}
+                        <button type="button" onClick={() => navigate(new URLSearchParams())} className="px-3 py-1 text-sm text-blue-700 underline">Ukloni sve filtre</button>
+                    </div>}
+                    {loading && <p role="status">Učitavanje oglasa...</p>}
+                    {errorMessage && <p role="alert" className="mb-4 text-sm text-red-700">{errorMessage}</p>}
+                    {!loading && !errorMessage && ads.length === 0 && <p>Nema oglasa za odabrane filtre{result.total > 0 ? '. Odaberite prethodnu stranicu.' : '.'}</p>}
+                    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                        {ads.map(ad => <AdCard key={ad.id} currentUserId={currentUserId} ad={ad} href={getAdPath(ad)} />)}
+                    </div>
+                    {!loading && !errorMessage && result.totalPages > 0 && <nav aria-label="Stranice rezultata" className="mt-6 flex flex-wrap items-center justify-center gap-4">
+                        <button type="button" disabled={result.page <= 1} onClick={() => page(result.page - 1)} className="rounded-md border px-3 py-2 disabled:opacity-40">Prethodna</button>
+                        <span>Stranica {result.page} od {result.totalPages} · {ads.length ? (result.page - 1) * result.pageSize + 1 : 0}–{Math.min(result.page * result.pageSize, result.total)} od {result.total}</span>
+                        <button type="button" disabled={result.page >= result.totalPages} onClick={() => page(result.page + 1)} className="rounded-md border px-3 py-2 disabled:opacity-40">Sljedeća</button>
+                    </nav>}
                 </section>
             </main>
-
-
-
             <Footer />
         </>
     );

@@ -10,11 +10,13 @@ import { InputValidationPipe } from './input-validation';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { RATE_LIMIT_OPTIONS } from './rate-limit.config';
 import { AuthModule } from './auth/auth.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
       ThrottlerModule.forRoot(RATE_LIMIT_OPTIONS),
       AuthModule,
+      AdminModule,
       UsersModule,
       ServeStaticModule.forRoot({
           rootPath: join(process.cwd(), 'public'),

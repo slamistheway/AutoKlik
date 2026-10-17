@@ -6,10 +6,11 @@ import { LoginAttemptsService } from './login-attempts.service';
 import { RegistrationAttemptsService } from './registration-attempts.service';
 import { AuditModule } from '../audit/audit.module';
 import { AuthModule } from '../auth/auth.module';
+import { MessageEventsService } from './message-events.service';
 
 @Module({
     imports: [DrizzleModule, AuditModule, AuthModule],
     controllers: [UsersController],
-    providers: [UsersService, LoginAttemptsService, RegistrationAttemptsService],
+    providers: [UsersService, LoginAttemptsService, RegistrationAttemptsService, MessageEventsService],
 })
 export class UsersModule {}

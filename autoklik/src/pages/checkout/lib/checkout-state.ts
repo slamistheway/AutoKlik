@@ -4,6 +4,7 @@ export interface CheckoutDetailsState {
   brand: string;
   model: string;
   enginePower: string;
+  engineSize: string;
   year: number | null;
   price: number | null;
   kilometrage: number | null;
@@ -12,6 +13,10 @@ export interface CheckoutDetailsState {
   county: string;
   sellerType: string;
   buyOrLease: string;
+  driveType: string | null;
+  gearCount: number | null;
+  fuelConsumption: number | null;
+  warranty: string | null;
   gearType: string | null;
   color: string | null;
   doorNumber: number | null;
@@ -52,6 +57,8 @@ const DESCRIPTION_KEY = 'checkout.description';
 const IMAGES_KEY = 'checkout.images';
 
 const detailKeys = {
+  engineSize: 'checkout.engineSize',
+  driveType: 'checkout.driveType', gearCount: 'checkout.gearCount', fuelConsumption: 'checkout.fuelConsumption', warranty: 'checkout.warranty',
   brand: BRANDS_KEY, model: MODEL_KEY, enginePower: ENGINEPOWER_KEY, year: YEAR_KEY, price: PRICE_KEY,
   kilometrage: KILOMETRAGE_KEY, fuel: FUEL_KEY, condition: CONDITION_KEY, county: COUNTY_KEY,
   sellerType: SELLERTYPE_KEY, buyOrLease: BUYORLEASE_KEY, gearType: GEARTYPE_KEY, color: COLOR_KEY,
@@ -76,7 +83,7 @@ function readDetails(): CheckoutDetailsState {
   const details = emptyDetails();
   for (const field of Object.keys(detailKeys) as (keyof typeof detailKeys)[]) {
     const value = readStoredValue(detailKeys[field]);
-    const numeric = ['year', 'price', 'kilometrage', 'doorNumber', 'weight', 'payload', 'volume'].includes(field);
+    const numeric = ['year', 'price', 'kilometrage', 'doorNumber', 'weight', 'payload', 'volume', 'gearCount', 'fuelConsumption'].includes(field);
     if (numeric ? typeof value === 'number' && Number.isFinite(value) : typeof value === 'string') {
       Object.assign(details, { [field]: value });
     }
@@ -97,6 +104,8 @@ function readDetails(): CheckoutDetailsState {
 
 const emptyCategory = (): CheckoutCategoryState => ({ category: '', subcategory: '' });
 const emptyDetails = (): CheckoutDetailsState => ({
+  engineSize: '',
+  driveType: null, gearCount: null, fuelConsumption: null, warranty: null,
   brand: '', model: '', enginePower: '', year: null, price: null, kilometrage: null, fuel: '', condition: '', county: '',
   sellerType: '', buyOrLease: '', gearType: null, color: null, doorNumber: null, drivingLicence: '',
   weight: null, payload: null, volume: null, title: '', description: '', images: [],
@@ -167,7 +176,7 @@ export function setCategoryState(state: CheckoutCategoryState) {
 export function getCategoryState() { return { ...categoryState }; }
 export function hasCategoryState() { return Boolean(categoryState.category && categoryState.subcategory); }
 export function setDetailsState(state: CheckoutDetailsState) {
-  initialize(); detailsState = { ...state, images: [...state.images] }; persistDetails();
+  initialize(); detailsState = { ...emptyDetails(), ...state, images: [...state.images] }; persistDetails();
 }
 export function getDetailsState() { return { ...detailsState, images: [...detailsState.images] }; }
 export function hasDetailsState() {
@@ -187,7 +196,8 @@ export function hasDetailsState() {
 export function hasDraftContent() {
   initialize();
   return Boolean(
-    detailsState.brand || detailsState.model || detailsState.enginePower || detailsState.year !== null || detailsState.price !== null ||
+    detailsState.driveType || detailsState.gearCount !== null || detailsState.fuelConsumption !== null || detailsState.warranty ||
+    detailsState.brand || detailsState.model || detailsState.enginePower || detailsState.engineSize || detailsState.year !== null || detailsState.price !== null ||
     detailsState.kilometrage !== null || detailsState.fuel || detailsState.condition || detailsState.county ||
     detailsState.sellerType || detailsState.buyOrLease || detailsState.gearType || detailsState.color ||
     detailsState.doorNumber !== null || detailsState.drivingLicence || detailsState.weight !== null ||

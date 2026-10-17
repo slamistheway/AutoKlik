@@ -3,8 +3,8 @@ import type { ReactNode } from "react";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "AutoKlik Admin | Demo prototip",
-  description: "Administracijski prototip AutoKlika s demonstracijskim podacima.",
+  title: "AutoKlik Admin",
+  description: "Administracija oglasa i pregled aktivnosti AutoKlika.",
   robots: { index: false, follow: false },
 };
 

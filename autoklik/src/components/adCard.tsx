@@ -32,19 +32,20 @@ export function AdCard({ ad, href, currentUserId }: AdCardProps) {
               height={450}
               unoptimized={ad.previewImg === '/default_ad_img.png' || /^https?:\/\//i.test(ad.previewImg)}
               className="h-full w-full object-cover"
+              onError={event => { event.currentTarget.src = '/default_ad_img.png'; }}
             />
             {getAdStatus(ad) !== 'active' && <span className="absolute left-2 top-2 rounded-md bg-gray-900 px-2 py-1 text-xs font-semibold text-white">{adStatusLabels[getAdStatus(ad)]}</span>}
           </div>
           <div className="flex flex-col px-4 pt-2">
             <h3 className="truncate font-bold text-gray-900">{ad.title}</h3>
-            <div className="grid grid-cols-3 text-sm gap-2">
-                <span className="flex min-w-0 items-center gap-1 whitespace-nowrap"><Calendar1Icon className="shrink-0" /><span className="truncate">{ad.year}</span></span>
-                <span className="flex min-w-0 items-center gap-1 whitespace-nowrap"><RoadIcon className="shrink-0" /><span className="truncate">{ad.kilometrage + " km"}</span></span>
-                <span className="flex min-w-0 items-center gap-1 whitespace-nowrap"><EngineIcon className="shrink-0" /><span className="truncate">{ad.enginePower}</span></span>
-                <span className="flex min-w-0 items-center gap-1 whitespace-nowrap"><FuelIcon className="shrink-0" /><span className="truncate">{ad.fuel}</span></span>
+            <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm">
+                <span className="flex max-w-full min-w-0 items-center gap-1"><Calendar1Icon className="size-4 shrink-0" /><span className="[overflow-wrap:anywhere]">{ad.year}</span></span>
+                <span className="flex max-w-full min-w-0 items-center gap-1"><RoadIcon className="size-4 shrink-0" /><span className="[overflow-wrap:anywhere]">{ad.kilometrage + " km"}</span></span>
+                <span className="flex max-w-full min-w-0 items-center gap-1"><EngineIcon className="size-4 shrink-0" /><span className="[overflow-wrap:anywhere]">{ad.enginePower}</span></span>
+                <span className="flex max-w-full min-w-0 items-center gap-1"><FuelIcon className="size-4 shrink-0" /><span className="[overflow-wrap:anywhere]">{ad.fuel}</span></span>
             </div>
-            <div className="mt-1 justify-between border-t border-gray-200 pt-1 text-xs text-gray-700">
-              <p className="mt-0.5 text-lg font-bold text-gray-950">{price + " €"}</p>
+            <div className="mt-1 flex flex-wrap items-center justify-between gap-x-2 gap-y-1 border-t border-gray-200 pt-1 text-xs text-gray-700">
+              <p className="mt-0.5 min-w-0 text-lg font-bold text-gray-950 [overflow-wrap:anywhere]">{price + " €"}</p>
             </div>
           </div>
         </Link>
@@ -55,7 +56,7 @@ export function AdCard({ ad, href, currentUserId }: AdCardProps) {
           className="flex h-7 aspect-square items-center justify-center rounded-lg border border-gray-300 bg-white/95 shadow-sm hover:bg-white"
         />
         </div>
-        <CompareAdButton adId={ad.id} className="mt-2 px-3 pb-3" />
+        <CompareAdButton adId={ad.id} variant="link" className="mt-1 px-4 pb-2" />
       </div>
     </article>
   );

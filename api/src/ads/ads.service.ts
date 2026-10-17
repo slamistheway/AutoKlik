@@ -5,20 +5,23 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import {and, asc, desc, eq, gte, ilike, inArray, lte, ne, notInArray, or, sql, type SQL,} from 'drizzle-orm';
+import {and, asc, desc, eq, gte, ilike, inArray, isNull, lte, ne, notInArray, or, sql, type SQL,} from 'drizzle-orm';
 // import { gt } from 'drizzle-orm';
 // import { buildRecommendationPreferences } from './recommendation-preferences';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { CreateAdDto, UpdateAdDto } from '../dtos/ad.dtos';
 import * as schema from '../db/schema';
-import { activeAdsCondition, effectiveAdStatus } from './ad-status';
+import { activeAdsCondition, effectiveAdStatus, publicSellerCondition } from './ad-status';
+import { imageDigest } from '../admin/image-digest';
+import { parseSearch, searchConditions, searchOrder } from './search-filters';
 
-const { ads, adImages, savedAds, users } = schema;
+const { ads, adImages, adViews, savedAds, users, priceDropNotifications } = schema;
 type Ad = typeof ads.$inferSelect;
 type AdWithRelations = {
   ad: Ad;
   sellerUsername: string | null;
   imageUrl: string | null;
+  viewCount?: number;
 };
 
 @Injectable()
@@ -39,9 +42,14 @@ export class AdsService {
     ad: Ad,
     sellerUsername: string | null,
     images: string[] = [],
+    viewCount = 0,
   ) {
     return {
       id: ad.id,
+      vin: ad.vin,
+      moderation_status: ad.moderationStatus,
+      moderation_reason: ad.moderationReason,
+      view_count: viewCount,
       status: effectiveAdStatus(ad),
       expires_at: ad.expiresAt,
       user_id: ad.userId,
@@ -55,11 +63,16 @@ export class AdsService {
       price: ad.price,
       kilometrage: ad.kilometrage,
       engine_power: ad.enginePower,
+      engine_size: ad.engineSize,
       fuel: ad.fuel,
       condition: ad.condition,
       county: ad.county,
       seller_type: ad.sellerType,
       buy_or_lease: ad.buyOrLease,
+      drive_type: ad.driveType,
+      gear_count: ad.gearCount,
+      fuel_consumption: ad.fuelConsumption,
+      warranty: ad.warranty,
       gear_type: ad.gearType,
       color: ad.color,
       door_number: ad.doorNumber,
@@ -78,7 +91,7 @@ export class AdsService {
   private mapJoinedAds(rows: AdWithRelations[]) {
     const grouped = new Map<
       number,
-      { ad: Ad; sellerUsername: string | null; images: string[] }
+      { ad: Ad; sellerUsername: string | null; images: string[]; viewCount: number }
     >();
 
     for (const row of rows) {
@@ -88,14 +101,15 @@ export class AdsService {
           ad: row.ad,
           sellerUsername: row.sellerUsername,
           images: [],
+          viewCount: Number(row.viewCount ?? 0),
         };
         grouped.set(row.ad.id, groupedAd);
       }
       if (row.imageUrl) groupedAd.images.push(row.imageUrl);
     }
 
-    return [...grouped.values()].map(({ ad, sellerUsername, images }) =>
-      this.mapAdForApi(ad, sellerUsername, images),
+    return [...grouped.values()].map(({ ad, sellerUsername, images, viewCount }) =>
+      this.mapAdForApi(ad, sellerUsername, images, viewCount),
     );
   }
 
@@ -161,6 +175,7 @@ export class AdsService {
         ad: ads,
         sellerUsername: users.username,
         imageUrl: adImages.imageUrl,
+        viewCount: sql<number>`(select count(*)::integer from ${adViews} where ${adViews.adId} = ${ads.id})`,
       })
       .from(ads)
       .leftJoin(users, eq(users.id, ads.userId))
@@ -220,6 +235,7 @@ export class AdsService {
         .insert(ads)
         .values({
           userId: user_id,
+          vin: createAdDto.vin?.toUpperCase() || null,
 
           category: category,
           subcategory: subcategory,
@@ -228,12 +244,17 @@ export class AdsService {
           price: String(createAdDto.price),
           kilometrage: createAdDto.kilometrage,
           enginePower: createAdDto.enginePower ?? null,
+          engineSize: createAdDto.engineSize ?? null,
           year: year ?? null,
           fuel: createAdDto.fuel || null,
           condition: createAdDto.condition || null,
           county: createAdDto.county || null,
           sellerType: createAdDto.sellerType || null,
           buyOrLease: createAdDto.buyOrLease || null,
+          driveType: createAdDto.driveType,
+          gearCount: createAdDto.gearCount,
+          fuelConsumption: createAdDto.fuelConsumption == null ? null : String(createAdDto.fuelConsumption),
+          warranty: createAdDto.warranty,
           gearType: createAdDto.gearType,
           color: createAdDto.color,
           doorNumber: createAdDto.doorNumber,
@@ -251,10 +272,11 @@ export class AdsService {
 
       if (normalizedImages.length > 0) {
         await tx.insert(adImages).values(
-          normalizedImages.map((imageUrl) => ({
+          await Promise.all(normalizedImages.map(async (imageUrl) => ({
             adId: ad.id,
             imageUrl,
-          })),
+            sha256: await imageDigest(imageUrl),
+          }))),
         );
         this.logger.warn(`Inserted ${normalizedImages.length} images for ad with ID ${ad.id}.`);
       }else {
@@ -277,6 +299,42 @@ export class AdsService {
   }
 
   /*-------------------------------------------SELECTING---------------------------------------------*/
+  async search(query: unknown, userId?: number) {
+    const filters = parseSearch(query);
+    const page = Number(filters.page ?? 1);
+    const pageSize = Number(filters.pageSize ?? 24);
+    const visible = and(activeAdsCondition(), ...searchConditions(filters));
+    const [count] = await this.db.select({total: sql<number>`count(*)::int`}).from(ads).where(visible);
+    const rows = await this.db.select({id: ads.id}).from(ads).where(visible)
+      .orderBy(...searchOrder(filters.sort)).limit(pageSize).offset((page - 1) * pageSize);
+    const ids = rows.map(row => row.id);
+    const mapped = ids.length ? this.mapJoinedAds(await this.getAdsWithRelations(and(visible, inArray(ads.id, ids)))) : [];
+    const saved = userId && ids.length ? await this.db.select({id: savedAds.adId}).from(savedAds).where(and(eq(savedAds.userId, userId), inArray(savedAds.adId, ids))) : [];
+    const savedIds = new Set(saved.map(row => row.id));
+    const byId = new Map(mapped.map(ad => [ad.id, ad]));
+    return {items: ids.flatMap(id => { const ad = byId.get(id); return ad ? [{...ad, is_saved: savedIds.has(id)}] : []; }), total: count.total, page, pageSize, totalPages: Math.ceil(count.total / pageSize)};
+  }
+
+  async sitemap(query: Record<string, string>) {
+    if (Object.keys(query).some(key => !['kind', 'page'].includes(key)) || Object.values(query).some(value => typeof value !== 'string')) throw new BadRequestException('Neispravan upit.');
+    const kind = query.kind ?? 'counts';
+    if (!['counts', 'ads', 'sellers'].includes(kind)) throw new BadRequestException('Neispravna vrsta karte.');
+    const page = query.page === undefined ? 1 : Number(query.page);
+    if (query.page !== undefined && !/^[1-9]\d*$/.test(query.page) || !Number.isSafeInteger(page) || page < 1 || page > 100000) throw new BadRequestException('Neispravna stranica.');
+    const pageSize = 1000;
+    if (kind === 'counts') {
+      const [counts] = await this.db.select({ ads: sql<number>`count(*)::int`, sellers: sql<number>`count(distinct ${ads.userId})::int` }).from(ads).where(activeAdsCondition());
+      return { ...counts, pageSize };
+    }
+    if (kind === 'sellers') {
+      const items = await this.db.selectDistinct({ id: ads.userId }).from(ads).where(activeAdsCondition()).orderBy(asc(ads.userId)).limit(pageSize).offset((page - 1) * pageSize);
+      return { items, pageSize };
+    }
+    const items = await this.db.select({ id: ads.id, title: ads.title, lastModified: sql<string | null>`to_char(${ads.dateLastUpdated}, 'YYYY-MM-DD')` }).from(ads)
+      .where(activeAdsCondition()).orderBy(asc(ads.id)).limit(pageSize).offset((page - 1) * pageSize);
+    return { items, pageSize };
+  }
+
   async findAllAds(
     userId?: number,
     filters: {
@@ -300,7 +358,7 @@ export class AdsService {
       .select({ id: ads.id })
       .from(ads)
       .where(and(...filterConditions))
-      .orderBy(desc(ads.dateCreated), desc(ads.id))
+      .orderBy(desc(ads.pinned), desc(ads.dateCreated), desc(ads.id))
       .limit(MAX_RECENT_ADS);
     const adIds = idRows.map((row) => row.id);
 
@@ -394,7 +452,7 @@ export class AdsService {
       .from(savedAds)
       .innerJoin(ads, eq(ads.id, savedAds.adId))
       .leftJoin(adImages, eq(adImages.adId, ads.id))
-      .where(and(eq(savedAds.userId, normalizedUserId), ne(ads.status, 'hidden')))
+      .where(and(eq(savedAds.userId, normalizedUserId), ne(ads.status, 'hidden'), publicSellerCondition()))
       .orderBy(desc(savedAds.dateSaved), asc(adImages.createdAt));
 
     const grouped = new Map<
@@ -441,6 +499,7 @@ export class AdsService {
         .select({ id: ads.id })
         .from(ads)
         .where(and(eq(ads.featured, true), activeAdsCondition()))
+        .orderBy(desc(ads.pinned), desc(ads.dateCreated), desc(ads.id))
         .limit(MAX_RECENT_ADS);
 
     const adIds = idRows.map((row) => row.id);
@@ -495,7 +554,7 @@ export class AdsService {
   }
 
   async findOne(id: number, userId?: number) {
-    const rows = await this.getAdsWithRelations(and(eq(ads.id, id), or(ne(ads.status, 'hidden'), userId ? eq(ads.userId, userId) : undefined)));
+    const rows = await this.getAdsWithRelations(and(eq(ads.id, id), or(and(ne(ads.status, 'hidden'), publicSellerCondition()), userId ? eq(ads.userId, userId) : undefined)));
     const [ad] = this.mapJoinedAds(rows);
 
     if (!ad) {
@@ -505,9 +564,49 @@ export class AdsService {
     return ad;
   }
 
+  async recordView(id: number, viewerId: number) {
+    if (!Number.isSafeInteger(id) || id <= 0 || !Number.isSafeInteger(viewerId) || viewerId <= 0) {
+      throw new BadRequestException('Neispravan oglas ili profil.');
+    }
+    return this.db.transaction(async tx => {
+      const [ad] = await tx.select({ id: ads.id, userId: ads.userId, status: ads.status }).from(ads).where(eq(ads.id, id)).for('share');
+      if (!ad || ad.status === 'hidden') throw new NotFoundException('Oglas nije pronađen.');
+      let counted = false;
+      if (ad.userId !== viewerId) {
+        const inserted = await tx.insert(adViews).values({ adId: id, viewerId }).onConflictDoNothing().returning({ adId: adViews.adId });
+        counted = inserted.length > 0;
+      }
+      const [total] = await tx.select({ count: sql<number>`count(*)::integer` }).from(adViews).where(eq(adViews.adId, id));
+      return { viewCount: Number(total.count), counted };
+    });
+  }
+
+  async findSellerProfile(sellerId: number, page = 1, status = 'all', viewerId?: number) {
+    if (!Number.isSafeInteger(sellerId) || sellerId <= 0 || !Number.isSafeInteger(page) || page < 1 || page > 1000000 || !['all', 'active', 'sold', 'expired'].includes(status)) {
+      throw new BadRequestException('Neispravan prodavatelj ili filtar.');
+    }
+    const [seller] = await this.db.select({ id: users.id, username: users.username, pfp: users.pfp, city: users.city, country: users.country, memberSince: users.dateCreated, verified: users.sellerVerified, badges: users.badges, dealerStatus: users.dealerStatus, dealerProfile: users.dealerProfile }).from(users).where(and(eq(users.id, sellerId), eq(users.accountStatus, 'active')));
+    if (!seller) throw new NotFoundException('Prodavatelj nije pronađen.');
+    if (seller.dealerStatus !== 'approved') seller.dealerProfile = null;
+    const publicAds = and(eq(ads.userId, sellerId), ne(ads.status, 'hidden'));
+    const [summary] = await this.db.select({
+      total: sql<number>`count(*)::integer`,
+      active: sql<number>`count(*) filter (where ${ads.status} = 'active' and ${ads.expiresAt} > now())::integer`,
+      sold: sql<number>`count(*) filter (where ${ads.status} = 'sold')::integer`,
+      expired: sql<number>`count(*) filter (where ${ads.status} = 'active' and ${ads.expiresAt} <= now())::integer`,
+    }).from(ads).where(publicAds);
+    const filter = status === 'active' ? activeAdsCondition() : status === 'sold' ? eq(ads.status, 'sold') : status === 'expired' ? and(eq(ads.status, 'active'), lte(ads.expiresAt, sql`now()`)) : undefined;
+    const idRows = await this.db.select({ id: ads.id }).from(ads).where(and(publicAds, filter)).orderBy(desc(ads.dateCreated), desc(ads.id)).limit(20).offset((page - 1) * 20);
+    const ids = idRows.map(row => row.id);
+    const listings = ids.length ? this.mapJoinedAds(await this.getAdsWithRelations(and(publicAds, filter, inArray(ads.id, ids)))) : [];
+    const saved = viewerId && ids.length ? await this.db.select({ adId: savedAds.adId }).from(savedAds).where(and(eq(savedAds.userId, viewerId), inArray(savedAds.adId, ids))) : [];
+    const savedIds = new Set(saved.map(row => row.adId));
+    return { seller, summary, page, pageSize: 20, total: status === 'all' ? summary.total : summary[status as 'active' | 'sold' | 'expired'], listings: listings.map(ad => ({ ...ad, is_saved: savedIds.has(ad.id) })) };
+  }
+
   async findRecentlyViewed(ids: number[]) {
     if (!ids.length) return [];
-    const rows = await this.getAdsWithRelations(and(inArray(ads.id, ids), ne(ads.status, 'hidden')));
+    const rows = await this.getAdsWithRelations(and(inArray(ads.id, ids), ne(ads.status, 'hidden'), publicSellerCondition()));
     const mapped = new Map(this.mapJoinedAds(rows).map(ad => [ad.id, ad]));
     return ids.flatMap(id => mapped.has(id) ? [mapped.get(id)!] : []);
   }
@@ -518,8 +617,9 @@ export class AdsService {
     }
     const [updated] = await this.db.update(ads).set({
       status: status as 'active' | 'sold' | 'hidden', dateLastUpdated: new Date(),
-    }).where(and(eq(ads.id, id), eq(ads.userId, userId))).returning({ id: ads.id });
-    if (!updated) throw new NotFoundException('Oglas nije pronađen ili nije vaš.');
+      soldAt: status === 'sold' ? sql`coalesce(${ads.soldAt}, now())` : null,
+    }).where(and(eq(ads.id, id), eq(ads.userId, userId), or(isNull(ads.moderationStatus), eq(ads.moderationStatus, 'approved')))).returning({ id: ads.id });
+    if (!updated) throw new NotFoundException('Oglas nije pronađen, nije vaš ili je ograničen moderacijom.');
     return this.findOne(id, userId);
   }
 
@@ -527,11 +627,11 @@ export class AdsService {
     if (!Number.isSafeInteger(id) || id <= 0 || !Number.isSafeInteger(userId) || userId <= 0) {
       throw new BadRequestException('Neispravan oglas ili korisnik.');
     }
-    const { retainedImages, imageOrder, price, ...fields } = dto;
+    const { retainedImages, imageOrder, price, fuelConsumption, ...fields } = dto;
     for (const field of ['category', 'subcategory', 'brand', 'model', 'title'] as const) {
       if (fields[field] !== undefined && !fields[field]?.trim()) throw new BadRequestException('Obavezna polja ne mogu biti prazna.');
     }
-    if (!Object.keys(fields).length && price === undefined && retainedImages === undefined && !uploadedImages.length) {
+    if (!Object.keys(fields).length && price === undefined && fuelConsumption === undefined && retainedImages === undefined && !uploadedImages.length) {
       throw new BadRequestException('Nema promjena za spremanje.');
     }
     let retained: string[] | undefined;
@@ -566,11 +666,20 @@ export class AdsService {
       }
       if (images.length > 10) throw new BadRequestException('Oglas može imati najviše 10 slika.');
       await tx.update(ads).set({ ...fields, ...(price === undefined ? {} : { price: String(price) }),
+        ...(fields.vin === undefined ? {} : { vin: fields.vin?.toUpperCase() || null }),
+        ...(fuelConsumption === undefined ? {} : { fuelConsumption: fuelConsumption === null ? null : String(fuelConsumption) }),
         dateLastUpdated: new Date(), ...(retained !== undefined || uploadedImages.length ? { previewImg: images[0] ?? null } : {}),
       }).where(and(eq(ads.id, id), eq(ads.userId, userId)));
+      if (price !== undefined && owned.price != null && Number(price) < Number(owned.price)) {
+        const subscribers = await tx.select({ userId: savedAds.userId }).from(savedAds)
+          .where(and(eq(savedAds.adId, id), ne(savedAds.userId, userId)));
+        if (subscribers.length) await tx.insert(priceDropNotifications).values(subscribers.map(subscriber => ({
+          userId: subscriber.userId, adId: id, oldPrice: owned.price!, newPrice: String(price),
+        })));
+      }
       if (retained !== undefined || uploadedImages.length) {
         await tx.delete(adImages).where(eq(adImages.adId, id));
-        if (images.length) await tx.insert(adImages).values(images.map(imageUrl => ({ adId: id, imageUrl })));
+        if (images.length) await tx.insert(adImages).values(await Promise.all(images.map(async imageUrl => ({ adId: id, imageUrl, sha256: await imageDigest(imageUrl) }))));
       }
     });
     return this.findOne(id, userId);
@@ -581,6 +690,29 @@ export class AdsService {
   }
 
   /*-------------------------SAVING---------------------------*/
+  async getPriceDropNotifications(userId: number) {
+    const visible = and(eq(priceDropNotifications.userId, userId), ne(ads.status, 'hidden'));
+    const items = await this.db.select({
+      id: priceDropNotifications.id, adId: ads.id, title: ads.title,
+      oldPrice: priceDropNotifications.oldPrice, newPrice: priceDropNotifications.newPrice,
+      createdAt: priceDropNotifications.createdAt, readAt: priceDropNotifications.readAt,
+    }).from(priceDropNotifications).innerJoin(ads, eq(ads.id, priceDropNotifications.adId))
+      .where(visible).orderBy(desc(sql`${priceDropNotifications.readAt} is null`), desc(priceDropNotifications.id)).limit(30);
+    const [count] = await this.db.select({ value: sql<number>`count(*)::integer` })
+      .from(priceDropNotifications).innerJoin(ads, eq(ads.id, priceDropNotifications.adId))
+      .where(and(visible, sql`${priceDropNotifications.readAt} is null`));
+    return { items, unreadCount: count.value };
+  }
+
+  async readPriceDropNotification(id: number, userId: number) {
+    const [updated] = await this.db.update(priceDropNotifications)
+      .set({ readAt: sql`coalesce(${priceDropNotifications.readAt}, now())` })
+      .where(and(eq(priceDropNotifications.id, id), eq(priceDropNotifications.userId, userId)))
+      .returning({ id: priceDropNotifications.id });
+    if (!updated) throw new NotFoundException('Obavijest nije pronađena.');
+    return { success: true };
+  }
+
   async saveAd(userId: number, adId: number) {
     if (
       !Number.isFinite(userId) ||

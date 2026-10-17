@@ -197,10 +197,15 @@ export default function PaymentOptionsPage() {
       body.append('kilometrage', String(details.kilometrage ?? 0));
       body.append('fuel', details.fuel);
       body.append('enginePower', String(details.enginePower ?? ''));
+      if (details.engineSize) body.append('engineSize', details.engineSize);
       body.append('condition', details.condition);
       body.append('county', details.county);
       body.append('sellerType', details.sellerType);
       body.append('buyOrLease', details.buyOrLease);
+      body.append('driveType', details.driveType ?? '');
+      body.append('gearCount', String(details.gearCount ?? ''));
+      body.append('fuelConsumption', String(details.fuelConsumption ?? ''));
+      body.append('warranty', details.warranty ?? '');
       body.append('gearType', details.gearType ?? '');
       body.append('color', details.color ?? '');
       body.append('doorNumber', String(details.doorNumber ?? ''));

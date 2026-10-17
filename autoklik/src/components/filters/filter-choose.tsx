@@ -13,9 +13,17 @@ type Props = {
     placeholder?: string;
 };
 
-type FilterType = 'condition' | 'buyOrLease' | 'sellerType' | 'fuel' | 'gear' | 'doorNumber';
+type FilterType = 'condition' | 'buyOrLease' | 'sellerType' | 'fuel' | 'gear' | 'doorNumber' | 'driveType' | 'warranty';
 
 const filters: Record<FilterType, { title: string; options: Option[] }> = {
+    driveType: {
+        title: 'Vrsta pogona',
+        options: ['Prednji', 'Stražnji', '4x4'].map(value => ({ label: value, value })),
+    },
+    warranty: {
+        title: 'Jamstvo',
+        options: ['Da', 'Ne'].map(value => ({ label: value, value })),
+    },
     condition: {
         title: 'Stanje',
         options: [

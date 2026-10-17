@@ -1,10 +1,14 @@
 import Link from "next/link";
 
-export function Footer() {
+export function Footer({homepage = false}: {homepage?: boolean} = {}) {
   return (
     <footer className="bg-[var(--color-footer)] px-4 py-12 text-[var(--color-footer-text)] sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
+        <div className={homepage
+          ? `grid min-w-0 grid-cols-1 gap-6
+              sm:grid-cols-2 sm:gap-8
+              lg:grid-cols-4`
+          : 'grid grid-cols-1 gap-8 md:grid-cols-4'}>
           <div>
             <h3 className="text-2xl font-bold">AutoKlik</h3>
           </div>

@@ -1,5 +1,7 @@
 'use client';
 
+import { getAdPath } from '@/shared/ad-seo';
+
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -56,9 +58,10 @@ export default function MyAdsPage() {
             {ads.map(ad => (
               <article key={ad.id} className="rounded-lg border border-gray-200 p-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <Link href={`/ad/${ad.id}`} className="font-bold text-gray-900 hover:underline">{ad.title}</Link>
+                  <Link href={getAdPath(ad)} className="font-bold text-gray-900 hover:underline">{ad.title}</Link>
                   <span className="rounded-md bg-gray-100 px-3 py-1 text-sm">{adStatusLabels[getAdStatus(ad)]}</span>
                 </div>
+                <p className="mt-2 text-sm text-gray-500">Pregledi: {ad.viewCount ?? 0}</p>
                 {ad.expiresAt && <p className="mt-2 text-sm text-gray-500">Istek: {new Date(ad.expiresAt).toLocaleString('hr-HR')}</p>}
                 <AdStatusControls ad={ad} onChange={updated => setAds(current => current.map(item => item.id === updated.id ? updated : item))} />
               </article>

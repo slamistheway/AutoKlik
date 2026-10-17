@@ -43,7 +43,7 @@ const ctaClass =
 
 type LeaveEvent = CustomEvent<string> & { resume?: () => void };
 
-export function Navbar() {
+export function Navbar({homepage = false}: {homepage?: boolean} = {}) {
   const router = useRouter();
   const pathname = usePathname();
 
@@ -192,7 +192,7 @@ export function Navbar() {
                           unoptimized
                           className="h-6 w-6 rounded-full object-cover ring-2 ring-white/20"
                       />
-                      <span>{currentUser.username}</span>
+                      <span className={homepage ? 'max-w-28 truncate' : undefined}>{currentUser.username}</span>
                       <ChevronDownIcon
                           className={`h-4 w-4 transition-transform ${isProfileDropdownOpen ? 'rotate-180' : ''}`}
                       />
@@ -241,7 +241,10 @@ export function Navbar() {
 
         {/* ---------- Search bar ---------- */}
         <div className="bg-[#a3b18a] px-4 shadow-[inset_0_1px_0_#879875]">
-          <div className="mx-auto flex min-h-14 max-w-7xl items-center justify-between gap-4 py-2">
+          <div className={homepage
+            ? `mx-auto grid min-h-14 max-w-7xl grid-cols-1 items-center gap-2 py-2
+                sm:flex sm:justify-between sm:gap-4`
+            : 'mx-auto flex min-h-14 max-w-7xl items-center justify-between gap-4 py-2'}>
             <div className="flex min-w-0 flex-1 items-center gap-2">
               <form onSubmit={submitSearch} role="search" className="flex min-w-0 flex-1 items-center md:max-w-3xl">
                 <input
@@ -267,14 +270,14 @@ export function Navbar() {
                   <button
                       type="button"
                       onClick={() => localStorage.clear()}
-                      className="ml-2 rounded-md bg-white px-3 py-1 text-sm font-semibold text-slate-600 ring-1 ring-inset ring-slate-300 transition-colors hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-700"
+                      className={`${homepage ? 'hidden lg:block' : ''} ml-2 rounded-md bg-white px-3 py-1 text-sm font-semibold text-slate-600 ring-1 ring-inset ring-slate-300 transition-colors hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-700`}
                   >
                     Delete localStorage
                   </button>
               )}
             </div>
 
-            <Link href="/checkout/vehicle-category" onClick={closeMenus} className={ctaClass}>
+            <Link href="/checkout/vehicle-category" onClick={closeMenus} className={`${ctaClass} ${homepage ? 'min-h-10 justify-center sm:w-auto' : ''}`}>
               <PlusIcon className="h-5 w-5" />
               <span>Objavi oglas</span>
             </Link>

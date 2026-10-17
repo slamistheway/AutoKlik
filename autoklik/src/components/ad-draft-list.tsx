@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
 import { deleteAdDraft, getAdDrafts, type AdDraft } from '@/lib/ad-drafts';
 import * as checkoutState from '@/pages/checkout/lib/checkout-state';
@@ -8,6 +8,13 @@ export function AdDraftList() {
   const [drafts, setDrafts] = useState<AdDraft[]>([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<AdDraft | null>(null);
+  const deleteDialog = useRef<HTMLDialogElement>(null);
+  const deleting = useRef(false);
+
+  useEffect(() => {
+    if (pendingDelete) deleteDialog.current?.showModal();
+  }, [pendingDelete]);
 
   useEffect(() => {
     let active = true;
@@ -36,14 +43,18 @@ export function AdDraftList() {
   };
 
   const deleteDraft = async (id: string) => {
+    if (deleting.current) return;
+    deleting.current = true;
     setLoading(true);
     setError('');
     try {
       await deleteAdDraft(id);
       setDrafts(current => current.filter(draft => draft.id !== id));
+      setPendingDelete(null);
     } catch {
       setError('Skicu nije moguće obrisati. Pokušajte ponovno.');
     } finally {
+      deleting.current = false;
       setLoading(false);
     }
   };
@@ -60,11 +71,20 @@ export function AdDraftList() {
             <span>{draft.details.title || [draft.details.brand, draft.details.model].filter(Boolean).join(' ') || 'Nedovršeni oglas'}<small className="block text-gray-500">{new Date(draft.savedAt).toLocaleString('hr-HR')}</small></span>
             <div className="flex shrink-0 flex-wrap gap-2">
               <button type="button" disabled={loading} onClick={() => void resume(draft.id)} className="rounded-md bg-[#a4473b] px-4 py-2 text-white disabled:opacity-50">Nastavi unos</button>
-              <button type="button" disabled={loading} onClick={() => void deleteDraft(draft.id)} className="rounded-md border border-red-300 px-4 py-2 text-red-700 hover:bg-red-50 disabled:opacity-50">Obriši</button>
+              <button type="button" disabled={loading} onClick={() => { setError(''); setPendingDelete(draft); }} className="rounded-md border border-red-300 px-4 py-2 text-red-700 hover:bg-red-50 disabled:opacity-50">Obriši</button>
             </div>
           </li>
         ))}
       </ul>
+      {pendingDelete && <dialog ref={deleteDialog} aria-labelledby="delete-draft-title" onCancel={event => { event.preventDefault(); if (!deleting.current) setPendingDelete(null); }} className="m-auto w-[calc(100%-2rem)] max-w-md rounded-xl bg-white p-6 shadow-xl backdrop:bg-black/50">
+        <h2 id="delete-draft-title" className="text-xl font-bold text-gray-900">Obrisati skicu?</h2>
+        <p className="mt-3 text-gray-600">Skica „{pendingDelete.details.title || 'Nedovršeni oglas'}” bit će trajno obrisana zajedno sa spremljenim fotografijama. Ovu radnju nije moguće poništiti.</p>
+        {error && <p role="alert" className="mt-3 text-red-700">{error}</p>}
+        <div className="mt-6 flex justify-end gap-3">
+          <button type="button" autoFocus disabled={loading} onClick={() => setPendingDelete(null)} className="rounded-md border border-gray-300 px-4 py-2 disabled:opacity-50">Odustani</button>
+          <button type="button" disabled={loading} onClick={() => void deleteDraft(pendingDelete.id)} className="rounded-md bg-red-700 px-4 py-2 text-white disabled:opacity-50">{loading ? 'Brisanje…' : 'Obriši skicu'}</button>
+        </div>
+      </dialog>}
     </section>
   );
 }

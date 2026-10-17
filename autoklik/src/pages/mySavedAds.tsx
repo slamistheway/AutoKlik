@@ -1,5 +1,7 @@
 'use client';
 
+import { getAdPath } from '@/shared/ad-seo';
+
 import { useRouter as useAccountRouter } from 'next/router';
 import type { ReactNode } from 'react';
 import { Footer } from '@/components/footer';
@@ -208,14 +210,14 @@ export default function MySavedAds() {
                   <div className="mt-5 space-y-4">
                     {pagedAds.map(ad => (
                         <article key={ad.id} className="flex overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition hover:shadow-md">
-                          <Link href={`/ad/${ad.id}`} className="relative h-40 w-36 shrink-0 overflow-hidden bg-gray-100 sm:h-44 sm:w-48">
+                          <Link href={getAdPath(ad)} className="relative h-40 w-36 shrink-0 overflow-hidden bg-gray-100 sm:h-44 sm:w-48">
                             <Image src={ad.previewImg} alt={ad.title || 'Slika oglasa'} fill sizes="(max-width: 640px) 144px, 192px" unoptimized={ad.previewImg === '/default_ad_img.png' || /^https?:\/\//i.test(ad.previewImg)} className="object-cover" />
                           </Link>
                           <div className="flex min-w-0 flex-1 flex-col gap-3 p-4">
                             <span className="text-xs font-medium text-gray-600">{ad.category ?? 'Oglas'}{ad.subcategory ? ` > ${ad.subcategory}` : ''}</span>
                             <div className="flex items-start justify-between gap-3">
                               <div className="min-w-0">
-                                <Link href={`/ad/${ad.id}`} className="line-clamp-2 text-base font-bold text-gray-900 hover:text-[var(--color-navbar)]">
+                                <Link href={getAdPath(ad)} className="line-clamp-2 text-base font-bold text-gray-900 hover:text-[var(--color-navbar)]">
                                   {ad.title || 'Oglas bez naslova'}
                                 </Link>
                                 <p className="mt-1 text-xs text-gray-500">{ad.brand} {ad.model}</p>

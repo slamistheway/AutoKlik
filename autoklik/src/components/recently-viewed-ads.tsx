@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { AdsCarousel } from '@/components/AdsCarousel';
 import type { AdCardData } from '@/types/types';
-import { getRecentlyViewedIds, clearRecentlyViewed } from '@/lib/recently-viewed';
+import { getRecentlyViewedIds } from '@/lib/recently-viewed';
 import { toAdCardData } from '@/shared/ad-data';
 import { resolve_api_ad_img } from '@/shared/functions';
 import { API_BASE_URL } from '@/pages/myProfile/account-api';
@@ -26,22 +26,17 @@ export function RecentlyViewedAds() {
     return () => controller.abort();
   }, []);
 
-  const clearHistory = () => {
-    try {
-      clearRecentlyViewed();
-      setAds([]);
-      setError('');
-    } catch { setError('Povijest nije moguće obrisati.'); }
-  };
-
   if (!ads.length && !error) return null;
   return (
-    <section className="mx-auto max-w-7xl px-4 pt-10">
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-xl font-bold text-(--color-navbar) sm:text-2xl">Nedavno pregledani oglasi</h2>
-        <div className="flex gap-3">
-          <Link href="/history" className="text-sm underline">Cijela povijest</Link>
-          <button type="button" onClick={clearHistory} className="text-sm underline">Obriši povijest</button>
+    <section className="mx-auto min-w-0 max-w-7xl px-4 pt-6
+      sm:px-6 sm:pt-10
+      lg:px-8 lg:pt-12">
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        <h2 className="min-w-0 text-lg font-bold text-(--color-navbar)
+          sm:text-xl
+          lg:text-2xl">Nedavno pregledani oglasi</h2>
+        <div className="shrink-0">
+          <Link href="/history" className="inline-flex min-h-11 items-center text-sm underline">Cijela povijest</Link>
         </div>
       </div>
       <p className="mt-1 text-sm text-gray-500">Posljednjih 10 oglasa pregledanih u ovom pregledniku.</p>

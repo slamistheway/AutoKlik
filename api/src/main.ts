@@ -10,7 +10,7 @@ async function bootstrap() {
     logger: ['log', 'error', 'warn', 'debug', 'verbose'] as LogLevel[],
   });
   app.enableCors({
-    origin: ['http://localhost:3000', 'http://localhost:4200'],
+    origin: ['http://localhost:3000', 'http://localhost:4200', process.env.ADMIN_URL ?? 'http://localhost:3003'],
     credentials: true,
     exposedHeaders: ['Retry-After', 'Retry-After-burst'],
   });

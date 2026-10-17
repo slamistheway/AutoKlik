@@ -92,6 +92,76 @@
       "when": 1792163262984,
       "tag": "0012_ad_availability",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1792168506331,
+      "tag": "0013_ad_vehicle_details",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1792169294481,
+      "tag": "0014_unique_ad_views",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1792174415276,
+      "tag": "0015_price_drop_notifications",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1792266231959,
+      "tag": "0016_admin_moderation",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1792266390311,
+      "tag": "0017_admin_indexes",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1792267096179,
+      "tag": "0018_user_management_safety",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1792267320941,
+      "tag": "0019_erasure_file_cleanup",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1792269000000,
+      "tag": "0020_user_blocks",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1792272000000,
+      "tag": "0021_complete_search",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1792270560209,
+      "tag": "0022_flawless_prowler",
+      "breakpoints": true
     }
   ]
 }

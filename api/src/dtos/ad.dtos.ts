@@ -1,4 +1,5 @@
 export class CreateAdDto {
+    vin?: string | null;
     user_id!: number;
     category!: string;
     subcategory!: string;
@@ -7,11 +8,16 @@ export class CreateAdDto {
     price!: number;
     kilometrage!: number;
     enginePower?: number | null;
+    engineSize?: number | null;
     fuel!: string;
     condition!: string;
     county!: string;
     sellerType!: string;
     buyOrLease!: string;
+    driveType?: string | null;
+    gearCount?: number | null;
+    fuelConsumption?: number | null;
+    warranty?: string | null;
     gearType!: string | null;
     color!: string | null;
     doorNumber?: number | null;
@@ -37,6 +43,8 @@ export class AdsQueryDto {
 }
 
 export class UpdateAdDto {
+    engineSize?: number | null;
+    vin?: string | null;
     retainedImages?: string;
     imageOrder?: string;
     category?: string;
@@ -51,6 +59,10 @@ export class UpdateAdDto {
     county?: string;
     sellerType?: string;
     buyOrLease?: string;
+    driveType?: string | null;
+    gearCount?: number | null;
+    fuelConsumption?: number | null;
+    warranty?: string | null;
     gearType?: string | null;
     color?: string | null;
     doorNumber?: number | null;

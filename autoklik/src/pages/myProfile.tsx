@@ -21,6 +21,7 @@ type SavedAd = { ad_id: number };
 
 const profileNavigation = [
   { href: '/myProfile', label: 'Moj profil' },
+  { href: '/dealer-application', label: 'Profil trgovca' },
   { href: '/myAds', label: 'Moji oglasi' },
   { href: '/myMessages', label: 'Poruke' },
   { href: '/mySavedAds', label: 'Spremljeni oglasi' },
@@ -105,6 +106,7 @@ export default function MyProfilePage() {
                   </dl>
                   {statsError && <p role="status" className="text-sm text-amber-700">{statsError}</p>}
                   <div className="flex flex-wrap gap-3">
+                    <Link href={`/seller/${user.id}`} className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Moj javni profil</Link>
                     <Link href="/mySettings" className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Uredi profil</Link>
                     <Link href="/mySavedAds" className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Spremljeni oglasi</Link>
                   </div>

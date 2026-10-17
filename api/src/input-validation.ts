@@ -33,6 +33,8 @@ const profile: Rules = {
   country: { ...text(100), nullable: true },
 };
 const ad: Rules = {
+  engineSize: { ...number(0, 100000), nullable: true },
+  vin: { ...text(17), nullable: true, pattern: /^[A-HJ-NPR-Z0-9]{17}$/i },
   user_id: number(1, Number.MAX_SAFE_INTEGER),
   category: text(100, true),
   subcategory: text(100),
@@ -50,6 +52,10 @@ const ad: Rules = {
   sellerType: text(100),
   buyOrLease: text(100),
   gearType: { ...text(100), nullable: true },
+  driveType: { ...text(30), nullable: true, pattern: /^(Prednji|Stražnji|4x4)$/ },
+  gearCount: { ...number(1, 20), nullable: true },
+  fuelConsumption: { ...number(0, 1000), integer: false, nullable: true },
+  warranty: { ...text(10), nullable: true, pattern: /^(Da|Ne)$/ },
   color: { ...text(100), nullable: true },
   doorNumber: { ...number(0, 100), nullable: true },
   drivingLicence: text(100),

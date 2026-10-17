@@ -122,7 +122,7 @@ function LoginPage() {
               {retryAfter > 0 ? `Pokušaj ponovno za ${retryAfter} s` : isSubmitting ? 'Prijava u tijeku...' : 'Prijavi se'}
             </button>
           </form>
-          <Link href="/forgot-password" className="block text-center text-sm text-blue-600 hover:underline">Zaboravili ste lozinku?</Link>
+          <Link href="/forgot-password" className="block text-center text-sm text-blue-600 hover:underline">Zaboravili ste lozinku?</Link><Link href="/appeal" className="block text-center text-sm text-blue-600 hover:underline">Žalba na ograničenje računa</Link>
         </div>
       </main>
       <Footer />

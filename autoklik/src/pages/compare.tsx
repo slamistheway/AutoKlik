@@ -1,5 +1,7 @@
 'use client';
 
+import { getAdPath } from '@/shared/ad-seo';
+
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -22,6 +24,7 @@ const displayValue = (value: string) => valueLabels[value] ?? value;
 
 const rows: { label: string; value: (ad: AdCardData) => string | number | null }[] = [
   { label: 'Cijena', value: ad => ad.price === '' ? 'Na upit' : `${new Intl.NumberFormat('hr-HR').format(Number(ad.price))} €` },
+  { label: 'Pregledi', value: ad => ad.viewCount ?? 0 },
   { label: 'Status', value: ad => adStatusLabels[getAdStatus(ad)] },
   { label: 'Marka', value: ad => ad.brand },
   { label: 'Model', value: ad => ad.model },
@@ -29,6 +32,10 @@ const rows: { label: string; value: (ad: AdCardData) => string | number | null }
   { label: 'Kilometraža', value: ad => ad.kilometrage === null ? null : `${new Intl.NumberFormat('hr-HR').format(ad.kilometrage)} km` },
   { label: 'Snaga motora', value: ad => ad.enginePower === null ? null : `${ad.enginePower} kW` },
   { label: 'Gorivo', value: ad => displayValue(ad.fuel) },
+  { label: 'Vrsta pogona', value: ad => ad.driveType ?? null },
+  { label: 'Broj brzina', value: ad => ad.gearCount ?? null },
+  { label: 'Potrošnja goriva', value: ad => ad.fuelConsumption == null ? null : `${ad.fuelConsumption} L/100 km` },
+  { label: 'Jamstvo', value: ad => ad.warranty ?? null },
   { label: 'Mjenjač', value: ad => displayValue(ad.gearType) },
   { label: 'Stanje', value: ad => displayValue(ad.condition) },
   { label: 'Boja', value: ad => ad.color },
@@ -83,7 +90,7 @@ export default function ComparePage() {
                 <thead><tr><th scope="col" className="min-w-32 border-b border-gray-200 p-4 align-bottom text-gray-500">Podaci o vozilu</th>{ids.map(id => {
                   const ad = ads.find(item => item.id === id);
                   return <th key={id} scope="col" className="min-w-56 border-b border-l border-gray-200 p-4 align-top font-normal">
-                    {ad ? <><Link href={`/ad/${id}`} className="block"><div className="relative mb-3 aspect-[16/10] overflow-hidden rounded-md bg-gray-100"><Image src={resolve_api_ad_img(ad.previewImg)} alt={ad.title} fill unoptimized sizes="300px" className="object-cover" onError={event => { event.currentTarget.src = '/default_ad_img.png'; }} /></div><span className="font-bold text-gray-900 hover:underline">{ad.title}</span></Link></> : <p className="mb-3 text-gray-600">Oglas #{id} više nije dostupan.</p>}
+                    {ad ? <><Link href={getAdPath(ad)} className="block"><div className="relative mb-3 aspect-[16/10] overflow-hidden rounded-md bg-gray-100"><Image src={resolve_api_ad_img(ad.previewImg)} alt={ad.title} fill unoptimized sizes="300px" className="object-cover" onError={event => { event.currentTarget.src = '/default_ad_img.png'; }} /></div><span className="font-bold text-gray-900 hover:underline">{ad.title}</span></Link></> : <p className="mb-3 text-gray-600">Oglas #{id} više nije dostupan.</p>}
                     <CompareAdButton adId={id} className="mt-3" />
                   </th>;
                 })}</tr></thead>

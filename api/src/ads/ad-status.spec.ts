@@ -32,9 +32,12 @@ describe('Ad availability', () => {
     const service = new AdsService({ update: () => ({ set }) } as unknown as ConstructorParameters<typeof AdsService>[0]);
     jest.spyOn(service, 'findOne').mockResolvedValue({ id: 5 } as Awaited<ReturnType<AdsService['findOne']>>);
     await service.updateStatus(5, 7, 'sold');
-    expect(set).toHaveBeenCalledWith({ status: 'sold', dateLastUpdated: expect.any(Date) });
+    expect(set).toHaveBeenCalledWith(expect.objectContaining({ status: 'sold', dateLastUpdated: expect.any(Date) }));
+    expect(set.mock.calls[0][0]).not.toHaveProperty('expiresAt');
+    expect(new PgDialect().sqlToQuery(set.mock.calls[0][0].soldAt).sql).toContain('coalesce(');
     const query = new PgDialect().sqlToQuery(where.mock.calls[0][0]);
-    expect(query.params).toEqual([5, 7]);
+    expect(query.params).toEqual([5, 7, 'approved']);
+    expect(query.sql).toContain('"ads"."moderation_status" is null');
     expect(query.sql).toContain('"ads"."user_id"');
     returning.mockResolvedValue([]);
     await expect(service.updateStatus(5, 8, 'hidden')).rejects.toMatchObject({ status: 404 });

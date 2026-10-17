@@ -1,5 +1,7 @@
 'use client';
 
+import { ReportButton } from '@/components/report-button';
+
 import {useEffect, useRef, useState} from 'react';
 import { useRouter } from 'next/router';
 import '../app/globals.css';
@@ -11,6 +13,7 @@ import Link from "next/link";
 import {usePathname} from "next/navigation";
 import {sessionCookie} from '@/components/cookies/cookies';
 import {ImageIcon, XIcon} from "lucide-react";
+import {subscribeMessages} from '@/shared/live-messages';
 
 const profileNavigation = [
     { href: '/myProfile', label: 'Moj profil' },
@@ -20,7 +23,7 @@ const profileNavigation = [
 ];
 
 
-type Conversation = { id: number; otherUserId: number; username: string; pfp: string | null; unreadCount: number };
+type Conversation = { id: number; otherUserId: number; username: string; pfp: string | null; unreadCount: number; blockedByMe: boolean; messagingBlocked: boolean };
 type Message = { id: number; senderId: number; body: string; createdAt: string; readAt: string | null; hasImage: boolean };
 
 async function request<T>(path: string, token: string, body?: object, signal?: AbortSignal): Promise<T> {
@@ -51,6 +54,7 @@ export default function MyMessages() {
     const messageRequest = useRef(0);
     const [messageBody, setMessageBody] = useState('');
     const [sendingMessage, setSendingMessage] = useState(false);
+    const [changingBlock, setChangingBlock] = useState(false);
     const sendInProgress = useRef(false);
     const messageRevision = useRef(0);
     const [loadedConversation, setLoadedConversation] = useState<number | null>(null);
@@ -62,13 +66,14 @@ export default function MyMessages() {
     const scrolledConversation = useRef<number | null>(null);
     const sentImageToScroll = useRef<number | null>(null);
     const otherUserId = conversations.find(item => item.id === activeConversation)?.otherUserId;
+    const activeChat = conversations.find(item => item.id === activeConversation);
     const pathname = usePathname()
 
 
     const sendMessage = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         const body = messageBody.trim();
-        if (sendInProgress.current || loadingMessages || (!body && !selectedImage) || activeConversation === null || !user) return;
+        if (sendInProgress.current || changingBlock || activeChat?.messagingBlocked || loadingMessages || (!body && !selectedImage) || activeConversation === null || !user) return;
         const token = sessionCookie.getSessionToken();
         if (!token) {
             void router.replace('/login');
@@ -99,7 +104,7 @@ export default function MyMessages() {
             if (requestId === messageRequest.current) {
                 scrolledConversation.current = null;
                 sentImageToScroll.current = message.hasImage ? message.id : null;
-                setMessages(current => [...current, message]);
+                setMessages(current => current.some(item => item.id === message.id) ? current : [...current, message]);
                 setMessageBody('');
                 setSelectedImage(null);
                 setImagePreview(null);
@@ -111,6 +116,19 @@ export default function MyMessages() {
             sendInProgress.current = false;
             setSendingMessage(false);
         }
+    };
+
+    const toggleBlock = async () => {
+        const token = sessionCookie.getSessionToken();
+        if (!token || !activeChat || changingBlock) return;
+        setChangingBlock(true);
+        try {
+            await request(activeChat.blockedByMe ? 'unblockUser' : 'blockUser', token, {otherUserId: activeChat.otherUserId});
+            const list = await request<Conversation[]>('getConversations', token);
+            setConversations(list);
+        } catch (error: unknown) {
+            setErrorMessage(error instanceof Error ? error.message : 'Promjena blokade nije uspjela.');
+        } finally { setChangingBlock(false); }
     };
 
     useEffect(() => {
@@ -172,11 +190,13 @@ export default function MyMessages() {
             }
         };
         const interval = window.setInterval(refresh, 5000);
+        const unsubscribe = subscribeMessages(() => { void refresh(); });
         window.addEventListener('messages-read', refresh);
         document.addEventListener('visibilitychange', refresh);
         return () => {
             controller.abort();
             window.clearInterval(interval);
+            unsubscribe();
             window.removeEventListener('messages-read', refresh);
             document.removeEventListener('visibilitychange', refresh);
         };
@@ -217,10 +237,12 @@ export default function MyMessages() {
         const refresh = () => { void load(); };
         void load(true);
         const interval = window.setInterval(refresh, 5000);
+        const unsubscribe = subscribeMessages(refresh);
         document.addEventListener('visibilitychange', refresh);
         return () => {
             controller.abort();
             window.clearInterval(interval);
+            unsubscribe();
             document.removeEventListener('visibilitychange', refresh);
         };
     }, [activeConversation, otherUserId]);
@@ -338,6 +360,8 @@ export default function MyMessages() {
                         <section className="flex min-h-[320px] min-w-0 flex-col" aria-labelledby="chat-heading">
                             <div className="border-b border-gray-200 px-5 py-4">
                                 <h2 id="chat-heading" className="font-semibold text-gray-900">{conversations.find(item => item.id === activeConversation)?.username ?? 'Poruke'}</h2>
+                                {activeChat && <button type="button" disabled={changingBlock || sendingMessage} onClick={() => { void toggleBlock(); }} className="mt-2 text-sm font-medium text-blue-700 disabled:opacity-50">{changingBlock ? 'Spremanje...' : activeChat.blockedByMe ? 'Odblokiraj korisnika' : 'Blokiraj korisnika'}</button>}
+                                {activeChat?.messagingBlocked && <p role="status" className="mt-2 text-sm text-gray-600">{activeChat.blockedByMe ? 'Blokirali ste ovog korisnika. Odblokirajte ga za slanje poruka.' : 'Slanje poruka ovom korisniku nije dostupno.'}</p>}
                             </div>
                             <div className="flex flex-1 flex-col overflow-hidden">
                                 {loadingMessages ? (
@@ -360,7 +384,7 @@ export default function MyMessages() {
                                                             if (panel) panel.scrollTop = panel.scrollHeight;
                                                             sentImageToScroll.current = null;
                                                         }}/></div>}
-                                                        {m.body && <div className="min-w-0 whitespace-pre-wrap break-words text-sm leading-5 [overflow-wrap:anywhere]">{m.body}</div>}
+                                                        {m.senderId !== user?.id && <ReportButton targetType="message" targetId={m.id} />}{m.body && <div className="min-w-0 whitespace-pre-wrap break-words text-sm leading-5 [overflow-wrap:anywhere]">{m.body}</div>}
                                                         <time dateTime={m.createdAt} title={new Date(m.createdAt).toLocaleString('hr-HR')}
                                                               className="ml-auto shrink-0 text-[11px] leading-4 text-gray-300">
                                                             {new Date(m.createdAt).toLocaleTimeString('hr-HR', {hour: '2-digit', minute: '2-digit'})}
@@ -373,6 +397,7 @@ export default function MyMessages() {
 
                                         <div className="border-t border-gray-200 pt-4">
                                             <form onSubmit={sendMessage}>
+                                                <fieldset disabled={Boolean(activeChat?.messagingBlocked) || changingBlock} className="min-w-0">
                                                 <div>
                                                     {selectedImage && imagePreview &&
                                                         <div className="mb-3 flex items-center gap-3">
@@ -444,6 +469,7 @@ export default function MyMessages() {
                                                     </button>
                                                 </div>
 
+                                                </fieldset>
                                             </form>
                                         </div>
                                     </div>

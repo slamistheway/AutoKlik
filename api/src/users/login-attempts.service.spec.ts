@@ -126,6 +126,7 @@ describe('failed login cooldown', () => {
       service,
       new RegistrationAttemptsService(new LoginAttemptsService()),
       {} as BetterAuthService,
+      {} as ConstructorParameters<typeof UsersController>[3],
     );
     const response = { setHeader: jest.fn() };
     await expect(

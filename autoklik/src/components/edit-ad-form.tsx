@@ -4,6 +4,7 @@ import { useRef, useState, type FormEvent } from 'react';
 import FilterBrands from '@/components/filters/filter-brands';
 import FilterModels from '@/components/filters/filter-models';
 import FilterNumeric from '@/components/filters/filter-numeric';
+import { VehicleExtraFields } from '@/components/vehicle-extra-fields';
 import FilterChoose from '@/components/filters/filter-choose';
 import FilterCounty from '@/components/filters/filter-county';
 import type { AdFullData } from '@/types/types';
@@ -13,10 +14,14 @@ import { sessionCookie } from '@/components/cookies/cookies';
 import { API_BASE_URL, getResponseMessage } from '@/pages/myProfile/account-api';
 
 const fields = [
+  ['engineSize', 'Obujam motora (cc)', 'number'],
+  ['vin', 'VIN', 'text'],
   ['title', 'Naslov', 'text'], ['brand', 'Marka', 'text'], ['model', 'Model', 'text'],
   ['year', 'Godina', 'number'], ['price', 'Cijena (€)', 'number'], ['kilometrage', 'Kilometraža', 'number'], ['enginePower', 'Snaga motora', 'number'],
   ['fuel', 'Gorivo', 'text'], ['condition', 'Stanje', 'text'], ['county', 'Županija', 'text'],
   ['sellerType', 'Vrsta prodavača', 'text'], ['buyOrLease', 'Kupnja ili leasing', 'text'],
+  ['driveType', 'Vrsta pogona', 'text'], ['gearCount', 'Broj brzina', 'number'],
+  ['fuelConsumption', 'Potrošnja goriva (L/100 km)', 'number'], ['warranty', 'Jamstvo', 'text'],
   ['gearType', 'Mjenjač', 'text'], ['color', 'Boja', 'text'], ['doorNumber', 'Broj vrata', 'number'],
   ['drivingLicence', 'Vozačka dozvola', 'text'], ['weight', 'Težina', 'number'],
   ['payload', 'Nosivost', 'number'], ['volume', 'Zapremina', 'number'],
@@ -54,7 +59,7 @@ export default function EditAdForm({ ad, onSaved, onCancel }: {
       const body = new FormData();
       for (const [key, , type] of fields) {
         if (type === 'number' && !values[key]) {
-          if (['doorNumber', 'weight', 'payload', 'volume'].includes(key)) body.append(key, '');
+          if (['engineSize', 'doorNumber', 'weight', 'payload', 'volume', 'gearCount', 'fuelConsumption'].includes(key)) body.append(key, '');
           continue;
         }
         body.append(key, values[key]);
@@ -77,19 +82,23 @@ export default function EditAdForm({ ad, onSaved, onCancel }: {
   return (
     <section className="mb-6 rounded-2xl bg-white p-5 text-gray-900 sm:p-6" aria-label="Uređivanje oglasa">
       <h2 className="mb-4 text-xl font-bold">Uredi oglas</h2>
+      {ad.moderationStatus && ad.moderationStatus !== 'approved' && <p role="status" className="mb-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">Oglas je ograničen moderacijom. {ad.moderationReason} Izmjene možete spremiti; za ponovnu objavu potrebno je odobrenje osoblja.</p>}
       <form onSubmit={save}>
         <fieldset disabled={saving || readingImages} className="space-y-4 disabled:opacity-60">
           <div>
             <h1 className="block text-sm font-medium text-gray-700">Opći podaci</h1>
             <div className="grid grid-cols-1 gap-x-5 gap-y-6 sm:grid-cols-2 lg:grid-cols-4">
+              <label className="text-sm text-gray-700">VIN (neobavezno)<input className="mt-2 block w-full rounded-lg border border-gray-200 p-3" value={values.vin} maxLength={17} pattern="[A-HJ-NPR-Za-hj-npr-z0-9]{17}" onChange={event => updateField('vin', event.target.value.toUpperCase())} /></label>
               <FilterBrands title="Marka" selectedVehicle_type={ad.category || 'cars'} mode="single" value={values.brand ? [values.brand] : []} onChange={value => updateField('brand', value[0] ?? '')} />
               <FilterModels title="Model" selectedVehicle_type={ad.category || 'cars'} selectedBrands={values.brand ? [values.brand] : []} mode="single" value={values.model ? [values.model] : []} onChange={value => updateField('model', value[0] ?? '')} />
               <FilterNumeric filterType="enginePower" mode="single" value={values.enginePower} onChange={value => updateField('enginePower', value)} />
+              <FilterNumeric filterType="engineSize" mode="single" value={values.engineSize} onChange={value => updateField('engineSize', value)} />
               <FilterNumeric filterType="price" mode="single" value={values.price} onChange={value => updateField('price', value)} />
               <FilterNumeric filterType="year" mode="single" value={values.year} onChange={value => updateField('year', value)} />
               <FilterNumeric filterType="kilometrage" mode="single" value={values.kilometrage} onChange={value => updateField('kilometrage', value)} />
               <FilterChoose filterType="condition" value={values.condition} onChange={value => updateField('condition', value)} />
               <FilterCounty mode="single" value={values.county ? [values.county] : []} onChange={value => updateField('county', value[0] ?? '')} />
+              <VehicleExtraFields values={values} onChange={updateField} />
               <FilterChoose filterType="gear" value={values.gearType} onChange={value => updateField('gearType', value)} />
               <FilterChoose filterType="sellerType" value={values.sellerType} onChange={value => updateField('sellerType', value)} />
               <FilterChoose filterType="fuel" value={values.fuel} onChange={value => updateField('fuel', value)} />

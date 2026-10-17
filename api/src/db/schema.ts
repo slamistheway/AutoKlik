@@ -7,10 +7,12 @@ import {
     foreignKey,
     index,
     integer, numeric,
+    jsonb,
     pgTable, primaryKey, serial,
     text,
     timestamp,
     unique,
+    uniqueIndex,
     varchar,
 } from "drizzle-orm/pg-core";
 
@@ -27,11 +29,24 @@ export const users = pgTable(
       phone: varchar("phone", { length: 20 }),
       city: varchar("city", { length: 100 }),
       country: varchar("country", { length: 100 }),
-      dateCreated: timestamp("date_created", { withTimezone: false }).defaultNow()
+      dateCreated: timestamp("date_created", { withTimezone: false }).defaultNow(),
+      role: text("role").$type<'user' | 'dealer' | 'moderator' | 'admin'>().notNull().default('user'),
+      accountStatus: text('account_status').$type<'active' | 'suspended' | 'banned' | 'deleted'>().notNull().default('active'),
+      restrictionReason: text('restriction_reason'),
+      passwordResetRequired: boolean('password_reset_required').notNull().default(false),
+      sellerVerified: boolean('seller_verified').notNull().default(false),
+      badges: text('badges').array().notNull().default(sql`'{}'::text[]`),
+      dealerStatus: text('dealer_status').$type<'none' | 'pending' | 'approved' | 'rejected'>().notNull().default('none'),
+      dealerProfile: jsonb('dealer_profile').$type<{ businessName: string; registrationNumber: string; address: string; website: string }>(),
+      moderationVersion: integer('moderation_version').notNull().default(0),
     },
     (table) => [
       unique("users_username_key").on(table.username),
       unique("users_email_key").on(table.email),
+      check("users_role_check", sql`${table.role} in ('user', 'dealer', 'moderator', 'admin')`),
+      check('users_status_check', sql`${table.accountStatus} in ('active', 'suspended', 'banned', 'deleted')`),
+      check('users_dealer_check', sql`${table.dealerStatus} in ('none', 'pending', 'approved', 'rejected')`),
+      index('users_registered_idx').on(table.dateCreated),
     ],
 );
 
@@ -50,12 +65,17 @@ export const ads = pgTable("ads", {
     price: numeric("price"),
     kilometrage: integer("kilometrage"),
     enginePower: integer("engine_power"),
+    engineSize: integer("engine_size"),
     fuel: text("fuel"),
     condition: text("condition"),
     county: text("county"),
     sellerType: text("seller_type"),
     buyOrLease: text("buy_or_lease"),
     gearType: text("gear_type"),
+    driveType: text("drive_type"),
+    gearCount: integer("gear_count"),
+    fuelConsumption: numeric("fuel_consumption"),
+    warranty: text("warranty"),
     color: text("color"),
     doorNumber: integer("door_number"),
     drivingLicence: text("driving_licence").default(""),
@@ -66,12 +86,43 @@ export const ads = pgTable("ads", {
     previewImg: text("preview_img"),
 
     featured: boolean("featured").default(false),
+    pinned: boolean("pinned").notNull().default(false),
+    vin: varchar("vin", { length: 17 }),
+    moderationStatus: text("moderation_status").$type<'pending' | 'approved' | 'rejected' | 'changes' | 'removed'>(),
+    moderationReason: text("moderation_reason"),
+    soldAt: timestamp("sold_at", { withTimezone: true }),
     status: text("status").$type<'active' | 'sold' | 'hidden'>().notNull().default('active'),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull().default(sql`now() + interval '3 days'`),
 
     dateCreated: timestamp("date_created", { withTimezone: false }).defaultNow(),
     dateLastUpdated: timestamp("date_last_updated", { withTimezone: false }).defaultNow(),
-});
+}, table => [index('ads_vin_idx').on(table.vin), index('ads_moderation_idx').on(table.moderationStatus), index('ads_created_idx').on(table.dateCreated), check('ads_moderation_check', sql`${table.moderationStatus} is null or ${table.moderationStatus} in ('pending', 'approved', 'rejected', 'changes', 'removed')`)]);
+
+export const savedSearches = pgTable('saved_searches', {
+    id: serial('id').primaryKey(),
+    userId: bigint('user_id', { mode: 'number' }).notNull().references(() => users.id, { onDelete: 'cascade' }),
+    name: varchar('name', { length: 100 }).notNull(),
+    filters: jsonb('filters').$type<Record<string, string>>().notNull(),
+    alertsEnabled: boolean('alerts_enabled').notNull().default(true),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, table => [index('saved_searches_user_idx').on(table.userId)]);
+
+export const searchAlerts = pgTable('search_alerts', {
+    id: serial('id').primaryKey(),
+    savedSearchId: integer('saved_search_id').notNull().references(() => savedSearches.id, { onDelete: 'cascade' }),
+    adId: integer('ad_id').notNull().references(() => ads.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    readAt: timestamp('read_at', { withTimezone: true }),
+}, table => [unique('search_alerts_search_ad_key').on(table.savedSearchId, table.adId)]);
+
+export const adViews = pgTable(
+    "ad_views", {
+      adId: integer("ad_id").notNull().references(() => ads.id, { onDelete: "cascade" }),
+      viewerId: bigint("viewer_id", { mode: "number" }).notNull().references(() => users.id, { onDelete: "cascade" }),
+      firstViewedAt: timestamp("first_viewed_at", { withTimezone: true }).notNull().defaultNow(),
+    },
+    (table) => [primaryKey({ columns: [table.adId, table.viewerId], name: "ad_views_pkey" }), index("ad_views_viewer_idx").on(table.viewerId)],
+);
 
 export const adImages = pgTable(
     "ad_images", {
@@ -80,9 +131,10 @@ export const adImages = pgTable(
           .notNull()
           .references(() => ads.id, { onDelete: "cascade" }),
       imageUrl: text("image_url").notNull(),
+      sha256: varchar("sha256", { length: 64 }),
       createdAt: timestamp("created_at", { withTimezone: false }).defaultNow(),
     },
-    (table) => [index("idx_ad_images_ad_id").on(table.adId)],
+    (table) => [index("idx_ad_images_ad_id").on(table.adId), index('ad_images_sha256_idx').on(table.sha256)],
 );
 
 export const savedAds = pgTable(
@@ -117,6 +169,12 @@ export const usersAdDrafts = pgTable("users_ad_drafts", {
 
 
 
+
+export const userBlocks = pgTable('user_blocks', {
+    blockerId: bigint('blocker_id', { mode: 'number' }).notNull().references(() => users.id, { onDelete: 'cascade' }),
+    blockedId: bigint('blocked_id', { mode: 'number' }).notNull().references(() => users.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, table => [primaryKey({ columns: [table.blockerId, table.blockedId] }), check('user_blocks_not_self', sql`${table.blockerId} <> ${table.blockedId}`), index('user_blocks_blocked_idx').on(table.blockedId)]);
 
 export const conversations = pgTable(
     "conversations",
@@ -203,6 +261,59 @@ export const audit = pgTable(
 export const revokedTokens = pgTable('revoked_tokens', {
   tokenHash: text('token_hash').primaryKey(),
   expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+});
+
+export const moderationReports = pgTable('moderation_reports', {
+    id: serial('id').primaryKey(),
+    targetType: text('target_type').$type<'ad' | 'user' | 'message'>().notNull(),
+    targetId: bigint('target_id', { mode: 'number' }).notNull(),
+    reporterId: bigint('reporter_id', { mode: 'number' }).references(() => users.id, { onDelete: 'set null' }),
+    reason: text('reason').notNull(),
+    status: text('status').$type<'open' | 'escalated' | 'resolved' | 'dismissed'>().notNull().default('open'),
+    subjectUserId: bigint('subject_user_id', { mode: 'number' }).references(() => users.id, { onDelete: 'set null' }),
+    source: text('source').$type<'user' | 'automated'>().notNull().default('user'),
+    signals: text('signals').array().notNull().default(sql`'{}'::text[]`),
+    violationConfirmed: boolean('violation_confirmed').notNull().default(false),
+    resolutionNote: text('resolution_note'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    resolvedAt: timestamp('resolved_at', { withTimezone: true }),
+}, table => [index('moderation_reports_target_idx').on(table.targetType, table.targetId), index('moderation_reports_queue_idx').on(table.status, table.createdAt)]);
+
+export const adminActions = pgTable('admin_actions', {
+    id: serial('id').primaryKey(),
+    actorId: bigint('actor_id', { mode: 'number' }).references(() => users.id, { onDelete: 'set null' }),
+    action: text('action').notNull(),
+    adId: integer('ad_id').references(() => ads.id, { onDelete: 'set null' }),
+    targetUserId: bigint('target_user_id', { mode: 'number' }).references(() => users.id, { onDelete: 'set null' }),
+    reason: text('reason').notNull(),
+    before: jsonb('before'),
+    after: jsonb('after'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, table => [index('admin_actions_created_idx').on(table.createdAt), index('admin_actions_ad_idx').on(table.adId)]);
+
+export const safetyBlocklist = pgTable('safety_blocklist', {
+    id: serial('id').primaryKey(),
+    kind: text('kind').$type<'email' | 'phone' | 'ip'>().notNull(),
+    value: text('value').notNull(),
+    reason: text('reason').notNull(),
+    active: boolean('active').notNull().default(true),
+    createdBy: bigint('created_by', { mode: 'number' }).references(() => users.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, table => [unique('safety_blocklist_value_key').on(table.kind, table.value)]);
+
+export const safetyAppeals = pgTable('safety_appeals', {
+    id: serial('id').primaryKey(),
+    userId: bigint('user_id', { mode: 'number' }).notNull().references(() => users.id, { onDelete: 'cascade' }),
+    reason: text('reason').notNull(),
+    status: text('status').$type<'open' | 'accepted' | 'rejected'>().notNull().default('open'),
+    resolutionNote: text('resolution_note'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    resolvedAt: timestamp('resolved_at', { withTimezone: true }),
+}, table => [uniqueIndex('safety_appeals_open_user_idx').on(table.userId).where(sql`${table.status} = 'open'`)]);
+
+export const erasureFiles = pgTable('erasure_files', {
+    path: text('path').primaryKey(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
 
@@ -297,3 +408,13 @@ export const accountRelations = relations(account, ({ one }) => ({
         references: [user.id],
     }),
 }));
+
+export const priceDropNotifications = pgTable("price_drop_notifications", {
+    id: serial("id").primaryKey(),
+    userId: bigint("user_id", { mode: "number" }).notNull().references(() => users.id, { onDelete: "cascade" }),
+    adId: integer("ad_id").notNull().references(() => ads.id, { onDelete: "cascade" }),
+    oldPrice: numeric("old_price").notNull(),
+    newPrice: numeric("new_price").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    readAt: timestamp("read_at", { withTimezone: true }),
+}, table => [index("price_drop_notifications_user_idx").on(table.userId, table.createdAt)]);

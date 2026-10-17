@@ -77,6 +77,14 @@ describe('Published ad editing', () => {
     expect(remove).not.toHaveBeenCalled();
   });
 
+  it('updates and clears optional vehicle details without losing decimal consumption', async () => {
+    const { service, set } = setup();
+    await service.update(5, 7, { driveType: '4x4', gearCount: 8, fuelConsumption: 5.75, warranty: 'Da' });
+    expect(set).toHaveBeenCalledWith(expect.objectContaining({ driveType: '4x4', gearCount: 8, fuelConsumption: '5.75', warranty: 'Da' }));
+    await service.update(5, 7, { driveType: null, gearCount: null, fuelConsumption: null, warranty: null });
+    expect(set).toHaveBeenLastCalledWith(expect.objectContaining({ driveType: null, gearCount: null, fuelConsumption: null, warranty: null }));
+  });
+
   it('supports removing/reordering images and adding images while updating the preview', async () => {
     const { service, set, insertValues } = setup();
     await service.update(
@@ -89,8 +97,8 @@ describe('Published ad editing', () => {
       expect.objectContaining({ previewImg: 'ad-images/second.jpg' }),
     );
     expect(insertValues).toHaveBeenCalledWith([
-      { adId: 5, imageUrl: 'ad-images/second.jpg' },
-      { adId: 5, imageUrl: 'ad-images/new.jpg' },
+      { adId: 5, imageUrl: 'ad-images/second.jpg', sha256: null },
+      { adId: 5, imageUrl: 'ad-images/new.jpg', sha256: null },
     ]);
   });
 
@@ -121,7 +129,7 @@ describe('Published ad editing', () => {
       imageOrder: '["new:0","ad-images/second.jpg"]',
     }, ['ad-images/new.jpg']);
     expect(set).toHaveBeenCalledWith(expect.objectContaining({ enginePower: 150, previewImg: 'ad-images/new.jpg' }));
-    expect(insertValues).toHaveBeenCalledWith([{ adId: 5, imageUrl: 'ad-images/new.jpg' }, { adId: 5, imageUrl: 'ad-images/second.jpg' }]);
+    expect(insertValues).toHaveBeenCalledWith([{ adId: 5, imageUrl: 'ad-images/new.jpg', sha256: null }, { adId: 5, imageUrl: 'ad-images/second.jpg', sha256: null }]);
     await expect(service.update(5, 7, { retainedImages: '["ad-images/second.jpg"]', imageOrder: '["new:99"]' }, ['new.jpg'])).rejects.toMatchObject({ status: 400 });
   });
 

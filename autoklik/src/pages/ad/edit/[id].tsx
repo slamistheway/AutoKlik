@@ -1,5 +1,7 @@
 'use client';
 
+import { getAdPath } from '@/shared/ad-seo';
+
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
@@ -76,8 +78,8 @@ export default function EditPage() {
                         <Link href="/myProfile" className="mt-2 inline-block underline">Povratak na moj profil</Link>
                     </div>}
                     {!loading && ad && <EditAdForm key={ad.id} ad={ad}
-                        onCancel={() => { void router.push(`/ad/${ad.id}`); }}
-                        onSaved={updated => { void router.push(`/ad/${updated.id}`); }} />}
+                        onCancel={() => { void router.push(getAdPath(ad)); }}
+                        onSaved={updated => { void router.push(getAdPath(updated)); }} />}
                 </div>
             </main>
             <Footer />

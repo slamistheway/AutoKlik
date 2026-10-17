@@ -13,6 +13,7 @@ export type CurrentUser = {
 
 export type AdCardData = {
     id: number;
+    viewCount?: number;
     status?: 'active' | 'sold' | 'hidden' | 'expired';
     expiresAt?: string | null;
     userId: number;
@@ -31,6 +32,10 @@ export type AdCardData = {
     county: string | '';
     sellerType: string | '';
     buyOrLease: string | '';
+    driveType?: string | null;
+    gearCount?: number | null;
+    fuelConsumption?: number | null;
+    warranty?: string | null;
     gearType: string | '';
     color: string | '';
     doorNumber: number | null;
@@ -50,7 +55,24 @@ export type AdCardData = {
     savedAt?: string | null;
 };
 
+export type PublicSeller = {
+    verified?: boolean;
+    badges?: string[];
+    dealerStatus?: string;
+    dealerProfile?: { businessName: string; address: string; registrationNumber: string; website: string } | null;
+    id: number;
+    username: string;
+    pfp: string | null;
+    city: string | null;
+    country: string | null;
+    memberSince: string | null;
+};
+
 export type AdFullData = AdCardData & {
+    engineSize?: number | null;
+    vin?: string | null;
+    moderationStatus?: string | null;
+    moderationReason?: string | null;
     enginePower?: number | null;
     images: string[];
 };

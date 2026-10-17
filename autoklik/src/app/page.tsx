@@ -30,6 +30,7 @@ import FilterBrands from '@/components/filters/filter-brands';
 import FilterModels from '@/components/filters/filter-models';
 import FilterNumeric from '@/components/filters/filter-numeric';
 import {fetchCurrentUser} from '@/app/auth/auth-guards';
+import {AdvancedSearchModal} from '@/components/advanced-search-modal';
 
 
 type SearchFilters = {
@@ -41,6 +42,15 @@ type SearchFilters = {
 
 const emptyFilters: SearchFilters = { brand: '', model: '', yearMin: '', yearMax: '' };
 
+// Tailwind groups: base/mobile first, then one line per breakpoint in ascending order.
+const sectionClass = `mx-auto min-w-0 max-w-7xl px-4 pt-6
+  sm:px-6 sm:pt-10
+  lg:px-8 lg:pt-12`;
+const sectionTitleClass = `min-w-0 text-lg font-bold text-[var(--color-navbar)]
+  sm:text-xl
+  lg:text-2xl`;
+const sectionLinkClass = `inline-flex min-h-11 shrink-0 items-center gap-1 text-sm font-bold text-[var(--color-navbar)] underline transition hover:text-[var(--color-text)]
+  sm:text-base`;
 
 export default function Home() {
   const [currentUserId, setCurrentUserId] = useState<number | string | null>();
@@ -51,6 +61,7 @@ export default function Home() {
   const [search, setSearch] = useState('');
   const [filters, setFilters] = useState<SearchFilters>(emptyFilters);
   const [filterError, setFilterError] = useState('');
+  const [advancedFilters, setAdvancedFilters] = useState<Record<string, string> | null>(null);
 
 
   const startCategories = [
@@ -199,15 +210,19 @@ export default function Home() {
   return (
       <>
         <header>
-          <Navbar />
+          <Navbar homepage />
         </header>
 
-        <div className="bg-[url(/banner.jpg)] bg-no-repeat bg-center bg-cover w-full px-4 py-8 sm:px-6 lg:px-8">
-          <div className="mx-auto flex w-full max-w-7xl justify-start">
-            <section aria-labelledby="filters-title" className="w-full max-w-lg rounded-2xl bg-white p-4 text-gray-900 shadow-2xl sm:p-5">
+        <div className="w-full min-w-0 bg-[url(/banner.jpg)] bg-cover bg-center bg-no-repeat px-4 py-5
+          sm:px-6 sm:py-8
+          lg:px-8 lg:py-10">
+          <div className="mx-auto flex w-full min-w-0 max-w-7xl justify-start">
+            <section aria-labelledby="filters-title" className="w-full min-w-0 max-w-lg rounded-2xl bg-white p-4 text-gray-900 shadow-2xl
+              sm:p-5">
               <div className="flex items-start justify-between gap-3 border-b border-gray-200 pb-2">
                 <div>
-                  <h2 id="filters-title" className="text-2xl font-bold">Napredno pretraživanje</h2>
+                  <h2 id="filters-title" className="text-xl font-bold
+                    sm:text-2xl">Napredno pretraživanje</h2>
                   <p className="mt-1 text-sm text-gray-600">Suzi pretragu po vozilu i godini proizvodnje.</p>
                 </div>
               </div>
@@ -216,16 +231,20 @@ export default function Home() {
                 <label className="block text-sm font-medium text-gray-700">Pretraži oglase
                   <input type="search" maxLength={200} value={search} onChange={event => setSearch(event.target.value)} placeholder="Naslov ili opis oglasa..." className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900" />
                 </label>
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid min-w-0 grid-cols-1 gap-3
+                  sm:grid-cols-2">
                   <FilterBrands title="Marka" selectedVehicle_type="cars" mode="multi" value={filters.brand.split(',').filter(Boolean)} onChange={brands => setFilters(current => ({ ...current, brand: brands.join(','), model: '' }))} />
                   <FilterModels title="Model" selectedVehicle_type="cars" selectedBrands={filters.brand.split(',').filter(Boolean)} mode="multi" value={filters.model.split(',').filter(Boolean)} onChange={models => setFilters(current => ({ ...current, model: models.join(',') }))} />
                 </div>
                 <FilterNumeric filterType="year" mode="range" value={{ min: filters.yearMin, max: filters.yearMax }} onChange={years => setFilters(current => ({ ...current, yearMin: years.min, yearMax: years.max }))} />
                 {filterError && <p role="alert" className="text-sm text-red-600">{filterError}</p>}
-                <div className="flex flex-col-reverse justify-between gap-2 border-t border-gray-200 pt-2 sm:flex-row">
-                  <button type="button" onClick={() => { setSearch(''); setFilters(emptyFilters); setFilterError(''); }} className="rounded-md border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Očisti filtre</button>
-                  <div className="flex gap-3">
-                    <button type="submit" className="rounded-md bg-[var(--color-navbar)] px-5 py-2 text-sm font-semibold text-white hover:bg-[var(--color-navbar-hover)]">Prikaži oglase</button>
+                <div className="flex min-w-0 flex-col-reverse justify-between gap-2 border-t border-gray-200 pt-3
+                  sm:flex-row sm:items-center">
+                  <button type="button" onClick={() => { setSearch(''); setFilters(emptyFilters); setFilterError(''); }} className="min-h-11 rounded-md border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Očisti filtre</button>
+                  <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] gap-2
+                    sm:flex">
+                    <button type="button" aria-haspopup="dialog" onClick={() => setAdvancedFilters({...Object.fromEntries(new URLSearchParams(window.location.search)), search, brands: filters.brand, models: filters.model, yearMin: filters.yearMin, yearMax: filters.yearMax})} className="min-h-11 min-w-0 rounded-md border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Napredno</button>
+                    <button type="submit" className="min-h-11 min-w-0 rounded-md bg-[var(--color-navbar)] px-3 py-2 text-sm font-semibold text-white hover:bg-[var(--color-navbar-hover)]">Pretraži oglase</button>
                   </div>
                 </div>
               </form>
@@ -233,24 +252,35 @@ export default function Home() {
           </div>
         </div>
 
+        {advancedFilters && <AdvancedSearchModal initialFilters={advancedFilters} onClose={() => setAdvancedFilters(null)} onSearch={params => {
+          const url = '/search?' + params.toString();
+          if (canNavigate(url)) window.location.assign(new URL(url, window.location.origin).toString());
+        }} />}
 
-        <main className="bg-[var(--color-accent-soft)] font-semibold">
+        <main className="min-w-0 bg-[var(--color-accent-soft)] pb-6 font-semibold
+          sm:pb-10
+          lg:pb-12">
           <RecentlyViewedAds />
 
-          <section className="mx-auto max-w-7xl px-4 pt-10">
-            <div className="mb-5 flex items-end justify-between gap-4">
-              <h2 className="text-xl font-bold text-[var(--color-text)]">
+          <section className={sectionClass}>
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2
+              sm:mb-5">
+              <h2 className={sectionTitleClass}>
                 Kategorije i podkategorije
               </h2>
             </div>
 
-            <div className="flex items-start justify-between gap-6 overflow-x-auto px-4 py-4">
+            <div className="grid grid-cols-3 items-start gap-x-3 gap-y-5 py-2
+              sm:grid-cols-4 sm:gap-x-4 sm:gap-y-6
+              md:grid-cols-5
+              xl:grid-cols-10">
               {startCategories.map(({ label, href, icon: Icon, bg }) => (
-                  <Link key={label} href={href} className="group flex w-20 shrink-0 flex-col items-center gap-2 text-center focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--color-navbar)] rounded-lg">
-                    <span className={`flex h-16 w-16 items-center justify-center rounded-full ${bg}  shadow-md transition group-hover:-translate-y-0.5 group-hover:shadow-lg`}>
+                  <Link key={label} href={href} className="group flex min-w-0 flex-col items-center gap-2 rounded-lg text-center focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--color-navbar)]">
+                    <span className={`flex size-12 shrink-0 items-center justify-center rounded-full ${bg} shadow-md transition group-hover:-translate-y-0.5 group-hover:shadow-lg
+                      sm:size-16`}>
                       <Icon className="h-6 w-6" strokeWidth={1.75} aria-hidden="true" />
                     </span>
-                    <span className="text-[11px] font-semibold text-[var(--color-text)]">
+                    <span className="max-w-full break-words text-xs font-semibold text-[var(--color-text)]">
                       {label}
                     </span>
                   </Link>
@@ -261,14 +291,14 @@ export default function Home() {
           </section>
 
 
-          <section className="mx-auto max-w-7xl px-4 pt-10">
-            <div className="flex justify-between items-end ">
-              <h2 className="text-xl font-bold text-(--color-navbar) sm:text-2xl">
+          <section className={sectionClass}>
+            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+              <h2 className={sectionTitleClass}>
                 Istaknuti oglasi
               </h2>
               <Link
                   href="/search"
-                  className="underline text-[1.25rem] font-bold text-(--color-navbar) transition hover:text-(--color-text)"
+                  className={sectionLinkClass}
               >
                 <span>Vidi sve</span>
                 <ArrowRightIcon className="ml-1 inline h-4 w-4" />
@@ -282,14 +312,14 @@ export default function Home() {
             />
           </section>
 
-          <section className="mx-auto max-w-7xl px-4 pt-10">
-            <div className="flex justify-between items-end ">
-              <h2 className="text-xl font-bold text-(--color-navbar) sm:text-2xl">
+          <section className={sectionClass}>
+            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+              <h2 className={sectionTitleClass}>
                 Preporučeno
               </h2>
               <Link
                   href="/search"
-                  className="underline text-[1.25rem] font-bold text-(--color-navbar) transition hover:text-(--color-text)"
+                  className={sectionLinkClass}
               >
                 <span>Vidi sve</span>
                 <ArrowRightIcon className="ml-1 inline h-4 w-4" />
@@ -305,25 +335,32 @@ export default function Home() {
 
 
 
-          <section className="mx-auto max-w-7xl px-4 pt-10">
-            <div className="overflow-hidden rounded-2xl p-6">
-              <h2 className="mb-5 text-xl font-bold text-[var(--color-text)]">Popularne marke</h2>
+          <section className={sectionClass}>
+            <div className="min-w-0">
+              <h2 className={`${sectionTitleClass} mb-4
+                sm:mb-5`}>Popularne marke</h2>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7">
+              <div className="grid grid-cols-2 gap-2
+                sm:grid-cols-3 sm:gap-3
+                md:grid-cols-4
+                xl:grid-cols-7">
                 {startBrands.map((brand) => (
                     <Link
                         key={brand.name}
                         href={{ pathname: '/search', query: { brands: brand.name } }}
-                        className="flex min-w-0 flex-col items-center justify-center gap-2 shadow-sm border-[var(--border-color)] px-3 py-6 text-center text-sm font-bold text-[var(--color-text)] transition hover:bg-black/5 focus-visible:outline-2"
+                        className="flex min-w-0 flex-col items-center justify-center gap-2 rounded-lg border border-[var(--border-color)] px-2 py-4 text-center text-xs font-bold text-[var(--color-text)] shadow-sm transition hover:bg-black/5 focus-visible:outline-2
+                          sm:px-3 sm:py-5 sm:text-sm"
                     >
                       <Image
                           width={120}
                           height={120}
                           src={brand.logo}
                           alt=""
-                          className="w-auto h-auto object-contain"
+                          className="h-14 w-full max-w-24 object-contain
+                            sm:h-16
+                            lg:h-20"
                       />
-                      <span>{brand.name}</span>
+                      <span className="max-w-full break-words">{brand.name}</span>
                     </Link>
                 ))}
               </div>
@@ -331,7 +368,7 @@ export default function Home() {
           </section>
         </main>
 
-        <Footer />
+        <Footer homepage />
 
       </>
   );

@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Inject,
   Injectable,
   Logger,
@@ -13,6 +14,7 @@ import type { Request } from 'express';
 import { randomUUID } from 'crypto';
 import * as schema from '../db/schema';
 import { AuditService } from '../audit/audit.service';
+import { accountRestriction, assertNotBlocked } from './account-access';
 
 type AppUser = Pick<
   typeof schema.users.$inferSelect,
@@ -79,10 +81,20 @@ export class BetterAuthService {
   async signIn(user: AppUser, password: string, ip: string | null) {
     const auth = await this.getAuth();
     await this.ensureIdentity(user);
-    return auth.api.signInEmail({
+    const session = await auth.api.signInEmail({
       body: { email: user.email, password },
       headers: new Headers(ip ? { 'x-forwarded-for': ip } : {}),
     });
+    try {
+      const [fresh] = await this.db.select().from(schema.users).where(eq(schema.users.id, user.id));
+      const restriction = fresh ? accountRestriction(fresh) : 'Račun nije dostupan.';
+      if (restriction) throw new ForbiddenException(restriction);
+      await assertNotBlocked(this.db, fresh!, ip);
+      return session;
+    } catch (error) {
+      await this.db.delete(schema.session).where(eq(schema.session.token, session.token));
+      throw error;
+    }
   }
 
   async forgotPassword(email: string) {
@@ -151,11 +163,13 @@ export class BetterAuthService {
     const id = Number(result.user.id);
     if (!Number.isSafeInteger(id) || id <= 0) return null;
     const [user] = await this.db
-      .select({ id: schema.users.id, email: schema.users.email })
+      .select({ id: schema.users.id, email: schema.users.email, phone: schema.users.phone, accountStatus: schema.users.accountStatus, passwordResetRequired: schema.users.passwordResetRequired })
       .from(schema.users)
       .where(eq(schema.users.id, id))
       .limit(1);
-    return user ? { ...user, sessionId: result.session.id } : null;
+    if (!user || accountRestriction(user)) return null;
+    await assertNotBlocked(this.db, user, request.ip ?? request.socket?.remoteAddress ?? null);
+    return { id: user.id, email: user.email, sessionId: result.session.id };
   }
 
   async logout(

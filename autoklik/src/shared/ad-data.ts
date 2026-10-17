@@ -1,7 +1,11 @@
 import type { AdFullData, AdCardData } from '@/types/types';
 
 type ApiAdData = {
+  vin?: string | null;
+  moderation_status?: string | null;
+  moderation_reason?: string | null;
   id: number;
+  view_count?: number;
   status?: AdCardData['status'];
   expires_at?: string | null;
   user_id: number;
@@ -16,11 +20,16 @@ type ApiAdData = {
   price?: string | null;
   kilometrage?: number | null;
   engine_power?: number | null;
+  engine_size?: number | null;
   fuel?: string | null;
   condition?: string | null;
   county?: string | null;
   seller_type?: string | null;
   buy_or_lease?: string | null;
+  drive_type?: string | null;
+  gear_count?: number | null;
+  fuel_consumption?: string | number | null;
+  warranty?: string | null;
   gear_type?: string | null;
   color?: string | null;
   door_number?: number | null;
@@ -39,6 +48,7 @@ export function toAdCardData(data: unknown): AdCardData {
   const ad = data as ApiAdData;
   return {
     id: ad.id,
+    viewCount: ad.view_count ?? 0,
     status: ad.status ?? 'active',
     expiresAt: ad.expires_at ?? null,
     userId: ad.user_id,
@@ -57,6 +67,10 @@ export function toAdCardData(data: unknown): AdCardData {
     county: ad.county ?? '',
     sellerType: ad.seller_type ?? '',
     buyOrLease: ad.buy_or_lease ?? '',
+    driveType: ad.drive_type ?? null,
+    gearCount: ad.gear_count ?? null,
+    fuelConsumption: ad.fuel_consumption == null ? null : Number(ad.fuel_consumption),
+    warranty: ad.warranty ?? null,
     gearType: ad.gear_type ?? '',
     color: ad.color ?? '',
     doorNumber: ad.door_number ?? null,
@@ -74,5 +88,5 @@ export function toAdCardData(data: unknown): AdCardData {
 
 export function toAdFullData(data: unknown): AdFullData {
   const ad = data as ApiAdData;
-  return { ...toAdCardData(ad), enginePower: ad.engine_power ?? null, images: ad.images ?? [] };
+  return { ...toAdCardData(ad), engineSize: ad.engine_size ?? null, vin: ad.vin ?? null, moderationStatus: ad.moderation_status ?? null, moderationReason: ad.moderation_reason ?? null, enginePower: ad.engine_power ?? null, images: ad.images ?? [] };
 }

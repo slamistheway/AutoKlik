@@ -1,0 +1,4 @@
+import { sitemapResponse } from '@/server/sitemap';
+
+export const dynamic = 'force-dynamic';
+export function GET(request: Request) { return sitemapResponse('sellers', request); }
