@@ -95,10 +95,10 @@ export default function FilterChoose({ filterType, value, onChange, title = filt
                     type="button"
                     onClick={() => setOpen(!open)}
                     aria-expanded={open}
-                    className="flex w-full items-center justify-between border-2 border-[var(--border-color)] px-3 py-2 text-left text-sm"
+                    className="flex min-w-0 w-full items-center justify-between border-2 border-[var(--border-color)] px-3 py-2 text-left text-sm"
                 >
                     <span className={value === '' ? 'text-gray-400' : ''}>{options.find(option => option.value === value)?.label || placeholder}</span>
-                    <ChevronDownIcon aria-hidden="true" className="h-4 w-4" />
+                    <ChevronDownIcon aria-hidden="true" className="h-4 w-4 shrink-0" />
                 </button>
                 {open && (
                     <div className="absolute z-20 mt-1 max-h-60 w-full overflow-y-auto border bg-[var(--color-surface)] shadow-lg">

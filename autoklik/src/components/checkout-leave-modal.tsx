@@ -34,7 +34,7 @@ export function useCheckoutLeaveModal() {
   };
 
   const leaveModal = pending ? (
-    <dialog ref={dialog} aria-labelledby="checkout-leave-title" onCancel={event => { event.preventDefault(); cancel(); }} className="m-auto w-[calc(100%-2rem)] max-w-lg rounded-xl bg-white p-6 shadow-xl backdrop:bg-black/50">
+    <dialog ref={dialog} aria-labelledby="checkout-leave-title" onCancel={event => { event.preventDefault(); cancel(); }} className="m-auto max-h-[90dvh] overflow-y-auto break-words w-[calc(100%-2rem)] max-w-lg rounded-xl bg-white p-6 shadow-xl backdrop:bg-black/50">
       <h2 id="checkout-leave-title" className="text-xl font-bold text-gray-900">Napustiti unos oglasa?</h2>
       <p className="mt-3 text-gray-600">Spremite oglas kao skicu ili napustite unos bez spremanja.</p>
       <p className="mt-2 text-sm text-gray-500">Skice i fotografije čuvaju se u ovom pregledniku. Nastavite unos na stranici za kreiranje oglasa.</p>

@@ -80,14 +80,17 @@ export default function EditAdForm({ ad, onSaved, onCancel }: {
   };
 
   return (
-    <section className="mb-6 rounded-2xl bg-white p-5 text-gray-900 sm:p-6" aria-label="Uređivanje oglasa">
+    <section className="mb-6 rounded-2xl bg-white p-5 text-gray-900
+      sm:p-6" aria-label="Uređivanje oglasa">
       <h2 className="mb-4 text-xl font-bold">Uredi oglas</h2>
       {ad.moderationStatus && ad.moderationStatus !== 'approved' && <p role="status" className="mb-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">Oglas je ograničen moderacijom. {ad.moderationReason} Izmjene možete spremiti; za ponovnu objavu potrebno je odobrenje osoblja.</p>}
       <form onSubmit={save}>
         <fieldset disabled={saving || readingImages} className="space-y-4 disabled:opacity-60">
           <div>
             <h1 className="block text-sm font-medium text-gray-700">Opći podaci</h1>
-            <div className="grid grid-cols-1 gap-x-5 gap-y-6 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-1 gap-x-5 gap-y-6
+              sm:grid-cols-2
+              lg:grid-cols-4">
               <label className="text-sm text-gray-700">VIN (neobavezno)<input className="mt-2 block w-full rounded-lg border border-gray-200 p-3" value={values.vin} maxLength={17} pattern="[A-HJ-NPR-Za-hj-npr-z0-9]{17}" onChange={event => updateField('vin', event.target.value.toUpperCase())} /></label>
               <FilterBrands title="Marka" selectedVehicle_type={ad.category || 'cars'} mode="single" value={values.brand ? [values.brand] : []} onChange={value => updateField('brand', value[0] ?? '')} />
               <FilterModels title="Model" selectedVehicle_type={ad.category || 'cars'} selectedBrands={values.brand ? [values.brand] : []} mode="single" value={values.model ? [values.model] : []} onChange={value => updateField('model', value[0] ?? '')} />
@@ -128,7 +131,9 @@ export default function EditAdForm({ ad, onSaved, onCancel }: {
             <div className="rounded-lg border-2 border-dashed p-4 min-h-[220px] bg-gray-50 border-gray-300">
               {images.length > 0 ? <>
                 <h1 className="mb-3 font-medium">Fotografije pridružene uz oglas</h1>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 gap-4
+                  sm:grid-cols-2
+                  lg:grid-cols-4">
                   {images.map((image, index) => <div key={`${image.url}-${index}`} className="border rounded-lg overflow-hidden p-2 bg-white shadow-sm">
                     <div className="w-full aspect-[4/3] border rounded-lg overflow-hidden bg-black flex items-center justify-center">
                       <img src={image.file ? image.url : resolve_api_ad_img(image.url)} alt={`Fotografija ${index + 1}`} className="w-full h-full object-contain" />
@@ -153,7 +158,7 @@ export default function EditAdForm({ ad, onSaved, onCancel }: {
             <textarea id="description" name="description" required minLength={10} maxLength={10000} rows={5} value={description} onChange={event => setDescription(event.target.value)} className="mt-1 block w-full rounded-md border px-3 py-2 focus:border-red-600 focus:outline-none border-gray-300" />
           </div>
           {error && <p role="alert" className="text-red-700">{error}</p>}
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             <button type="submit" className="rounded-md bg-blue-600 px-4 py-2 text-white">{saving ? 'Spremanje...' : 'Spremi promjene'}</button>
             <button type="button" onClick={onCancel} className="rounded-md border px-4 py-2">Odustani</button>
           </div>

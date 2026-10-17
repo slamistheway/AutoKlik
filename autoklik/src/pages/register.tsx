@@ -94,12 +94,15 @@ function RegisterPage() {
     }
   };
 
-  const inputClass = 'block w-full rounded-md border border-[var(--border-color)] px-3 py-2 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-blue-500 sm:text-sm';
+  const inputClass = `block w-full rounded-md border border-[var(--border-color)] px-3 py-2 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-blue-500
+    sm:text-sm`;
 
   return (
     <>
       <header><Navbar /></header>
-      <main className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <main className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4
+        sm:px-6
+        lg:px-8">
         <div className="w-full max-w-md space-y-8">
           <div>
             <h1 className="mt-6 text-center text-3xl font-extrabold text-gray-900">Registriraj se na AutoKlik</h1>

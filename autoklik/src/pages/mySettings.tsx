@@ -174,14 +174,18 @@ export default function MySettings() {
   return (
       <>
         <header><Navbar /></header>
-        <main className="min-h-screen bg-gray-50 px-4 py-10"><div className="mx-auto flex max-w-7xl flex-col gap-6 md:flex-row">
-          <aside className="h-fit w-full shrink-0 rounded-lg border border-gray-200 bg-white p-4 shadow-md md:w-56"><nav aria-label="Korisnički izbornik" className="flex flex-col gap-2">
+        <main className="min-h-screen bg-gray-50 px-4 py-10"><div className="mx-auto flex max-w-7xl flex-col gap-6
+          md:flex-row">
+          <aside className="h-fit w-full shrink-0 rounded-lg border border-gray-200 bg-white p-4 shadow-md
+            md:w-56"><nav aria-label="Korisnički izbornik" className="flex flex-col gap-2">
             {accountNavigation.map(item => <Link key={item.href} href={item.href} aria-current={shellRouter.pathname === item.href ? 'page' : undefined} className={`rounded px-3 py-2 text-sm font-medium transition ${shellRouter.pathname === item.href ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-blue-100 hover:text-blue-700'}`}>{item.label}</Link>)}
           </nav></aside>
-          <section className="min-w-0 flex-1 rounded-lg border border-gray-200 bg-white p-5 shadow-md sm:p-6">
+          <section className="min-w-0 flex-1 rounded-lg border border-gray-200 bg-white p-5 shadow-md
+            sm:p-6">
             <h1 className="text-2xl font-bold text-gray-900">Postavke profila</h1>
             {loadError && <p role="alert" className="mt-4 rounded-md bg-red-50 px-4 py-3 text-sm text-red-700">{loadError}</p>}
-            <div className="mt-5 flex border-b border-gray-200">
+            <div className="mt-5 grid grid-cols-1 border-b border-gray-200
+              sm:grid-cols-2">
               <button type="button" onClick={() => setTab('profile')} className={`flex-1 px-4 py-3 text-sm font-medium ${tab === 'profile' ? 'border-b-2 border-blue-600 text-blue-700' : 'text-gray-600 hover:bg-gray-50'}`}>Moji podaci</button>
               <button type="button" onClick={() => setTab('account')} className={`flex-1 px-4 py-3 text-sm font-medium ${tab === 'account' ? 'border-b-2 border-blue-600 text-blue-700' : 'text-gray-600 hover:bg-gray-50'}`}>Upravljanje računom</button>
             </div>
@@ -197,9 +201,10 @@ export default function MySettings() {
                     <input ref={fileInput} type="file" accept="image/*" className="hidden" onChange={onFileSelected} />
                   </div>
 
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="rounded-md border-b px-1 py-3"><p className="text-sm font-medium text-gray-700">Korisničko ime</p><p className="mt-1 text-gray-900">{user?.username ?? '...'}</p></div>
-                    <div className="rounded-md border-b px-1 py-3"><p className="text-sm font-medium text-gray-700">Email</p><p className="mt-1 text-gray-900">{user?.email ?? '...'}</p></div>
+                  <div className="grid gap-4
+                    sm:grid-cols-2">
+                    <div className="rounded-md border-b px-1 py-3"><p className="text-sm font-medium text-gray-700">Korisničko ime</p><p className="mt-1 break-words text-gray-900">{user?.username ?? '...'}</p></div>
+                    <div className="rounded-md border-b px-1 py-3"><p className="text-sm font-medium text-gray-700">Email</p><p className="mt-1 break-words text-gray-900">{user?.email ?? '...'}</p></div>
                   </div>
 
                   {fields.map(field => (
@@ -215,7 +220,7 @@ export default function MySettings() {
                               value={profile[field.key]}
                               readOnly={!editing[field.key] || isSaving}
                               onChange={event => setProfile(current => ({ ...current, [field.key]: event.target.value }))}
-                              className={`w-full rounded-md border px-3 py-2 ${editing[field.key] ? 'border-blue-400 bg-white' : 'cursor-not-allowed border-gray-300 bg-gray-100'}`}
+                              className={`min-w-0 w-full rounded-md border px-3 py-2 ${editing[field.key] ? 'border-blue-400 bg-white' : 'cursor-not-allowed border-gray-300 bg-gray-100'}`}
                           />
                           <button type="button" onClick={() => setEditing(current => ({ ...current, [field.key]: !current[field.key] }))} disabled={isSaving} aria-label={`Uredi ${field.label.toLocaleLowerCase()}`} className="h-10 w-10 shrink-0 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 disabled:opacity-60">
                             ✎

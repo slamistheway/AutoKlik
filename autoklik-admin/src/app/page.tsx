@@ -27,7 +27,21 @@ const iconPaths = {
 };
 
 function Icon({ name, size = 20 }: { name: keyof typeof iconPaths; size?: number }) {
-  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={iconPaths[name]} /></svg>;
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d={iconPaths[name]} />
+    </svg>
+  );
 }
 
 const statusLabels: Record<string, string> = { active: 'Aktivan', sold: 'Prodano', hidden: 'Skriven', expired: 'Istekao', pending: 'Čeka odobrenje', approved: 'Odobren', rejected: 'Odbijen', changes: 'Potrebne izmjene', removed: 'Uklonjen' };
@@ -51,7 +65,31 @@ const date = (value: string | null) => value ? new Date(value.endsWith('Z') || /
 const euro = (value: string | null) => value === null ? '—' : `${new Intl.NumberFormat('hr-HR').format(Number(value))} €`;
 
 function ActivityList({ items }: { items: Activity[] }) {
-  return <div className="activity-list">{items.length ? items.map(item => <article key={item.id}><Icon name="activity" /><div><strong>{item.actor ?? `Osoblje #${item.actorId ?? '—'}`} · {item.action}{item.adId ? ` · #${item.adId}` : ''}</strong><p>{item.reason}</p><details><summary>Prije / poslije</summary><pre>{JSON.stringify({ before: item.before, after: item.after }, null, 2)}</pre></details></div><time>{date(item.createdAt)}</time></article>) : <p className="empty">Nema administratorskih aktivnosti.</p>}</div>;
+  return (
+    <div className="activity-list">
+      {items.length ? (
+        items.map(item => (
+          <article key={item.id}>
+            <Icon name="activity" />
+            <div>
+              <strong>
+                {item.actor ?? `Osoblje #${item.actorId ?? '—'}`} · {item.action}
+                {item.adId ? ` · #${item.adId}` : ''}
+              </strong>
+              <p>{item.reason}</p>
+              <details>
+                <summary>Prije / poslije</summary>
+                <pre>{JSON.stringify({ before: item.before, after: item.after }, null, 2)}</pre>
+              </details>
+            </div>
+            <time>{date(item.createdAt)}</time>
+          </article>
+        ))
+      ) : (
+        <p className="empty">Nema administratorskih aktivnosti.</p>
+      )}
+    </div>
+  );
 }
 
 export default function AdminPage() {
@@ -179,48 +217,830 @@ export default function AdminPage() {
     }, 'Prijavljeni ste.');
   }
 
-  if (!ready) return <main><p role="status">Provjera pristupa…</p></main>;
-  if (!token) return <main className="login-page"><form className="panel login-form" onSubmit={event => { event.preventDefault(); void login(event.currentTarget); }}><p className="eyebrow">AUTOKLIK ADMIN</p><h1>Prijava osoblja</h1><p>Pristup imaju administratori i moderatori.</p><label>Korisničko ime ili e-mail<input name="identifier" required autoComplete="username" maxLength={255} /></label><label>Lozinka<input name="password" type="password" required autoComplete="current-password" /></label>{error && <p role="alert">{error}</p>}<button className="primary-button" disabled={busy}>{busy ? 'Prijava…' : 'Prijavi se'}</button></form></main>;
+  if (!ready) return (
+    <main>
+      <p role="status">Provjera pristupa…</p>
+    </main>
+  );
+  if (!token) return (
+    <main className="login-page">
+      <form
+        className="panel login-form"
+        onSubmit={event => {
+          event.preventDefault();
+          void login(event.currentTarget);
+        }}
+      >
+        <p className="eyebrow">AUTOKLIK ADMIN</p>
+        <h1>Prijava osoblja</h1>
+        <p>Pristup imaju administratori i moderatori.</p>
+        <label>
+          Korisničko ime ili e-mail
+          <input
+            name="identifier"
+            required
+            autoComplete="username"
+            maxLength={255}
+          />
+        </label>
+        <label>
+          Lozinka
+          <input
+            name="password"
+            type="password"
+            required
+            autoComplete="current-password"
+          />
+        </label>
+        {error && <p role="alert">{error}</p>}
+        <button
+          className="primary-button"
+          disabled={busy}
+        >
+          {busy ? 'Prijava…' : 'Prijavi se'}
+        </button>
+      </form>
+    </main>
+  );
 
-  return <div className="admin-app">
-    <aside className={`sidebar ${mobileMenu ? 'mobile-open' : ''}`}><Link href="/" className="brand" onClick={event => { event.preventDefault(); navigate('overview'); }}><span className="brand-icon"><Icon name="car" /></span>AutoKlik<span className="brand-dot">.</span></Link><span className="workspace-label">ADMINISTRACIJA</span><nav aria-label="Administracijski izbornik">{navigation.map(item => <button className={`nav-item ${section === item.id ? 'selected' : ''}`} aria-current={section === item.id ? 'page' : undefined} key={item.id} onClick={() => { setFocusedUser(undefined); navigate(item.id); }}><Icon name={item.icon} />{item.label}</button>)}</nav><div className="sidebar-bottom"><div className="prototype-note"><Icon name="shield" /><strong>{role === 'admin' ? 'Administrator' : 'Moderator'}</strong><p>Odluke se spremaju i bilježe u evidenciji.</p></div><button className="admin-person" disabled={busy} onClick={() => void mutate(async () => { await request(token, '/users/logout', { method: 'POST' }); sessionStorage.removeItem('autoklik-admin-token'); closeAd(); setToken(''); setDashboard(null); setList(null); setActivity([]); }, 'Odjavljeni ste.')}>Odjavi se</button></div></aside>
-    <div className="workspace"><header className="topbar"><div className="breadcrumbs"><button className="icon-button mobile-toggle" aria-label="Otvori izbornik" aria-expanded={mobileMenu} onClick={() => setMobileMenu(current => !current)}><Icon name="menu" /></button><span>Radni prostor</span><Icon name="chevron" size={14} /><strong>{navigation.find(item => item.id === section)?.label}</strong></div><button className="outline-button" disabled={loading || busy} onClick={() => setRevision(current => current + 1)}>Osvježi</button></header>
-      <main><div className="page-heading"><div><p className="eyebrow">AUTOKLIK ADMIN</p><h1>{navigation.find(item => item.id === section)?.label}</h1><p>{section === 'users' || section === 'reports' ? 'Stvarni podaci · osvježite prikaz nakon promjena' : 'Stvarni podaci · automatsko osvježavanje svake minute'}</p></div></div>
-        {error && <div className="notice error" role="alert">{error}<button className="icon-button" aria-label="Zatvori grešku" onClick={() => setError('')}><Icon name="close" /></button></div>}
-        {notice && <div className="notice" role="status">{notice}<button className="icon-button" aria-label="Zatvori obavijest" onClick={() => setNotice('')}><Icon name="close" /></button></div>}
-        {(loading || detailLoading) && <p role="status">Učitavanje…</p>}
+  return (
+    <div className="admin-app">
+      <aside className={`sidebar ${mobileMenu ? 'mobile-open' : ''}`}>
+        <Link
+          href="/"
+          className="brand"
+          onClick={event => {
+            event.preventDefault();
+            navigate('overview');
+          }}
+        >
+          <span className="brand-icon">
+            <Icon name="car" />
+          </span>
+          AutoKlik<span className="brand-dot">.</span>
+        </Link>
+        <span className="workspace-label">ADMINISTRACIJA</span>
+        <nav aria-label="Administracijski izbornik">
+          {navigation.map(item => (
+            <button
+              className={`nav-item ${section === item.id ? 'selected' : ''}`}
+              aria-current={section === item.id ? 'page' : undefined}
+              key={item.id}
+              onClick={() => {
+                setFocusedUser(undefined);
+                navigate(item.id);
+              }}
+            >
+              <Icon name={item.icon} />
+              {item.label}
+            </button>
+          ))}
+        </nav>
+        <div className="sidebar-bottom">
+          <div className="prototype-note">
+            <Icon name="shield" />
+            <strong>{role === 'admin' ? 'Administrator' : 'Moderator'}</strong>
+            <p>Odluke se spremaju i bilježe u evidenciji.</p>
+          </div>
+          <button
+            className="admin-person"
+            disabled={busy}
+            onClick={() =>
+              void mutate(async () => {
+                await request(token, '/users/logout', { method: 'POST' });
+                sessionStorage.removeItem('autoklik-admin-token');
+                closeAd();
+                setToken('');
+                setDashboard(null);
+                setList(null);
+                setActivity([]);
+              }, 'Odjavljeni ste.')
+            }
+          >
+            Odjavi se
+          </button>
+        </div>
+      </aside>
+      <div className="workspace">
+        <header className="topbar">
+          <div className="breadcrumbs">
+            <button
+              className="icon-button mobile-toggle"
+              aria-label="Otvori izbornik"
+              aria-expanded={mobileMenu}
+              onClick={() => setMobileMenu(current => !current)}
+            >
+              <Icon name="menu" />
+            </button>
+            <span>Radni prostor</span>
+            <Icon
+              name="chevron"
+              size={14}
+            />
+            <strong>{navigation.find(item => item.id === section)?.label}</strong>
+          </div>
+          <button
+            className="outline-button"
+            disabled={loading || busy}
+            onClick={() => setRevision(current => current + 1)}
+          >
+            Osvježi
+          </button>
+        </header>
+        <main>
+          <div className="page-heading">
+            <div>
+              <p className="eyebrow">AUTOKLIK ADMIN</p>
+              <h1>{navigation.find(item => item.id === section)?.label}</h1>
+              <p>
+                {section === 'users' || section === 'reports'
+                  ? 'Stvarni podaci · osvježite prikaz nakon promjena'
+                  : 'Stvarni podaci · automatsko osvježavanje svake minute'}
+              </p>
+            </div>
+          </div>
+          {error && (
+            <div
+              className="notice error"
+              role="alert"
+            >
+              {error}
+              <button
+                className="icon-button"
+                aria-label="Zatvori grešku"
+                onClick={() => setError('')}
+              >
+                <Icon name="close" />
+              </button>
+            </div>
+          )}
+          {notice && (
+            <div
+              className="notice"
+              role="status"
+            >
+              {notice}
+              <button
+                className="icon-button"
+                aria-label="Zatvori obavijest"
+                onClick={() => setNotice('')}
+              >
+                <Icon name="close" />
+              </button>
+            </div>
+          )}
+          {(loading || detailLoading) && <p role="status">Učitavanje…</p>}
 
-        {section === 'overview' && dashboard && <>
-          <div className="work-queues"><button className="outline-button" onClick={() => { setFilters({ ...emptyFilters, status: 'pending' }); setPage(1); navigate('ads'); }}>Čeka odobrenje <strong>{dashboard.queues.pendingAds}</strong></button><button className="outline-button" onClick={() => { setReportType(''); setReportStatus('pending'); navigate('reports'); }}>Otvorene prijave <strong>{dashboard.queues.openReports}</strong></button><button className="outline-button" onClick={() => { setReportType('message'); setReportStatus('open'); navigate('reports'); }}>Prijavljene poruke <strong>{dashboard.queues.flaggedMessages}</strong></button><button className="outline-button" onClick={() => setShowUsers(current => !current)} aria-expanded={showUsers}>Novi korisnici (24 h) <strong>{dashboard.queues.newUsers}</strong></button></div>
-          {showUsers && <section className="panel queue-users"><h2>Novi korisnici · posljednja 24 sata</h2><p>Prikazano do 20 najnovijih registracija.</p>{dashboard.newUsers.length ? dashboard.newUsers.map(user => <p key={user.id}>#{user.id} · {user.username} · {date(user.createdAt)}</p>) : <p>Nema novih korisnika.</p>}</section>}
-          <div className="toolbar"><label>Razdoblje <select aria-label="Razdoblje statistike" value={period} onChange={event => setPeriod(event.target.value)}><option value="day">Dan</option><option value="week">Tjedan</option><option value="month">Mjesec (30 dana)</option></select></label><span className="period-note">Od {date(dashboard.since)} · grupiranje UTC</span></div>
-          <div className="stats-grid">{[
-            ['Novi oglasi', dashboard.stats.newAds], ['Aktivni oglasi', dashboard.stats.activeAds], ['Novi korisnici', dashboard.stats.newUsers], ['Poslane poruke', dashboard.stats.messagesSent], ['Prodani oglasi', dashboard.stats.soldAds], ['Istekli oglasi', dashboard.stats.expiredAds], ['Ukupno oglasa', dashboard.stats.totalAds], ['Ukupno korisnika', dashboard.stats.totalUsers],
-          ].map(([label, value]) => <article className="stat-card" key={label}><span className="stat-top">{label}</span><strong className="stat-value">{value}</strong></article>)}</div>
-          <section className="panel chart-panel"><div className="panel-heading"><h2>Aktivnost kroz vrijeme</h2><select aria-label="Podaci grafikona" value={metric} onChange={event => setMetric(event.target.value as typeof metric)}><option value="ads">Novi oglasi</option><option value="users">Novi korisnici</option><option value="messages">Poruke</option></select></div><div className="live-chart" role="img" aria-label={`${metric === 'ads' ? 'Novi oglasi' : metric === 'users' ? 'Novi korisnici' : 'Poruke'} po ${period === 'day' ? 'satu' : 'danu'}, UTC. Ukupno ${dashboard.chart.reduce((sum, point) => sum + point[metric], 0)}. Podaci su u tablici ispod.`}>{dashboard.chart.map(point => <div className="live-column" key={point.at} title={`${date(point.at)}: ${point[metric]}`}><span>{point[metric]}</span><div style={{ height: `${Math.max(1, point[metric] / Math.max(1, ...dashboard.chart.map(item => item[metric])) * 120)}px` }} /><small>{new Date(point.at).toLocaleString('hr-HR', period === 'day' ? { hour: '2-digit', timeZone: 'UTC' } : { day: 'numeric', month: 'numeric', timeZone: 'UTC' })}</small></div>)}</div><details className="chart-data"><summary>Tablica podataka</summary><div className="table-scroll"><table><thead><tr><th>Vrijeme (UTC)</th><th>Oglasi</th><th>Korisnici</th><th>Poruke</th></tr></thead><tbody>{dashboard.chart.map(point => <tr key={point.at}><td>{new Date(point.at).toISOString()}</td><td>{point.ads}</td><td>{point.users}</td><td>{point.messages}</td></tr>)}</tbody></table></div></details><p className="period-note">Prodaja se prati od uvođenja ove evidencije; stariji datumi prodaje nisu poznati. Istekli: oglasi kojima je rok istekao u razdoblju i nisu obnovljeni.</p></section>
-          <section className="panel"><div className="panel-heading"><h2>Posljednje administratorske aktivnosti</h2><button className="text-link" onClick={() => navigate('activity')}>Sve aktivnosti</button></div><ActivityList items={dashboard.activity.slice(0, 5)} /></section>
-        </>}
+          {section === 'overview' && dashboard && (
+            <>
+              <div className="work-queues">
+                <button
+                  className="outline-button"
+                  onClick={() => {
+                    setFilters({ ...emptyFilters, status: 'pending' });
+                    setPage(1);
+                    navigate('ads');
+                  }}
+                >
+                  Čeka odobrenje <strong>{dashboard.queues.pendingAds}</strong>
+                </button>
+                <button
+                  className="outline-button"
+                  onClick={() => {
+                    setReportType('');
+                    setReportStatus('pending');
+                    navigate('reports');
+                  }}
+                >
+                  Otvorene prijave <strong>{dashboard.queues.openReports}</strong>
+                </button>
+                <button
+                  className="outline-button"
+                  onClick={() => {
+                    setReportType('message');
+                    setReportStatus('open');
+                    navigate('reports');
+                  }}
+                >
+                  Prijavljene poruke <strong>{dashboard.queues.flaggedMessages}</strong>
+                </button>
+                <button
+                  className="outline-button"
+                  onClick={() => setShowUsers(current => !current)}
+                  aria-expanded={showUsers}
+                >
+                  Novi korisnici (24 h) <strong>{dashboard.queues.newUsers}</strong>
+                </button>
+              </div>
+              {showUsers && (
+                <section className="panel queue-users">
+                  <h2>Novi korisnici · posljednja 24 sata</h2>
+                  <p>Prikazano do 20 najnovijih registracija.</p>
+                  {dashboard.newUsers.length ? (
+                    dashboard.newUsers.map(user => (
+                      <p key={user.id}>
+                        #{user.id} · {user.username} · {date(user.createdAt)}
+                      </p>
+                    ))
+                  ) : (
+                    <p>Nema novih korisnika.</p>
+                  )}
+                </section>
+              )}
+              <div className="toolbar">
+                <label>
+                  Razdoblje{' '}
+                  <select
+                    aria-label="Razdoblje statistike"
+                    value={period}
+                    onChange={event => setPeriod(event.target.value)}
+                  >
+                    <option value="day">Dan</option>
+                    <option value="week">Tjedan</option>
+                    <option value="month">Mjesec (30 dana)</option>
+                  </select>
+                </label>
+                <span className="period-note">Od {date(dashboard.since)} · grupiranje UTC</span>
+              </div>
+              <div className="stats-grid">
+                {[
+                  ['Novi oglasi', dashboard.stats.newAds],
+                  ['Aktivni oglasi', dashboard.stats.activeAds],
+                  ['Novi korisnici', dashboard.stats.newUsers],
+                  ['Poslane poruke', dashboard.stats.messagesSent],
+                  ['Prodani oglasi', dashboard.stats.soldAds],
+                  ['Istekli oglasi', dashboard.stats.expiredAds],
+                  ['Ukupno oglasa', dashboard.stats.totalAds],
+                  ['Ukupno korisnika', dashboard.stats.totalUsers],
+                ].map(([label, value]) => (
+                  <article
+                    className="stat-card"
+                    key={label}
+                  >
+                    <span className="stat-top">{label}</span>
+                    <strong className="stat-value">{value}</strong>
+                  </article>
+                ))}
+              </div>
+              <section className="panel chart-panel">
+                <div className="panel-heading">
+                  <h2>Aktivnost kroz vrijeme</h2>
+                  <select
+                    aria-label="Podaci grafikona"
+                    value={metric}
+                    onChange={event => setMetric(event.target.value as typeof metric)}
+                  >
+                    <option value="ads">Novi oglasi</option>
+                    <option value="users">Novi korisnici</option>
+                    <option value="messages">Poruke</option>
+                  </select>
+                </div>
+                <div
+                  className="live-chart"
+                  role="img"
+                  aria-label={`${metric === 'ads' ? 'Novi oglasi' : metric === 'users' ? 'Novi korisnici' : 'Poruke'} po ${period === 'day' ? 'satu' : 'danu'}, UTC. Ukupno ${dashboard.chart.reduce((sum, point) => sum + point[metric], 0)}. Podaci su u tablici ispod.`}
+                >
+                  {dashboard.chart.map(point => (
+                    <div
+                      className="live-column"
+                      key={point.at}
+                      title={`${date(point.at)}: ${point[metric]}`}
+                    >
+                      <span>{point[metric]}</span>
+                      <div
+                        style={{
+                          height: `${Math.max(1, (point[metric] / Math.max(1, ...dashboard.chart.map(item => item[metric]))) * 120)}px`,
+                        }}
+                      />
+                      <small>
+                        {new Date(point.at).toLocaleString(
+                          'hr-HR',
+                          period === 'day'
+                            ? { hour: '2-digit', timeZone: 'UTC' }
+                            : { day: 'numeric', month: 'numeric', timeZone: 'UTC' }
+                        )}
+                      </small>
+                    </div>
+                  ))}
+                </div>
+                <details className="chart-data">
+                  <summary>Tablica podataka</summary>
+                  <div className="table-scroll">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Vrijeme (UTC)</th>
+                          <th>Oglasi</th>
+                          <th>Korisnici</th>
+                          <th>Poruke</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {dashboard.chart.map(point => (
+                          <tr key={point.at}>
+                            <td>{new Date(point.at).toISOString()}</td>
+                            <td>{point.ads}</td>
+                            <td>{point.users}</td>
+                            <td>{point.messages}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </details>
+                <p className="period-note">
+                  Prodaja se prati od uvođenja ove evidencije; stariji datumi prodaje nisu poznati. Istekli:
+                  oglasi kojima je rok istekao u razdoblju i nisu obnovljeni.
+                </p>
+              </section>
+              <section className="panel">
+                <div className="panel-heading">
+                  <h2>Posljednje administratorske aktivnosti</h2>
+                  <button
+                    className="text-link"
+                    onClick={() => navigate('activity')}
+                  >
+                    Sve aktivnosti
+                  </button>
+                </div>
+                <ActivityList items={dashboard.activity.slice(0, 5)} />
+              </section>
+            </>
+          )}
 
-        {section === 'ads' && <>
-          <div className="toolbar"><label className="search-field"><Icon name="search" /><input aria-label="Pretraži oglase" placeholder="Naslov, ID, VIN ili prodavatelj…" value={filters.search} onChange={event => filter('search', event.target.value)} /></label><select aria-label="Status" value={filters.status} onChange={event => filter('status', event.target.value)}><option value="">Svi statusi</option>{['active', 'sold', 'hidden', 'expired', 'pending', 'rejected', 'changes', 'removed'].map(value => <option value={value} key={value}>{statusLabels[value]}</option>)}</select><select aria-label="Marka" value={filters.brand} onChange={event => filter('brand', event.target.value)}><option value="">Sve marke</option>{list?.brands.map(value => <option key={value}>{value}</option>)}</select><select aria-label="Prodavatelj" value={filters.seller} onChange={event => filter('seller', event.target.value)}><option value="">Svi prodavatelji</option>{list?.sellers.map(seller => <option key={seller.id} value={seller.id}>{seller.name} (#{seller.id})</option>)}</select><label className="date-filter">Od<input type="date" value={filters.from} max={filters.to || undefined} onChange={event => filter('from', event.target.value)} /></label><label className="date-filter">Do<input type="date" value={filters.to} min={filters.from || undefined} onChange={event => filter('to', event.target.value)} /></label><label className="filter-check"><input type="checkbox" checked={filters.reported === 'true'} onChange={event => filter('reported', event.target.checked ? 'true' : '')} />Otvorene prijave</label><button className="outline-button" onClick={() => { setFilters(emptyFilters); setPage(1); setCheckedIds([]); }}>Poništi filtre</button></div>
-          <div className="toolbar bulk-toolbar"><span>{checkedIds.length} odabrano</span><label>Razlog radnje<input className="reason-input" value={reason} maxLength={1000} onChange={event => setReason(event.target.value)} /></label><button className="outline-button" disabled={busy || loading || !checkedIds.length || !reason.trim()} onClick={() => moderate(checkedIds, 'approve')}>Odobri odabrane</button><button className="outline-button" disabled={busy || loading || !checkedIds.length || !reason.trim()} onClick={() => moderate(checkedIds, 'remove')}>Ukloni odabrane</button></div>
-          <section className="panel"><div className="table-scroll"><table><thead><tr><th><input type="checkbox" aria-label="Odaberi sve na stranici" disabled={loading || busy} checked={!!list?.items.length && list.items.every(ad => checkedIds.includes(ad.id))} onChange={event => setCheckedIds(event.target.checked ? list?.items.map(ad => ad.id) ?? [] : [])} /></th><th>Oglas</th><th>Prodavatelj</th><th>Cijena</th><th>Status</th><th>Isticanje</th><th>Objavljen</th></tr></thead><tbody>{list?.items.map(ad => <tr key={ad.id}><td><input type="checkbox" aria-label={`Odaberi oglas ${ad.id}`} checked={checkedIds.includes(ad.id)} disabled={loading || busy} onChange={event => setCheckedIds(current => event.target.checked ? [...current, ad.id] : current.filter(id => id !== ad.id))} /></td><td><button className="ad-title" disabled={busy || detailLoading} onClick={() => void openAd(ad.id)}><span><strong>{ad.title ?? 'Bez naslova'}</strong><small>#{ad.id} · {ad.vin ?? 'VIN nije unesen'}</small></span></button></td><td>{ad.seller} (#{ad.userId})</td><td>{euro(ad.price)}</td><td><span className={`badge ${ad.effectiveStatus}`}>{statusLabels[ad.effectiveStatus] ?? ad.effectiveStatus}</span></td><td>{ad.pinned ? 'Prikvačen' : ''}{ad.pinned && ad.featured ? ' · ' : ''}{ad.featured ? 'Istaknut' : ''}</td><td>{date(ad.dateCreated)}</td></tr>)}</tbody></table>{list && !list.items.length && <p className="empty">Nema oglasa za odabrane filtre.</p>}</div><div className="panel-footer"><span>{list?.total ?? 0} oglasa · stranica {page}</span><div><button className="outline-button" disabled={page === 1 || loading} onClick={() => { setPage(current => current - 1); setCheckedIds([]); }}>Prethodna</button><button className="outline-button" disabled={loading || !list || page * list.pageSize >= list.total} onClick={() => { setPage(current => current + 1); setCheckedIds([]); }}>Sljedeća</button></div></div></section>
-        </>}
+          {section === 'ads' && (
+            <>
+              <div className="toolbar">
+                <label className="search-field">
+                  <Icon name="search" />
+                  <input
+                    aria-label="Pretraži oglase"
+                    placeholder="Naslov, ID, VIN ili prodavatelj…"
+                    value={filters.search}
+                    onChange={event => filter('search', event.target.value)}
+                  />
+                </label>
+                <select
+                  aria-label="Status"
+                  value={filters.status}
+                  onChange={event => filter('status', event.target.value)}
+                >
+                  <option value="">Svi statusi</option>
+                  {['active', 'sold', 'hidden', 'expired', 'pending', 'rejected', 'changes', 'removed'].map(
+                    value => (
+                      <option
+                        value={value}
+                        key={value}
+                      >
+                        {statusLabels[value]}
+                      </option>
+                    )
+                  )}
+                </select>
+                <select
+                  aria-label="Marka"
+                  value={filters.brand}
+                  onChange={event => filter('brand', event.target.value)}
+                >
+                  <option value="">Sve marke</option>
+                  {list?.brands.map(value => (
+                    <option key={value}>{value}</option>
+                  ))}
+                </select>
+                <select
+                  aria-label="Prodavatelj"
+                  value={filters.seller}
+                  onChange={event => filter('seller', event.target.value)}
+                >
+                  <option value="">Svi prodavatelji</option>
+                  {list?.sellers.map(seller => (
+                    <option
+                      key={seller.id}
+                      value={seller.id}
+                    >
+                      {seller.name} (#{seller.id})
+                    </option>
+                  ))}
+                </select>
+                <label className="date-filter">
+                  Od
+                  <input
+                    type="date"
+                    value={filters.from}
+                    max={filters.to || undefined}
+                    onChange={event => filter('from', event.target.value)}
+                  />
+                </label>
+                <label className="date-filter">
+                  Do
+                  <input
+                    type="date"
+                    value={filters.to}
+                    min={filters.from || undefined}
+                    onChange={event => filter('to', event.target.value)}
+                  />
+                </label>
+                <label className="filter-check">
+                  <input
+                    type="checkbox"
+                    checked={filters.reported === 'true'}
+                    onChange={event => filter('reported', event.target.checked ? 'true' : '')}
+                  />
+                  Otvorene prijave
+                </label>
+                <button
+                  className="outline-button"
+                  onClick={() => {
+                    setFilters(emptyFilters);
+                    setPage(1);
+                    setCheckedIds([]);
+                  }}
+                >
+                  Poništi filtre
+                </button>
+              </div>
+              <div className="toolbar bulk-toolbar">
+                <span>{checkedIds.length} odabrano</span>
+                <label>
+                  Razlog radnje
+                  <input
+                    className="reason-input"
+                    value={reason}
+                    maxLength={1000}
+                    onChange={event => setReason(event.target.value)}
+                  />
+                </label>
+                <button
+                  className="outline-button"
+                  disabled={busy || loading || !checkedIds.length || !reason.trim()}
+                  onClick={() => moderate(checkedIds, 'approve')}
+                >
+                  Odobri odabrane
+                </button>
+                <button
+                  className="outline-button"
+                  disabled={busy || loading || !checkedIds.length || !reason.trim()}
+                  onClick={() => moderate(checkedIds, 'remove')}
+                >
+                  Ukloni odabrane
+                </button>
+              </div>
+              <section className="panel">
+                <div className="table-scroll">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>
+                          <input
+                            type="checkbox"
+                            aria-label="Odaberi sve na stranici"
+                            disabled={loading || busy}
+                            checked={
+                              !!list?.items.length && list.items.every(ad => checkedIds.includes(ad.id))
+                            }
+                            onChange={event =>
+                              setCheckedIds(event.target.checked ? (list?.items.map(ad => ad.id) ?? []) : [])
+                            }
+                          />
+                        </th>
+                        <th>Oglas</th>
+                        <th>Prodavatelj</th>
+                        <th>Cijena</th>
+                        <th>Status</th>
+                        <th>Isticanje</th>
+                        <th>Objavljen</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {list?.items.map(ad => (
+                        <tr key={ad.id}>
+                          <td>
+                            <input
+                              type="checkbox"
+                              aria-label={`Odaberi oglas ${ad.id}`}
+                              checked={checkedIds.includes(ad.id)}
+                              disabled={loading || busy}
+                              onChange={event =>
+                                setCheckedIds(current =>
+                                  event.target.checked
+                                    ? [...current, ad.id]
+                                    : current.filter(id => id !== ad.id)
+                                )
+                              }
+                            />
+                          </td>
+                          <td>
+                            <button
+                              className="ad-title"
+                              disabled={busy || detailLoading}
+                              onClick={() => void openAd(ad.id)}
+                            >
+                              <span>
+                                <strong>{ad.title ?? 'Bez naslova'}</strong>
+                                <small>
+                                  #{ad.id} · {ad.vin ?? 'VIN nije unesen'}
+                                </small>
+                              </span>
+                            </button>
+                          </td>
+                          <td>
+                            {ad.seller} (#{ad.userId})
+                          </td>
+                          <td>{euro(ad.price)}</td>
+                          <td>
+                            <span className={`badge ${ad.effectiveStatus}`}>
+                              {statusLabels[ad.effectiveStatus] ?? ad.effectiveStatus}
+                            </span>
+                          </td>
+                          <td>
+                            {ad.pinned ? 'Prikvačen' : ''}
+                            {ad.pinned && ad.featured ? ' · ' : ''}
+                            {ad.featured ? 'Istaknut' : ''}
+                          </td>
+                          <td>{date(ad.dateCreated)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {list && !list.items.length && <p className="empty">Nema oglasa za odabrane filtre.</p>}
+                </div>
+                <div className="panel-footer">
+                  <span>
+                    {list?.total ?? 0} oglasa · stranica {page}
+                  </span>
+                  <div>
+                    <button
+                      className="outline-button"
+                      disabled={page === 1 || loading}
+                      onClick={() => {
+                        setPage(current => current - 1);
+                        setCheckedIds([]);
+                      }}
+                    >
+                      Prethodna
+                    </button>
+                    <button
+                      className="outline-button"
+                      disabled={loading || !list || page * list.pageSize >= list.total}
+                      onClick={() => {
+                        setPage(current => current + 1);
+                        setCheckedIds([]);
+                      }}
+                    >
+                      Sljedeća
+                    </button>
+                  </div>
+                </div>
+              </section>
+            </>
+          )}
 
-        {section === 'reports' && <ReportsSafety token={token} role={role} initialType={reportType} initialStatus={reportStatus} openAd={id => void openAd(id)} openUser={id => { setFocusedUser(id); navigate('users'); }} />}
-        {section === 'activity' && <section className="panel"><ActivityList items={activity} /></section>}
-        {section === 'users' && <UserManagement token={token} role={role} initialUserId={focusedUser} openAd={id => { navigate('ads'); void openAd(id); }} />}
-        <footer className="workspace-footer"><span>AutoKlik Admin</span><span>Novi oglasi objavljuju se odmah.</span></footer>
-      </main>
+          {section === 'reports' && (
+            <ReportsSafety
+              token={token}
+              role={role}
+              initialType={reportType}
+              initialStatus={reportStatus}
+              openAd={id => void openAd(id)}
+              openUser={id => {
+                setFocusedUser(id);
+                navigate('users');
+              }}
+            />
+          )}
+          {section === 'activity' && (
+            <section className="panel">
+              <ActivityList items={activity} />
+            </section>
+          )}
+          {section === 'users' && (
+            <UserManagement
+              token={token}
+              role={role}
+              initialUserId={focusedUser}
+              openAd={id => {
+                navigate('ads');
+                void openAd(id);
+              }}
+            />
+          )}
+          <footer className="workspace-footer">
+            <span>AutoKlik Admin</span>
+            <span>Novi oglasi objavljuju se odmah.</span>
+          </footer>
+        </main>
+      </div>
+      {selected && (
+        <dialog
+          ref={dialog}
+          className="details-dialog"
+          aria-label={`Detalji oglasa ${selected.id}`}
+          onCancel={event => {
+            if (busy) event.preventDefault();
+            else closeAd();
+          }}
+          onClose={closeAd}
+        >
+          <div className="dialog-header">
+            <span className="eyebrow">OGLAS #{selected.id}</span>
+            <button
+              className="icon-button"
+              aria-label="Zatvori detalje"
+              disabled={busy}
+              onClick={closeAd}
+            >
+              <Icon name="close" />
+            </button>
+          </div>
+          <h2>{selected.title}</h2>
+          <p>
+            {selected.seller} (#{selected.userId}) · {euro(selected.price)}
+          </p>
+          <span className={`badge ${selected.effectiveStatus}`}>
+            {statusLabels[selected.effectiveStatus]}
+          </span>
+          {selected.moderationReason && <p>Posljednji razlog: {selected.moderationReason}</p>}
+          {error && (
+            <p
+              className="error"
+              role="alert"
+            >
+              {error}
+            </p>
+          )}
+          {notice && <p role="status">{notice}</p>}
+          <form
+            className="moderation-form"
+            onSubmit={event => {
+              event.preventDefault();
+              moderate([selected.id], decision);
+            }}
+          >
+            <label>
+              Odluka
+              <select
+                value={decision}
+                onChange={event => setDecision(event.target.value)}
+              >
+                <option value="approve">Odobri</option>
+                <option value="reject">Odbij</option>
+                <option value="changes">Zatraži izmjene</option>
+                <option value="remove">Ukloni</option>
+                <option value="restore">Vrati</option>
+                <option value="pending">Stavi na pregled</option>
+              </select>
+            </label>
+            <label>
+              Razlog (obavezno)
+              <textarea
+                value={reason}
+                required
+                maxLength={1000}
+                onChange={event => setReason(event.target.value)}
+              />
+            </label>
+            <p className="period-note">
+              Uklanjanje skriva oglas i može se poništiti vraćanjem. Vraćanje isteklog oglasa obnavlja rok na
+              3 dana.
+            </p>
+            <button
+              className="primary-button"
+              disabled={busy || !reason.trim()}
+            >
+              Spremi odluku
+            </button>
+          </form>
+          <AdEditor
+            key={`${selected.id}-${selected.dateLastUpdated}`}
+            ad={selected}
+            busy={busy}
+            save={(fields, reason) =>
+              void mutate(async () => {
+                const detail = await request<Detail>(token, `/admin/ads/${selected.id}`, {
+                  method: 'PATCH',
+                  body: JSON.stringify({ fields, reason, version: selected.dateLastUpdated }),
+                });
+                setSelected(detail);
+              }, 'Izmjene su spremljene.')
+            }
+          />
+          <section className="context-section">
+            <h3>Fotografije</h3>
+            <p>Za uklanjanje upišite razlog u polje odluke iznad.</p>
+            <div className="photo-grid">
+              {selected.photos.map(photo => (
+                <div key={photo.id}>
+                  <Image
+                    unoptimized
+                    width={240}
+                    height={140}
+                    src={`${API}/${photo.imageUrl}`}
+                    alt={`Fotografija oglasa ${selected.id}`}
+                  />
+                  <button
+                    className="outline-button"
+                    disabled={busy || !reason.trim()}
+                    onClick={() => {
+                      if (window.confirm('Ukloniti ovu fotografiju iz oglasa?'))
+                        void mutate(async () => {
+                          const detail = await request<Detail>(
+                            token,
+                            `/admin/ads/${selected.id}/photos/${photo.id}/remove`,
+                            {
+                              method: 'POST',
+                              body: JSON.stringify({ reason, version: selected.dateLastUpdated }),
+                            }
+                          );
+                          setSelected(detail);
+                        }, 'Fotografija je uklonjena iz oglasa.');
+                    }}
+                  >
+                    Ukloni fotografiju
+                  </button>
+                </div>
+              ))}
+            </div>
+            {!selected.photos.length && <p>Nema fotografija.</p>}
+          </section>
+          <section className="context-section">
+            <h3>Mogući duplikati</h3>
+            <p>
+              Jednak VIN ili identične datoteke fotografija. Vizualno slične i izmijenjene fotografije nisu
+              obuhvaćene.
+            </p>
+            {selected.duplicates.matches.map(ad => (
+              <button
+                className="text-link"
+                key={ad.id}
+                disabled={busy || detailLoading}
+                onClick={() => void openAd(ad.id)}
+              >
+                #{ad.id} · {ad.title} · {ad.sameVin ? 'VIN' : ''} {ad.samePhoto ? 'Fotografija' : ''}
+              </button>
+            ))}
+            {!selected.duplicates.matches.length && <p>Nema pronađenih duplikata.</p>}
+            {selected.duplicates.unindexedPhotos > 0 && (
+              <>
+                <p>
+                  {selected.duplicates.unindexedPhotos} fotografija još nema otisak. Nedostupne i vanjske
+                  slike nije moguće indeksirati.
+                </p>
+                <button
+                  className="outline-button"
+                  disabled={busy}
+                  onClick={() =>
+                    void mutate(async () => {
+                      let after = 0;
+                      let done = false;
+                      let indexed = 0;
+                      while (!done) {
+                        const batch = await request<{ next: number; done: boolean; indexed: number }>(
+                          token,
+                          '/admin/photos/index',
+                          { method: 'POST', body: JSON.stringify({ after }) }
+                        );
+                        after = batch.next;
+                        done = batch.done;
+                        indexed += batch.indexed;
+                        setNotice(`Indeksirano ${indexed} fotografija…`);
+                      }
+                      await openAd(selected.id);
+                    }, 'Provjera fotografija je završena.')
+                  }
+                >
+                  Indeksiraj postojeće fotografije
+                </button>
+              </>
+            )}
+          </section>
+          <section className="context-section">
+            <h3>Drugi oglasi prodavatelja (do 50)</h3>
+            {selected.otherAds.map(ad => (
+              <button
+                className="text-link"
+                key={ad.id}
+                disabled={busy || detailLoading}
+                onClick={() => void openAd(ad.id)}
+              >
+                #{ad.id} · {ad.title}
+              </button>
+            ))}
+            {!selected.otherAds.length && <p>Nema drugih oglasa.</p>}
+            <h3>Povijest prijava (do 100)</h3>
+            {selected.reports.map(report => (
+              <p key={report.id}>
+                #{report.id} · {report.reason} · {report.status}
+                {report.resolutionNote ? ` · ${report.resolutionNote}` : ''}
+              </p>
+            ))}
+            {!selected.reports.length && <p>Nema prijava.</p>}
+            <h3>Povijest odluka</h3>
+            <ActivityList items={selected.decisions} />
+          </section>
+        </dialog>
+      )}
     </div>
-    {selected && <dialog ref={dialog} className="details-dialog" aria-label={`Detalji oglasa ${selected.id}`} onCancel={event => { if (busy) event.preventDefault(); else closeAd(); }} onClose={closeAd}><div className="dialog-header"><span className="eyebrow">OGLAS #{selected.id}</span><button className="icon-button" aria-label="Zatvori detalje" disabled={busy} onClick={closeAd}><Icon name="close" /></button></div><h2>{selected.title}</h2><p>{selected.seller} (#{selected.userId}) · {euro(selected.price)}</p><span className={`badge ${selected.effectiveStatus}`}>{statusLabels[selected.effectiveStatus]}</span>{selected.moderationReason && <p>Posljednji razlog: {selected.moderationReason}</p>}{error && <p className="error" role="alert">{error}</p>}{notice && <p role="status">{notice}</p>}
-      <form className="moderation-form" onSubmit={event => { event.preventDefault(); moderate([selected.id], decision); }}><label>Odluka<select value={decision} onChange={event => setDecision(event.target.value)}><option value="approve">Odobri</option><option value="reject">Odbij</option><option value="changes">Zatraži izmjene</option><option value="remove">Ukloni</option><option value="restore">Vrati</option><option value="pending">Stavi na pregled</option></select></label><label>Razlog (obavezno)<textarea value={reason} required maxLength={1000} onChange={event => setReason(event.target.value)} /></label><p className="period-note">Uklanjanje skriva oglas i može se poništiti vraćanjem. Vraćanje isteklog oglasa obnavlja rok na 3 dana.</p><button className="primary-button" disabled={busy || !reason.trim()}>Spremi odluku</button></form>
-      <AdEditor key={`${selected.id}-${selected.dateLastUpdated}`} ad={selected} busy={busy} save={(fields, reason) => void mutate(async () => { const detail = await request<Detail>(token, `/admin/ads/${selected.id}`, { method: 'PATCH', body: JSON.stringify({ fields, reason, version: selected.dateLastUpdated }) }); setSelected(detail); }, 'Izmjene su spremljene.')} />
-      <section className="context-section"><h3>Fotografije</h3><p>Za uklanjanje upišite razlog u polje odluke iznad.</p><div className="photo-grid">{selected.photos.map(photo => <div key={photo.id}><Image unoptimized width={240} height={140} src={`${API}/${photo.imageUrl}`} alt={`Fotografija oglasa ${selected.id}`} /><button className="outline-button" disabled={busy || !reason.trim()} onClick={() => { if (window.confirm('Ukloniti ovu fotografiju iz oglasa?')) void mutate(async () => { const detail = await request<Detail>(token, `/admin/ads/${selected.id}/photos/${photo.id}/remove`, { method: 'POST', body: JSON.stringify({ reason, version: selected.dateLastUpdated }) }); setSelected(detail); }, 'Fotografija je uklonjena iz oglasa.'); }}>Ukloni fotografiju</button></div>)}</div>{!selected.photos.length && <p>Nema fotografija.</p>}</section>
-      <section className="context-section"><h3>Mogući duplikati</h3><p>Jednak VIN ili identične datoteke fotografija. Vizualno slične i izmijenjene fotografije nisu obuhvaćene.</p>{selected.duplicates.matches.map(ad => <button className="text-link" key={ad.id} disabled={busy || detailLoading} onClick={() => void openAd(ad.id)}>#{ad.id} · {ad.title} · {ad.sameVin ? 'VIN' : ''} {ad.samePhoto ? 'Fotografija' : ''}</button>)}{!selected.duplicates.matches.length && <p>Nema pronađenih duplikata.</p>}{selected.duplicates.unindexedPhotos > 0 && <><p>{selected.duplicates.unindexedPhotos} fotografija još nema otisak. Nedostupne i vanjske slike nije moguće indeksirati.</p><button className="outline-button" disabled={busy} onClick={() => void mutate(async () => { let after = 0; let done = false; let indexed = 0; while (!done) { const batch = await request<{ next: number; done: boolean; indexed: number }>(token, '/admin/photos/index', { method: 'POST', body: JSON.stringify({ after }) }); after = batch.next; done = batch.done; indexed += batch.indexed; setNotice(`Indeksirano ${indexed} fotografija…`); } await openAd(selected.id); }, 'Provjera fotografija je završena.')}>Indeksiraj postojeće fotografije</button></>}</section>
-      <section className="context-section"><h3>Drugi oglasi prodavatelja (do 50)</h3>{selected.otherAds.map(ad => <button className="text-link" key={ad.id} disabled={busy || detailLoading} onClick={() => void openAd(ad.id)}>#{ad.id} · {ad.title}</button>)}{!selected.otherAds.length && <p>Nema drugih oglasa.</p>}<h3>Povijest prijava (do 100)</h3>{selected.reports.map(report => <p key={report.id}>#{report.id} · {report.reason} · {report.status}{report.resolutionNote ? ` · ${report.resolutionNote}` : ''}</p>)}{!selected.reports.length && <p>Nema prijava.</p>}<h3>Povijest odluka</h3><ActivityList items={selected.decisions} /></section>
-    </dialog>}
-  </div>;
+  );
 }
 
 function AdEditor({ ad, busy, save }: { ad: Ad; busy: boolean; save: (fields: Record<string, unknown>, reason: string) => void }) {
@@ -228,14 +1048,87 @@ function AdEditor({ ad, busy, save }: { ad: Ad; busy: boolean; save: (fields: Re
   const [featured, setFeatured] = useState(!!ad.featured);
   const [pinned, setPinned] = useState(ad.pinned);
   const [reason, setReason] = useState('');
-  return <details className="context-section"><summary>Uredi podatke, isticanje i prikvačivanje</summary><form className="moderation-form edit-form" onSubmit={event => {
-    event.preventDefault();
-    const changed: Record<string, unknown> = {};
-    editFields.forEach(([key, , type]) => {
-      if (fields[key] !== String(ad[key] ?? '')) changed[key] = type === 'number' ? (fields[key] === '' ? null : Number(fields[key])) : key === 'vin' && !fields[key] ? null : fields[key];
-    });
-    if (featured !== !!ad.featured) changed.featured = featured;
-    if (pinned !== ad.pinned) changed.pinned = pinned;
-    save(changed, reason);
-  }}>{editFields.map(([key, label, type]) => <label key={key}>{label}{type === 'textarea' ? <textarea value={fields[key]} maxLength={10000} onChange={event => setFields(current => ({ ...current, [key]: event.target.value }))} /> : <input type={type} value={fields[key]} min={key === 'year' ? 1886 : type === 'number' ? 0 : undefined} max={key === 'year' ? 2100 : undefined} step={['price', 'fuelConsumption'].includes(key) ? 'any' : type === 'number' ? '1' : undefined} maxLength={key === 'vin' ? 17 : 200} required={['title', 'category', 'brand', 'model', 'subcategory'].includes(key)} onChange={event => setFields(current => ({ ...current, [key]: event.target.value }))} />}</label>)}<label className="filter-check"><input type="checkbox" checked={featured} onChange={event => setFeatured(event.target.checked)} />Istaknuti oglas</label><label className="filter-check"><input type="checkbox" checked={pinned} onChange={event => setPinned(event.target.checked)} />Prikvači na vrh najnovijih oglasa</label><label>Razlog izmjene<textarea required maxLength={1000} value={reason} onChange={event => setReason(event.target.value)} /></label><button className="primary-button" disabled={busy || !reason.trim()}>Spremi izmjene</button></form></details>;
+  return (
+    <details className="context-section">
+      <summary>Uredi podatke, isticanje i prikvačivanje</summary>
+      <form
+        className="moderation-form edit-form"
+        onSubmit={event => {
+          event.preventDefault();
+          const changed: Record<string, unknown> = {};
+          editFields.forEach(([key, , type]) => {
+            if (fields[key] !== String(ad[key] ?? ''))
+              changed[key] =
+                type === 'number'
+                  ? fields[key] === ''
+                    ? null
+                    : Number(fields[key])
+                  : key === 'vin' && !fields[key]
+                    ? null
+                    : fields[key];
+          });
+          if (featured !== !!ad.featured) changed.featured = featured;
+          if (pinned !== ad.pinned) changed.pinned = pinned;
+          save(changed, reason);
+        }}
+      >
+        {editFields.map(([key, label, type]) => (
+          <label key={key}>
+            {label}
+            {type === 'textarea' ? (
+              <textarea
+                value={fields[key]}
+                maxLength={10000}
+                onChange={event => setFields(current => ({ ...current, [key]: event.target.value }))}
+              />
+            ) : (
+              <input
+                type={type}
+                value={fields[key]}
+                min={key === 'year' ? 1886 : type === 'number' ? 0 : undefined}
+                max={key === 'year' ? 2100 : undefined}
+                step={
+                  ['price', 'fuelConsumption'].includes(key) ? 'any' : type === 'number' ? '1' : undefined
+                }
+                maxLength={key === 'vin' ? 17 : 200}
+                required={['title', 'category', 'brand', 'model', 'subcategory'].includes(key)}
+                onChange={event => setFields(current => ({ ...current, [key]: event.target.value }))}
+              />
+            )}
+          </label>
+        ))}
+        <label className="filter-check">
+          <input
+            type="checkbox"
+            checked={featured}
+            onChange={event => setFeatured(event.target.checked)}
+          />
+          Istaknuti oglas
+        </label>
+        <label className="filter-check">
+          <input
+            type="checkbox"
+            checked={pinned}
+            onChange={event => setPinned(event.target.checked)}
+          />
+          Prikvači na vrh najnovijih oglasa
+        </label>
+        <label>
+          Razlog izmjene
+          <textarea
+            required
+            maxLength={1000}
+            value={reason}
+            onChange={event => setReason(event.target.value)}
+          />
+        </label>
+        <button
+          className="primary-button"
+          disabled={busy || !reason.trim()}
+        >
+          Spremi izmjene
+        </button>
+      </form>
+    </details>
+  );
 }

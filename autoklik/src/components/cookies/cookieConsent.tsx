@@ -65,7 +65,8 @@ export function CookieConsent() {
     if (visible) return (
         <section
             aria-label="Postavke kolačića"
-            className="motion-safe:animate-[cookie-fade-in_1s_ease-out_both] fixed bottom-4 left-4 right-4 z-50 max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-xl border border-white/5 bg-[#202a38] p-5 text-sm font-normal leading-5 text-slate-300 shadow-2xl sm:left-auto sm:w-[560px] sm:p-6"
+            className="motion-safe:animate-[cookie-fade-in_1s_ease-out_both] fixed bottom-4 left-4 right-4 z-50 max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-xl border border-white/5 bg-[#202a38] p-5 text-sm font-normal leading-5 text-slate-300 shadow-2xl
+              sm:left-auto sm:w-[560px] sm:p-6"
         >
             {personalizing ? (
                 <>
@@ -92,7 +93,8 @@ export function CookieConsent() {
                 </>
             )}
             {error && <p role="alert" className="mt-3 text-red-300">{error}</p>}
-            <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="mt-5 flex flex-col gap-3
+              sm:flex-row sm:items-center">
                 <button type="button" onClick={() => personalizing ? save(analytics, marketing) : setPersonalizing(true)} className={`${primaryButton} sm:mr-auto`}>
                     {personalizing ? 'Spremi odabir' : 'Prilagodi izbor'}
                 </button>

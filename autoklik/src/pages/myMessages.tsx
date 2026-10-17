@@ -311,10 +311,14 @@ export default function MyMessages() {
                 <Navbar/>
             </header>
 
-            <main className="bg-gray-50 px-4 py-8 sm:px-6 lg:px-8">
-                <div className="mx-auto grid w-full max-w-7xl items-start gap-6 lg:grid-cols-[224px_minmax(0,1fr)]">
+            <main className="bg-gray-50 px-4 py-8
+              sm:px-6
+              lg:px-8">
+                <div className="mx-auto grid w-full max-w-7xl items-start gap-6
+                  lg:grid-cols-[224px_minmax(0,1fr)]">
                     {errorMessage && (
-                        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 lg:col-span-2" role="alert">
+                        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700
+                          lg:col-span-2" role="alert">
                             <strong className="font-semibold">Greška: </strong>
                             <span>{errorMessage}</span>
                         </div>
@@ -326,12 +330,15 @@ export default function MyMessages() {
                         </nav>
                     </aside>
 
-                    <div className="grid min-w-0 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm md:min-h-[520px] md:grid-cols-[280px_minmax(0,1fr)]">
-                        <aside className="border-b border-gray-200 bg-gray-50/50 md:border-b-0 md:border-r" aria-labelledby="conversations-heading">
+                    <div className="grid min-w-0 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm
+                      md:min-h-[520px] md:grid-cols-[280px_minmax(0,1fr)]">
+                        <aside className="border-b border-gray-200 bg-gray-50/50
+                          md:border-b-0 md:border-r" aria-labelledby="conversations-heading">
                             <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4">
                                 <h2 id="conversations-heading" className="font-semibold text-gray-900">Razgovori</h2>
                             </div>
-                            <div className="max-h-72 space-y-1 overflow-y-auto p-3 md:max-h-[460px]">
+                            <div className="max-h-72 space-y-1 overflow-y-auto p-3
+                              md:max-h-[460px]">
                                 {conversations.map((conversation) => (
                                     <div key={conversation.id}>
                                         <button type="button" disabled={sendingMessage} onClick={() => {
@@ -376,7 +383,8 @@ export default function MyMessages() {
                                                             {new Date(m.createdAt).toLocaleDateString('hr-HR', {day: 'numeric', month: 'long', year: 'numeric'})}
                                                         </div>
                                                     )}
-                                                    <div className={`relative flex w-fit max-w-[85%] flex-wrap items-end gap-x-2 rounded-lg px-2.5 py-1.5 text-white shadow-sm sm:max-w-[75%] ${m.senderId === user?.id ? 'self-end rounded-tr-none bg-[#005c4b]' : 'self-start rounded-tl-none bg-[#202c33]'}`}>
+                                                    <div className={`relative flex w-fit max-w-[85%] flex-wrap items-end gap-x-2 rounded-lg px-2.5 py-1.5 text-white shadow-sm
+                                                        sm:max-w-[75%] ${m.senderId === user?.id ? 'self-end rounded-tr-none bg-[#005c4b]' : 'self-start rounded-tl-none bg-[#202c33]'}`}>
                                                         <span aria-hidden="true" className={`absolute top-0 h-0 w-0 border-b-[8px] border-b-transparent ${m.senderId === user?.id ? '-right-2 border-l-[8px] border-l-[#005c4b]' : '-left-2 border-r-[8px] border-r-[#202c33]'}`} />
                                                         {m.hasImage && <div className="w-full"><ChatImage messageId={m.id} onLoad={() => {
                                                             if (sentImageToScroll.current !== m.id) return;
@@ -457,13 +465,13 @@ export default function MyMessages() {
                                                            onChange={event => setMessageBody(event.target.value)}
                                                            disabled={sendingMessage}
                                                            aria-label="Poruka"
-                                                           className="border border-gray-300 rounded-md py-2 px-4 focus:outline-none"
+                                                           className="min-w-0 flex-1 border border-gray-300 rounded-md py-2 px-3 focus:outline-none"
                                                            placeholder="Upiši poruku..."
                                                     />
 
                                                     <button
                                                         type="submit" disabled={sendingMessage || (!messageBody.trim() && !selectedImage) || !user}
-                                                        className="ml-2 rounded-md bg-blue-500 py-2 px-4 text-sm font-medium text-white enabled:hover:bg-blue-600 disabled:cursor-not-allowed disabled:bg-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                        className="shrink-0 rounded-md bg-blue-500 py-2 px-4 text-sm font-medium text-white enabled:hover:bg-blue-600 disabled:cursor-not-allowed disabled:bg-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                                     >
                                                         {sendingMessage ? 'Slanje...' : 'Pošalji'}
                                                     </button>

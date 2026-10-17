@@ -46,10 +46,10 @@ const emptyFilters: SearchFilters = { brand: '', model: '', yearMin: '', yearMax
 const sectionClass = `mx-auto min-w-0 max-w-7xl px-4 pt-6
   sm:px-6 sm:pt-10
   lg:px-8 lg:pt-12`;
-const sectionTitleClass = `min-w-0 text-lg font-bold text-[var(--color-navbar)]
+const sectionTitleClass = `min-w-0 text-lg font-bold tracking-tight text-slate-900
   sm:text-xl
   lg:text-2xl`;
-const sectionLinkClass = `inline-flex min-h-11 shrink-0 items-center gap-1 text-sm font-bold text-[var(--color-navbar)] underline transition hover:text-[var(--color-text)]
+const sectionLinkClass = `inline-flex min-h-11 shrink-0 items-center gap-1 text-sm font-semibold text-[var(--color-navbar)] transition hover:underline
   sm:text-base`;
 
 export default function Home() {
@@ -213,38 +213,55 @@ export default function Home() {
           <Navbar homepage />
         </header>
 
-        <div className="w-full min-w-0 bg-[url(/banner.jpg)] bg-cover bg-center bg-no-repeat px-4 py-5
-          sm:px-6 sm:py-8
-          lg:px-8 lg:py-10">
-          <div className="mx-auto flex w-full min-w-0 max-w-7xl justify-start">
-            <section aria-labelledby="filters-title" className="w-full min-w-0 max-w-lg rounded-2xl bg-white p-4 text-gray-900 shadow-2xl
-              sm:p-5">
-              <div className="flex items-start justify-between gap-3 border-b border-gray-200 pb-2">
+        <div className="relative isolate w-full min-w-0 bg-slate-950 bg-[url(/banner.jpg)] bg-cover bg-center bg-no-repeat px-4 py-8
+          sm:px-6 sm:py-10
+          lg:px-8 lg:py-14">
+          <div aria-hidden="true" className="absolute inset-0 -z-10 bg-linear-to-r from-slate-950/95 via-slate-950/75 to-slate-950/35" />
+          <div className="mx-auto grid w-full min-w-0 max-w-7xl items-center gap-6
+            lg:grid-cols-[minmax(0,1fr)_minmax(0,480px)] lg:gap-12">
+            <div className="min-w-0 text-white">
+              <p className="mb-3 inline-flex items-center gap-2 text-xs font-semibold tracking-[0.18em] text-white/75"><span className="size-1.5 rounded-full bg-red-400" />AUTOKLIK · AUTO OGLASI</p>
+              <h1 className="max-w-xl text-3xl font-bold leading-tight tracking-tight
+                sm:text-4xl
+                lg:text-5xl
+                xl:text-6xl">Pronađite svoje<br className="hidden sm:block" /> sljedeće vozilo.</h1>
+              <p className="mt-4 max-w-md text-sm leading-relaxed text-slate-200
+                sm:text-base">Usporedite oglase, spremite favorite i pronađite vozilo po svojoj mjeri.</p>
+              <div className="mt-5 flex flex-wrap gap-2
+                lg:mt-7">
+                <Link href="/search?priceMax=15000" className="rounded-full border border-white/25 bg-white/10 px-3 py-2 text-xs font-medium text-white transition hover:bg-white/20">Do 15.000 €</Link>
+                <Link href="/search?category=cars&fuel=electric" className="rounded-full border border-white/25 bg-white/10 px-3 py-2 text-xs font-medium text-white transition hover:bg-white/20">Električna vozila</Link>
+                <Link href="/search?gearType=automatic" className="rounded-full border border-white/25 bg-white/10 px-3 py-2 text-xs font-medium text-white transition hover:bg-white/20">Automatski mjenjač</Link>
+              </div>
+            </div>
+            <section aria-labelledby="filters-title" className="w-full min-w-0 rounded-2xl border border-white/70 bg-white p-4 text-gray-900 shadow-2xl
+              sm:p-6">
+              <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-4">
                 <div>
-                  <h2 id="filters-title" className="text-xl font-bold
-                    sm:text-2xl">Napredno pretraživanje</h2>
-                  <p className="mt-1 text-sm text-gray-600">Suzi pretragu po vozilu i godini proizvodnje.</p>
+                  <h2 id="filters-title" className="text-xl font-bold tracking-tight
+                    sm:text-2xl">Krenite u potragu</h2>
+                  <p className="mt-1 text-sm text-slate-500">Odaberite vozilo koje vam odgovara.</p>
                 </div>
               </div>
 
-              <form onSubmit={submitFilters} className="mt-3 space-y-3">
+              <form onSubmit={submitFilters} className="mt-4 space-y-4">
                 <label className="block text-sm font-medium text-gray-700">Pretraži oglase
-                  <input type="search" maxLength={200} value={search} onChange={event => setSearch(event.target.value)} placeholder="Naslov ili opis oglasa..." className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900" />
+                  <input type="search" maxLength={200} value={search} onChange={event => setSearch(event.target.value)} placeholder="Npr. Volkswagen Golf" className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-gray-900 outline-none transition focus:border-red-800 focus:bg-white focus:ring-2 focus:ring-red-800/10" />
                 </label>
-                <div className="grid min-w-0 grid-cols-1 gap-3
+                <div className="grid min-w-0 grid-cols-1 gap-3 [&_h2]:text-left [&_h2]:text-xs [&_h2]:font-medium [&_h2]:text-slate-500 [&_button]:min-h-11 [&_button]:rounded-xl [&_button]:border-slate-200
                   sm:grid-cols-2">
                   <FilterBrands title="Marka" selectedVehicle_type="cars" mode="multi" value={filters.brand.split(',').filter(Boolean)} onChange={brands => setFilters(current => ({ ...current, brand: brands.join(','), model: '' }))} />
                   <FilterModels title="Model" selectedVehicle_type="cars" selectedBrands={filters.brand.split(',').filter(Boolean)} mode="multi" value={filters.model.split(',').filter(Boolean)} onChange={models => setFilters(current => ({ ...current, model: models.join(',') }))} />
                 </div>
-                <FilterNumeric filterType="year" mode="range" value={{ min: filters.yearMin, max: filters.yearMax }} onChange={years => setFilters(current => ({ ...current, yearMin: years.min, yearMax: years.max }))} />
+                <div className="[&_h1]:text-left [&_h1]:text-xs [&_h1]:font-medium [&_h1]:text-slate-500 [&_button]:min-h-11 [&_button]:rounded-xl [&_button]:border-slate-200"><FilterNumeric filterType="year" mode="range" value={{ min: filters.yearMin, max: filters.yearMax }} onChange={years => setFilters(current => ({ ...current, yearMin: years.min, yearMax: years.max }))} /></div>
                 {filterError && <p role="alert" className="text-sm text-red-600">{filterError}</p>}
                 <div className="flex min-w-0 flex-col-reverse justify-between gap-2 border-t border-gray-200 pt-3
                   sm:flex-row sm:items-center">
-                  <button type="button" onClick={() => { setSearch(''); setFilters(emptyFilters); setFilterError(''); }} className="min-h-11 rounded-md border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Očisti filtre</button>
+                  <button type="button" onClick={() => { setSearch(''); setFilters(emptyFilters); setFilterError(''); }} className="min-h-11 rounded-xl px-2 py-2 text-xs font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-900">Očisti filtre</button>
                   <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] gap-2
                     sm:flex">
-                    <button type="button" aria-haspopup="dialog" onClick={() => setAdvancedFilters({...Object.fromEntries(new URLSearchParams(window.location.search)), search, brands: filters.brand, models: filters.model, yearMin: filters.yearMin, yearMax: filters.yearMax})} className="min-h-11 min-w-0 rounded-md border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Napredno</button>
-                    <button type="submit" className="min-h-11 min-w-0 rounded-md bg-[var(--color-navbar)] px-3 py-2 text-sm font-semibold text-white hover:bg-[var(--color-navbar-hover)]">Pretraži oglase</button>
+                    <button type="button" aria-haspopup="dialog" onClick={() => setAdvancedFilters({...Object.fromEntries(new URLSearchParams(window.location.search)), search, brands: filters.brand, models: filters.model, yearMin: filters.yearMin, yearMax: filters.yearMax})} className="min-h-11 min-w-0 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Napredno</button>
+                    <button type="submit" className="min-h-11 min-w-0 rounded-xl bg-[var(--color-navbar)] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[var(--color-navbar-hover)]">Pretraži oglase</button>
                   </div>
                 </div>
               </form>
@@ -257,7 +274,7 @@ export default function Home() {
           if (canNavigate(url)) window.location.assign(new URL(url, window.location.origin).toString());
         }} />}
 
-        <main className="min-w-0 bg-[var(--color-accent-soft)] pb-6 font-semibold
+        <main className="min-w-0 bg-slate-50 pb-6 [&_article]:rounded-2xl [&_article]:border-slate-200 [&_article]:shadow-sm
           sm:pb-10
           lg:pb-12">
           <RecentlyViewedAds />
@@ -265,9 +282,7 @@ export default function Home() {
           <section className={sectionClass}>
             <div className="mb-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2
               sm:mb-5">
-              <h2 className={sectionTitleClass}>
-                Kategorije i podkategorije
-              </h2>
+              <div><h2 className={sectionTitleClass}>Pretražite po kategoriji</h2><p className="mt-1 text-sm text-slate-500">Odaberite kategoriju koja vas zanima.</p></div>
             </div>
 
             <div className="grid grid-cols-3 items-start gap-x-3 gap-y-5 py-2
@@ -275,9 +290,9 @@ export default function Home() {
               md:grid-cols-5
               xl:grid-cols-10">
               {startCategories.map(({ label, href, icon: Icon, bg }) => (
-                  <Link key={label} href={href} className="group flex min-w-0 flex-col items-center gap-2 rounded-lg text-center focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--color-navbar)]">
-                    <span className={`flex size-12 shrink-0 items-center justify-center rounded-full ${bg} shadow-md transition group-hover:-translate-y-0.5 group-hover:shadow-lg
-                      sm:size-16`}>
+                  <Link key={label} href={href} className="group flex h-full min-w-0 flex-col items-center gap-3 rounded-2xl border border-slate-200/80 bg-white px-2 py-4 text-center transition hover:-translate-y-1 hover:border-red-200 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--color-navbar)] motion-reduce:transform-none">
+                    <span className={`flex size-11 shrink-0 items-center justify-center rounded-xl ${bg} transition
+                      sm:size-12`}>
                       <Icon className="h-6 w-6" strokeWidth={1.75} aria-hidden="true" />
                     </span>
                     <span className="max-w-full break-words text-xs font-semibold text-[var(--color-text)]">
@@ -348,7 +363,7 @@ export default function Home() {
                     <Link
                         key={brand.name}
                         href={{ pathname: '/search', query: { brands: brand.name } }}
-                        className="flex min-w-0 flex-col items-center justify-center gap-2 rounded-lg border border-[var(--border-color)] px-2 py-4 text-center text-xs font-bold text-[var(--color-text)] shadow-sm transition hover:bg-black/5 focus-visible:outline-2
+                        className="flex min-w-0 flex-col items-center justify-center gap-3 rounded-2xl border border-slate-200/80 bg-white px-2 py-4 text-center text-xs font-semibold text-slate-600 transition hover:border-red-200 hover:text-red-900 hover:shadow-md focus-visible:outline-2
                           sm:px-3 sm:py-5 sm:text-sm"
                     >
                       <Image
@@ -364,6 +379,18 @@ export default function Home() {
                     </Link>
                 ))}
               </div>
+            </div>
+          </section>
+          <section className={sectionClass}>
+            <div className="flex flex-col gap-5 rounded-2xl border border-slate-200 bg-white p-5
+              sm:p-8
+              md:flex-row md:items-center md:justify-between">
+              <div className="flex min-w-0 items-start gap-4">
+                <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-900"><Car aria-hidden="true" className="size-6" /></span>
+                <div><h2 className="text-lg font-bold tracking-tight text-slate-900
+                  sm:text-xl">Prodajete vozilo?</h2><p className="mt-1 text-sm leading-relaxed text-slate-500">Objavite oglas i predstavite svoje vozilo kupcima.</p></div>
+              </div>
+              <Link href="/checkout/vehicle-category" className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-red-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-red-800">Objavi oglas<ArrowRightIcon aria-hidden="true" className="size-4" /></Link>
             </div>
           </section>
         </main>

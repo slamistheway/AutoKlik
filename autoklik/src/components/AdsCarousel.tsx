@@ -15,9 +15,7 @@ interface AdsCarouselProps {
 
 // Keep these media queries aligned with the grid's sm / lg / xl / 2xl classes.
 const columnBreakpoints = [640, 1024, 1280, 1536];
-const arrowClass = `flex size-10 items-center justify-center rounded-full text-[var(--color-navbar)] transition
-  enabled:hover:bg-black/10 focus-visible:outline-2 focus-visible:outline-offset-2
-  disabled:text-gray-300
+const arrowClass = `flex size-10 items-center justify-center rounded-full text-[var(--color-navbar)] transition enabled:hover:bg-black/10 focus-visible:outline-2 focus-visible:outline-offset-2 disabled:text-gray-300
   md:size-8`;
 
 export function AdsCarousel({ads, errorMessage, currentUserId, rows = 2}: AdsCarouselProps) {

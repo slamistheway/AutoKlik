@@ -32,11 +32,11 @@ export function RecentlyViewedAds() {
       sm:px-6 sm:pt-10
       lg:px-8 lg:pt-12">
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-        <h2 className="min-w-0 text-lg font-bold text-(--color-navbar)
+        <h2 className="min-w-0 text-lg font-bold tracking-tight text-slate-900
           sm:text-xl
           lg:text-2xl">Nedavno pregledani oglasi</h2>
         <div className="shrink-0">
-          <Link href="/history" className="inline-flex min-h-11 items-center text-sm underline">Cijela povijest</Link>
+          <Link href="/history" className="inline-flex min-h-11 items-center text-sm font-semibold text-red-900 hover:underline">Cijela povijest</Link>
         </div>
       </div>
       <p className="mt-1 text-sm text-gray-500">Posljednjih 10 oglasa pregledanih u ovom pregledniku.</p>

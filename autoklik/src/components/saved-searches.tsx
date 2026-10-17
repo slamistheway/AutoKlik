@@ -58,12 +58,14 @@ export function SavedSearches({filters, signedIn}: {filters: string; signedIn: b
                         setName(''); setNotice('Pretraga je spremljena. Obavijesti su uključene.');
                     });
                 }}>
-                    <input aria-label="Naziv spremljene pretrage" required maxLength={100} value={name} onChange={event => setName(event.target.value)} placeholder="Golf, dizel, do 15.000 €" className="min-w-0 rounded-md border border-gray-300 bg-white px-3 py-2" />
+                    <input aria-label="Naziv spremljene pretrage" required maxLength={100} value={name} onChange={event => setName(event.target.value)} placeholder="Golf, dizel, do 15.000 €" className="min-w-0 w-full rounded-md border border-gray-300 bg-white px-3 py-2
+                      sm:w-auto sm:flex-1" />
                     <button disabled={busy || !name.trim()} className="rounded-md bg-blue-700 px-4 py-2 text-white disabled:opacity-50">Spremi pretragu</button>
                 </form>
                 <ul className="mt-4 space-y-2">
                     {items.map(item => <li key={item.id} className="flex flex-wrap items-center gap-3 rounded-md border border-gray-200 bg-white p-3">
-                        <div className="min-w-0 flex-1"><button type="button" className="font-semibold text-blue-700 underline" onClick={() => { void router.push('/search?' + new URLSearchParams(item.filters)); }}>{item.name}</button><p className="mt-1 text-xs text-gray-600">{searchChips(new URLSearchParams(item.filters)).map(chip => chip.label).join(' · ') || 'Svi oglasi'}</p></div>
+                        <div className="min-w-0 basis-full break-words
+                          sm:basis-0 sm:flex-1"><button type="button" className="font-semibold text-blue-700 underline" onClick={() => { void router.push('/search?' + new URLSearchParams(item.filters)); }}>{item.name}</button><p className="mt-1 text-xs text-gray-600">{searchChips(new URLSearchParams(item.filters)).map(chip => chip.label).join(' · ') || 'Svi oglasi'}</p></div>
                         <label className="flex items-center gap-2 text-sm"><input type="checkbox" disabled={busy} checked={item.alertsEnabled} onChange={() => { void change(() => request(`/${item.id}`, 'PATCH', {alertsEnabled: !item.alertsEnabled})); }} />Obavijesti</label>
                         <button type="button" disabled={busy} className="text-sm text-red-700 underline" onClick={() => { if (window.confirm(`Izbrisati spremljenu pretragu „${item.name}”?`)) void change(() => request(`/${item.id}`, 'DELETE')); }}>Izbriši</button>
                     </li>)}

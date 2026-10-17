@@ -19,7 +19,8 @@ export function SearchFilterFields({draft, setDraft}: {draft: Record<string, str
     return (
         <>
             <label className="mb-5 block text-sm font-medium">Pojam pretrage<input value={draft.search ?? ''} onChange={event => change('search', event.target.value)} maxLength={200} placeholder="Marka, model ili opis" className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2" /></label>
-            <div className="mb-5 grid gap-5 sm:grid-cols-2">
+            <div className="mb-5 grid gap-5
+              sm:grid-cols-2">
                 <label className="text-sm font-medium">Kategorija
                     <select value={category} onChange={event => setDraft(current => ({...current, category: event.target.value, subcategory: '', brands: '', models: ''}))} className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2">
                         <option value="">Sve kategorije</option>
@@ -33,7 +34,9 @@ export function SearchFilterFields({draft, setDraft}: {draft: Record<string, str
                     </select>
                 </label>
             </div>
-            <div className="grid grid-cols-1 gap-x-5 gap-y-6 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-1 gap-x-5 gap-y-6
+              sm:grid-cols-2
+              lg:grid-cols-4">
                 <FilterBrands title="Marka" selectedVehicle_type={vehicleType} mode="multi" value={values('brands')} onChange={value => setDraft(current => ({...current, brands: value.join(','), models: ''}))} />
                 <FilterModels title="Model" selectedVehicle_type={vehicleType} selectedBrands={values('brands')} mode="multi" value={values('models')} onChange={value => change('models', value.join(','))} />
                 {searchRanges.map(key => <FilterNumeric key={key} filterType={key} mode="range" value={{min: draft[key + 'Min'] ?? '', max: draft[key + 'Max'] ?? ''}} onChange={value => setDraft(current => ({...current, [key + 'Min']: value.min, [key + 'Max']: value.max}))} />)}

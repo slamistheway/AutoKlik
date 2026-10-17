@@ -40,7 +40,8 @@ export function AdLocationMap({location}: {location: string | null | undefined})
 
   return (
       <section className="mt-5 overflow-hidden rounded-2xl border border-white/10 bg-[#1b1b20]">
-        <div className="p-5 sm:p-6">
+        <div className="p-5
+          sm:p-6">
           <h2 className="text-xl font-bold">Lokacija oglasa</h2>
           <p className="mt-2 text-sm text-gray-300">{label} — približno područje. Točna adresa nije navedena.</p>
           {area && <p className="mt-1 text-xs text-gray-400">Povucite kartu za pomicanje. Koristite + i − za povećavanje i smanjivanje.</p>}
@@ -48,7 +49,8 @@ export function AdLocationMap({location}: {location: string | null | undefined})
         </div>
         {bbox && <iframe title={`Karta približne lokacije: ${label}`}
                          src={`https://www.openstreetmap.org/export/embed.html?bbox=${encodeURIComponent(bbox)}&layer=mapnik`}
-                         loading="lazy" referrerPolicy="no-referrer" className="h-80 w-full border-0 sm:h-96" allowFullScreen />}
+                         loading="lazy" referrerPolicy="no-referrer" className="h-80 w-full border-0
+                           sm:h-96" allowFullScreen />}
       </section>
   );
 }

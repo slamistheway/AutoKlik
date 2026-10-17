@@ -13,7 +13,7 @@ type SearchAlert = {id: number; adId: number; title: string | null; searchName: 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 const priceLabel = (value: string) => new Intl.NumberFormat('hr-HR', {style: 'currency', currency: 'EUR'}).format(Number(value));
 
-export function MessageNotifications() {
+export function MessageNotifications({dark = false}: {dark?: boolean} = {}) {
   const [conversations, setConversations] = useState<UnreadConversation[]>([]);
   const [priceDrops, setPriceDrops] = useState<PriceDrop[]>([]);
   const [priceUnread, setPriceUnread] = useState(0);
@@ -152,12 +152,13 @@ export function MessageNotifications() {
   return (
       <div className="relative">
         <button type="button" aria-label={`Obavijesti: ${unreadCount} nepročitanih obavijesti`} aria-expanded={open}
-                onClick={() => setOpen(current => !current)} className="relative flex items-center p-2 text-white">
+                onClick={() => setOpen(current => !current)} className={`relative flex items-center p-2 ${dark ? 'text-slate-600' : 'text-white'}`}>
           <BellIcon className="h-5 w-5" />
-          {unreadCount > 0 && <span className="absolute -right-1 -top-1 rounded-full bg-red-600 px-1.5 text-[10px] font-semibold">{unreadCount > 99 ? '99+' : unreadCount}</span>}
+          {unreadCount > 0 && <span className="absolute -right-1 -top-1 rounded-full bg-red-600 px-1.5 text-[10px] font-semibold text-white">{unreadCount > 99 ? '99+' : unreadCount}</span>}
         </button>
         {open && (
-            <div className="absolute right-0 z-50 mt-2 w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-md border border-gray-200 bg-white text-gray-900 shadow-lg">
+            <div className="fixed left-4 right-4 z-50 mt-2 max-h-[70dvh] overflow-y-auto rounded-md border border-gray-200 bg-white text-gray-900 shadow-lg
+              md:absolute md:left-auto md:right-0 md:w-80 md:max-w-[calc(100vw-2rem)]">
               <p className="border-b border-gray-200 px-3 py-3 text-sm font-semibold">Obavijesti</p>
               {error && <p role="alert" className="px-3 py-3 text-xs text-red-600">Obavijesti trenutačno nisu dostupne.</p>}
               {priceError && <p role="alert" className="px-3 py-3 text-xs text-red-600">Obavijesti o cijenama trenutačno nisu dostupne.</p>}

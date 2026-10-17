@@ -64,9 +64,9 @@ export default function FilterBrands({ value, onChange, selectedVehicle_type, mo
         {/*-----------PLAIN BUTTON (FIRST THING USER SEES)-----------*/}
         <button type="button"
                 onClick={() => setOpen(!open)}
-                className="flex w-full items-center justify-between border-2 border-[var(--border-color)] px-3 py-2 text-left text-sm"
+                className="flex min-w-0 w-full items-center justify-between border-2 border-[var(--border-color)] px-3 py-2 text-left text-sm"
         >
-          <span className="flex flex-wrap items-center gap-1">
+          <span className="flex min-w-0 flex-wrap items-center gap-1 break-words">
             {/*----NO BRANDS----*/}
             {value.length === 0 && <span className="text-gray-400">{placeholder}</span>}
 
@@ -83,7 +83,7 @@ export default function FilterBrands({ value, onChange, selectedVehicle_type, mo
           </span>
 
           {/*----ICON----*/}
-          <ChevronDownIcon aria-hidden="true" className="h-4 w-4" />
+          <ChevronDownIcon aria-hidden="true" className="h-4 w-4 shrink-0" />
         </button>
 
         {/*-----------DROPDOWN-----------*/}

@@ -86,7 +86,9 @@ function LoginPage() {
   return (
     <>
       <header><Navbar /></header>
-      <main className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <main className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4
+        sm:px-6
+        lg:px-8">
         <div className="max-w-md w-full space-y-8">
           <div>
             <h1 className="mt-6 text-center text-3xl font-extrabold text-gray-900">Prijavi se na AutoKlik</h1>
@@ -102,14 +104,16 @@ function LoginPage() {
                 <label htmlFor="identifier" className="mb-1 block text-sm font-medium">Email ili korisničko ime</label>
                 <input id="identifier" name="identifier" type="text" maxLength={255} value={identifier}
                   onChange={event => setIdentifier(event.target.value)} autoComplete="username" required
-                  className="relative block w-full rounded-md border border-[var(--border-color)] px-3 py-2 text-gray-900 placeholder-gray-500 focus:border-[var(--border-color)] focus:outline-none focus:ring-blue-500 sm:text-sm"
+                  className="relative block w-full rounded-md border border-[var(--border-color)] px-3 py-2 text-gray-900 placeholder-gray-500 focus:border-[var(--border-color)] focus:outline-none focus:ring-blue-500
+                    sm:text-sm"
                   placeholder="Unesi email ili korisničko ime" />
               </div>
               <div>
                 <label htmlFor="password" className="mb-1 block text-sm font-medium">Lozinka</label>
                 <input id="password" name="password" type="password" maxLength={72} value={password}
                   onChange={event => setPassword(event.target.value)} autoComplete="current-password" required
-                  className="relative block w-full rounded-md border border-[var(--border-color)] px-3 py-2 text-gray-900 placeholder-gray-500 focus:border-[var(--border-color)] focus:outline-none focus:ring-blue-500 sm:text-sm"
+                  className="relative block w-full rounded-md border border-[var(--border-color)] px-3 py-2 text-gray-900 placeholder-gray-500 focus:border-[var(--border-color)] focus:outline-none focus:ring-blue-500
+                    sm:text-sm"
                   placeholder="Unesi lozinku" />
               </div>
             </div>

@@ -50,7 +50,9 @@ export default function PasswordRecoveryForm({ reset = false }: { reset?: boolea
   return <>
     <Head><title>{reset ? 'Promjena lozinke' : 'Zaboravljena lozinka'} | AutoKlik</title><meta name="referrer" content="no-referrer" /></Head>
     <header><Navbar /></header>
-    <main className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4
+      sm:px-6
+      lg:px-8">
       <div className="max-w-md w-full space-y-6">
         <h1 className="text-center text-3xl font-extrabold text-gray-900">{reset ? 'Promjena lozinke' : 'Zaboravili ste lozinku?'}</h1>
         {!reset && <p className="text-sm text-gray-600">Unesite email adresu svojeg računa. Poslat ćemo vam poveznicu za promjenu lozinke.</p>}

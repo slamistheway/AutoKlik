@@ -175,12 +175,15 @@ export default function MySavedAds() {
           <Navbar />
         </header>
 
-        <main className="min-h-screen bg-gray-50 px-4 py-10"><div className="mx-auto flex max-w-7xl flex-col gap-6 md:flex-row">
-          <aside className="h-fit w-full shrink-0 rounded-lg border border-gray-200 bg-white p-4 shadow-md md:w-56"><nav aria-label="Korisnički izbornik" className="flex flex-col gap-2">
+        <main className="min-h-screen bg-gray-50 px-4 py-10"><div className="mx-auto flex max-w-7xl flex-col gap-6
+          md:flex-row">
+          <aside className="h-fit w-full shrink-0 rounded-lg border border-gray-200 bg-white p-4 shadow-md
+            md:w-56"><nav aria-label="Korisnički izbornik" className="flex flex-col gap-2">
             {accountNavigation.map(item => <Link key={item.href} href={item.href} aria-current={router.pathname === item.href ? 'page' : undefined} className={`rounded px-3 py-2 text-sm font-medium transition ${router.pathname === item.href ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-blue-100 hover:text-blue-700'}`}>{item.label}</Link>)}
           </nav></aside>
-          <section className="min-w-0 flex-1 rounded-lg border border-gray-200 bg-white p-5 shadow-md sm:p-6">
-            <div className="flex items-start justify-between gap-4">
+          <section className="min-w-0 flex-1 rounded-lg border border-gray-200 bg-white p-5 shadow-md
+            sm:p-6">
+            <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">Spremljeni oglasi</h1>
                 {user && <p className="mt-1 text-sm text-gray-600">Prikaz oglasa za {user.username}</p>}
@@ -196,7 +199,7 @@ export default function MySavedAds() {
             ) : (
                 <>
                   {totalPages > 1 && (
-                      <nav aria-label="Stranice spremljenih oglasa" className="mt-5 flex justify-center gap-1">
+                      <nav aria-label="Stranice spremljenih oglasa" className="mt-5 flex flex-wrap justify-center gap-1">
                         <button type="button" onClick={() => setPage(current => Math.max(1, current - 1))} disabled={page <= 1} className="h-10 w-10 border-2 disabled:opacity-50" aria-label="Prethodna stranica">←</button>
                         {pageNumbers.map(pageNumber => (
                             <button key={pageNumber} type="button" onClick={() => setPage(pageNumber)} aria-current={page === pageNumber ? 'page' : undefined} className={`h-10 w-10 border-2 ${page === pageNumber ? 'bg-[var(--color-navbar)] text-white' : ''}`}>
@@ -209,9 +212,11 @@ export default function MySavedAds() {
 
                   <div className="mt-5 space-y-4">
                     {pagedAds.map(ad => (
-                        <article key={ad.id} className="flex overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition hover:shadow-md">
-                          <Link href={getAdPath(ad)} className="relative h-40 w-36 shrink-0 overflow-hidden bg-gray-100 sm:h-44 sm:w-48">
-                            <Image src={ad.previewImg} alt={ad.title || 'Slika oglasa'} fill sizes="(max-width: 640px) 144px, 192px" unoptimized={ad.previewImg === '/default_ad_img.png' || /^https?:\/\//i.test(ad.previewImg)} className="object-cover" />
+                        <article key={ad.id} className="flex flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition hover:shadow-md
+                          sm:flex-row">
+                          <Link href={getAdPath(ad)} className="relative h-44 w-full shrink-0 overflow-hidden bg-gray-100
+                            sm:h-44 sm:w-48">
+                            <Image src={ad.previewImg} alt={ad.title || 'Slika oglasa'} fill sizes="(max-width: 640px) 100vw, 192px" unoptimized={ad.previewImg === '/default_ad_img.png' || /^https?:\/\//i.test(ad.previewImg)} className="object-cover" />
                           </Link>
                           <div className="flex min-w-0 flex-1 flex-col gap-3 p-4">
                             <span className="text-xs font-medium text-gray-600">{ad.category ?? 'Oglas'}{ad.subcategory ? ` > ${ad.subcategory}` : ''}</span>

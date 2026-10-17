@@ -55,8 +55,8 @@ export default function FilterColor({ value, onChange, mode = 'multi', title = '
         {/*-----------PLAIN BUTTON (FIRST THING USER SEES)-----------*/}
         <button type="button"
                 onClick={() => setOpen(!open)}
-                className="flex w-full items-center justify-between border-2 border-[var(--border-color)] px-3 py-2 text-left text-sm"
-        >          <span className="flex flex-wrap items-center gap-1">
+                className="flex min-w-0 w-full items-center justify-between border-2 border-[var(--border-color)] px-3 py-2 text-left text-sm"
+        >          <span className="flex min-w-0 flex-wrap items-center gap-1 break-words">
             {/*----NO COLORS----*/}
             {value.length === 0 && <span className="text-gray-400">{placeholder}</span>}
 
@@ -74,11 +74,11 @@ export default function FilterColor({ value, onChange, mode = 'multi', title = '
           </span>
 
           {/*----ICON----*/}
-          <ChevronDownIcon aria-hidden="true" className="h-4 w-4" />
+          <ChevronDownIcon aria-hidden="true" className="h-4 w-4 shrink-0" />
         </button>
 
         {/*-----------DROPDOWN-----------*/}
-        {open && <div className="absolute z-20 mt-1 grid max-h-60 w-full grid-cols-6 gap-2 overflow-y-auto border bg-[var(--color-surface)] p-3 shadow-lg">
+        {open && <div className="absolute z-20 mt-1 grid max-h-60 w-full grid-cols-[repeat(auto-fit,minmax(1.75rem,1fr))] gap-2 overflow-y-auto border bg-[var(--color-surface)] p-3 shadow-lg">
           {/*-----------ITEMS-----------*/}
           {colors.map(color => <button
             key={color.label}

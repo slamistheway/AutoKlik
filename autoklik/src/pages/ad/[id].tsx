@@ -162,13 +162,16 @@ function AdPageContent({initialAd, siteUrl, initialError}: AdPageProps) {
           dangerouslySetInnerHTML={{__html: serializeStructuredData(seo.structuredData)}} />}
       </Head>
       <Navbar />
-      <main className="min-h-screen bg-[#111114] px-4 py-6 text-white sm:px-6 lg:py-10">
+      <main className="min-h-screen bg-[#111114] px-4 py-6 text-white
+        sm:px-6
+        lg:py-10">
           <div className="mx-auto max-w-7xl">
           {errorMessage && <div role="alert" className="rounded-2xl border border-red-400/30 bg-red-950/40 p-6 text-red-100">{errorMessage}</div>}
 
           {ad && (
             <>
-              <div className="grid gap-5 lg:grid-cols-[minmax(0,1.7fr)_minmax(320px,0.9fr)]">
+              <div className="grid min-w-0 gap-5
+                lg:grid-cols-[minmax(0,1.7fr)_minmax(320px,0.9fr)]">
                 <section className="overflow-hidden rounded-2xl border border-white/10 bg-[#1b1b20]">
                   <div className="relative aspect-[16/10] bg-white">
                     <Image
@@ -207,7 +210,8 @@ function AdPageContent({initialAd, siteUrl, initialError}: AdPageProps) {
                   )}
                 </section>
 
-                <aside className="rounded-2xl border border-white/10 bg-[#1b1b20] p-5 lg:sticky lg:top-5">
+                <aside className="min-w-0 break-words rounded-2xl border border-white/10 bg-[#1b1b20] p-5
+                  lg:sticky lg:top-5">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-orange-400">{ad.brand} {ad.model}</p>
                   <h1 className="mt-2 text-2xl font-bold leading-tight">{ad.title || 'Oglas bez naslova'}</h1>
                   <p role="status" className="mt-3 text-sm font-semibold text-orange-300">{adStatusLabels[getAdStatus(ad)]}{getAdStatus(ad) !== 'active' ? ' — oglas nije dostupan za upite.' : ''}</p>
@@ -264,15 +268,18 @@ function AdPageContent({initialAd, siteUrl, initialError}: AdPageProps) {
               <AdLocationMap location={ad.county} />
 
               {ad.description && (
-                  <section className="mt-5 rounded-2xl border border-white/10 bg-[#1b1b20] p-5 sm:p-6">
+                  <section className="mt-5 rounded-2xl border border-white/10 bg-[#1b1b20] p-5
+                    sm:p-6">
                     <h2 className="text-xl font-bold">Opis oglasa</h2>
-                    <p className="mt-3 whitespace-pre-line leading-7 text-gray-300">{ad.description}</p>
+                    <p className="mt-3 break-words whitespace-pre-line leading-7 text-gray-300">{ad.description}</p>
                   </section>
               )}
 
-              <section className="mt-5 rounded-2xl border border-white/10 bg-[#1b1b20] p-5 sm:p-6">
+              <section className="mt-5 rounded-2xl border border-white/10 bg-[#1b1b20] p-5
+                sm:p-6">
                 <h2 className="text-xl font-bold">Pregled vozila</h2>
-                <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <div className="mt-4 grid grid-cols-2 gap-3
+                  sm:grid-cols-4">
                   {[
                       ['Godina', ad.year],
                       ['Kilometraža', ad.kilometrage],
@@ -285,7 +292,7 @@ function AdPageContent({initialAd, siteUrl, initialError}: AdPageProps) {
                       ['Prodavač', ad.sellerType]
 
                   ].filter(([, value]) => value !== null && value !== undefined && value !== '').map(([label, value]) => (
-                    <div key={String(label)} className="rounded-xl bg-[#111114] p-4">
+                    <div key={String(label)} className="min-w-0 break-words rounded-xl bg-[#111114] p-4">
                       <p className="text-xs text-gray-400">{label}</p>
                       <p className="mt-1 font-semibold text-gray-100">{value}</p>
                     </div>

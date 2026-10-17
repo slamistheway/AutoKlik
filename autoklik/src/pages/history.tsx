@@ -58,7 +58,7 @@ export default function HistoryPage() {
       <Navbar />
       <main className="min-h-screen bg-gray-50 px-4 py-10">
         <section className="mx-auto max-w-7xl">
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center justify-between gap-4">
             <h1 className="text-2xl font-bold text-gray-900">Povijest pregledanih oglasa</h1>
             <button type="button" disabled={loading || !result?.total} onClick={clearHistory} className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm disabled:opacity-50">Obriši povijest</button>
           </div>
@@ -68,12 +68,14 @@ export default function HistoryPage() {
             <>
               {!result?.total && <p className="mt-6 text-gray-600">Još niste pregledali nijedan oglas.</p>}
               {Boolean(result?.total) && !result?.ads.length && <p className="mt-6 text-gray-600">Oglasi na ovoj stranici više nisu dostupni.</p>}
-              <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="mt-6 grid grid-cols-1 gap-4
+                sm:grid-cols-2
+                lg:grid-cols-4">
                 {result?.ads.map(ad => <AdCard key={ad.id} ad={ad} href={getAdPath(ad)} />)}
               </div>
             </>
           )}
-          {totalPages > 1 && <nav aria-label="Stranice povijesti" className="mt-6 flex items-center justify-center gap-4">
+          {totalPages > 1 && <nav aria-label="Stranice povijesti" className="mt-6 flex flex-wrap items-center justify-center gap-4">
             <button type="button" disabled={loading || page === 1} onClick={() => setPage(current => current - 1)} className="rounded-md border border-gray-300 px-4 py-2 disabled:opacity-50">Prethodna</button>
             <span>Stranica {page} / {totalPages}</span>
             <button type="button" disabled={loading || page >= totalPages} onClick={() => setPage(current => current + 1)} className="rounded-md border border-gray-300 px-4 py-2 disabled:opacity-50">Sljedeća</button>

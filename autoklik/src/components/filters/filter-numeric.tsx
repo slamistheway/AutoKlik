@@ -26,7 +26,7 @@ const filters = {
     engineSize: { title: 'Obujam motora (cc)', placeholder: 'Obujam motora (cc)', unit: 'cc' },
 };
 const yearOptions = Array.from({ length: 37 }, (_, index) => String(2026 - index));
-const fieldClass = 'flex w-full items-center justify-between border-2 border-[var(--border-color)] px-3 py-2 text-left text-sm placeholder:text-gray-400';
+const fieldClass = 'flex min-w-0 w-full items-center justify-between border-2 border-[var(--border-color)] px-3 py-2 text-left text-sm placeholder:text-gray-400';
 
 
 
@@ -46,11 +46,11 @@ export default function FilterNumeric(props: Props) {
     }, []);
 
     return (
-        <div ref={root} className="span-2 flex flex-col gap-3">
+        <div ref={root} className="span-2 min-w-0 flex flex-col gap-3">
             <h1 className="w-full text-center">{title}</h1>
 
             {props.mode === 'single' ? (
-                <div className="relative w-full ">
+                <div className="relative min-w-0 w-full ">
                     <input
                         type="text"
                         placeholder={placeholder}
@@ -62,9 +62,9 @@ export default function FilterNumeric(props: Props) {
                     />
                 </div>
             ) : (
-                <div className="flex gap-3">
+                <div className="flex min-w-0 gap-3">
                     {(['min', 'max'] as const).map((side) => (
-                        <div key={side} className="relative w-full">
+                        <div key={side} className="relative min-w-0 w-full">
                             {props.filterType === 'year' ? (
                                 <>
                                     <button

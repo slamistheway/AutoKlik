@@ -51,6 +51,7 @@ export function Navbar({homepage = false}: {homepage?: boolean} = {}) {
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [search, setSearch] = useState('');
+  const navLinkClass = desktopLinkClass;
 
   const profileRef = useRef<HTMLDivElement>(null);
 
@@ -158,18 +159,19 @@ export function Navbar({homepage = false}: {homepage?: boolean} = {}) {
         {/* ---------- Top bar ---------- */}
         <div className="bg-[#a4473b] px-4">
           <div className="mx-auto flex h-13 max-w-7xl items-center justify-between gap-6">
-            <Link href="/" onClick={closeMenus} className="text-2xl font-bold text-white">
+            <Link href="/" onClick={closeMenus} className={`text-2xl font-bold text-white ${homepage ? 'tracking-tight' : ''}`}>
               AutoKlik
             </Link>
 
             {/* Desktop links */}
-            <div className="hidden items-center space-x-3 md:flex">
-              <CompareLink className={desktopLinkClass} onClick={closeMenus} />
-              <Link href="/mySavedAds" className={desktopLinkClass}>
+            <div className="hidden items-center space-x-3
+              md:flex">
+              <CompareLink className={navLinkClass} onClick={closeMenus} />
+              <Link href="/mySavedAds" className={navLinkClass}>
                 <HeartIcon className="h-5 w-5" />
                 <span>Spremljeno</span>
               </Link>
-              <Link href="/myMessages" className={desktopLinkClass}>
+              <Link href="/myMessages" className={navLinkClass}>
                 <MessageCircleIcon className="h-5 w-5" />
                 <span>Poruke</span>
               </Link>
@@ -192,7 +194,7 @@ export function Navbar({homepage = false}: {homepage?: boolean} = {}) {
                           unoptimized
                           className="h-6 w-6 rounded-full object-cover ring-2 ring-white/20"
                       />
-                      <span className={homepage ? 'max-w-28 truncate' : undefined}>{currentUser.username}</span>
+                      <span className="max-w-28 truncate">{currentUser.username}</span>
                       <ChevronDownIcon
                           className={`h-4 w-4 transition-transform ${isProfileDropdownOpen ? 'rotate-180' : ''}`}
                       />
@@ -215,7 +217,7 @@ export function Navbar({homepage = false}: {homepage?: boolean} = {}) {
                     )}
                   </div>
               ) : (
-                  <Link href="/login" className={desktopLinkClass}>
+                  <Link href="/login" className={navLinkClass}>
                     <UserIcon className="h-5 w-5" />
                     <span>Prijava</span>
                   </Link>
@@ -223,7 +225,8 @@ export function Navbar({homepage = false}: {homepage?: boolean} = {}) {
             </div>
 
             {/* Mobile: notifications + menu toggle */}
-            <div className="flex items-center gap-1 md:hidden">
+            <div className="flex items-center gap-1
+              md:hidden">
               {currentUser && <MessageNotifications />}
               <button
                   type="button"
@@ -241,12 +244,11 @@ export function Navbar({homepage = false}: {homepage?: boolean} = {}) {
 
         {/* ---------- Search bar ---------- */}
         <div className="bg-[#a3b18a] px-4 shadow-[inset_0_1px_0_#879875]">
-          <div className={homepage
-            ? `mx-auto grid min-h-14 max-w-7xl grid-cols-1 items-center gap-2 py-2
-                sm:flex sm:justify-between sm:gap-4`
-            : 'mx-auto flex min-h-14 max-w-7xl items-center justify-between gap-4 py-2'}>
+          <div className="mx-auto grid min-h-14 max-w-7xl grid-cols-1 items-center gap-2 py-2
+            sm:flex sm:justify-between sm:gap-4">
             <div className="flex min-w-0 flex-1 items-center gap-2">
-              <form onSubmit={submitSearch} role="search" className="flex min-w-0 flex-1 items-center md:max-w-3xl">
+              <form onSubmit={submitSearch} role="search" className="flex min-w-0 flex-1 items-center
+                md:max-w-3xl">
                 <input
                     type="search"
                     maxLength={200}
@@ -262,22 +264,24 @@ export function Navbar({homepage = false}: {homepage?: boolean} = {}) {
                     className="flex h-10 items-center gap-2 rounded-r-md bg-[#a4473b] px-4 font-semibold text-white transition-colors hover:bg-[#87382e] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#87382e]"
                 >
                   <SearchIcon className="h-4 w-4" />
-                  <span className="hidden sm:inline">Pretraži</span>
+                  <span className="hidden
+                    sm:inline">Pretraži</span>
                 </button>
               </form>
 
-              {SHOW_DEBUG_BUTTON && (
+              {SHOW_DEBUG_BUTTON && !homepage && (
                   <button
                       type="button"
                       onClick={() => localStorage.clear()}
-                      className={`${homepage ? 'hidden lg:block' : ''} ml-2 rounded-md bg-white px-3 py-1 text-sm font-semibold text-slate-600 ring-1 ring-inset ring-slate-300 transition-colors hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-700`}
+                      className={`hidden ml-2 rounded-md bg-white px-3 py-1 text-sm font-semibold text-slate-600 ring-1 ring-inset ring-slate-300 transition-colors hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-700
+                        lg:block`}
                   >
                     Delete localStorage
                   </button>
               )}
             </div>
 
-            <Link href="/checkout/vehicle-category" onClick={closeMenus} className={`${ctaClass} ${homepage ? 'min-h-10 justify-center sm:w-auto' : ''}`}>
+            <Link href="/checkout/vehicle-category" onClick={closeMenus} className={`${ctaClass} min-h-10 justify-center`}>
               <PlusIcon className="h-5 w-5" />
               <span>Objavi oglas</span>
             </Link>
@@ -286,8 +290,10 @@ export function Navbar({homepage = false}: {homepage?: boolean} = {}) {
 
         {/* ---------- Mobile menu ---------- */}
         {isMenuOpen && (
-            <div id="mobile-menu" className="rounded-b-xl bg-white shadow-[inset_0_1px_0_#e2e8f0] md:hidden">
-              <div className="space-y-1 px-2 pb-3 pt-2 sm:px-3">
+            <div id="mobile-menu" className="rounded-b-xl bg-white shadow-[inset_0_1px_0_#e2e8f0]
+              md:hidden">
+              <div className="space-y-1 px-2 pb-3 pt-2
+                sm:px-3">
                 <Link href="/search" onClick={closeMenus} className={mobileLinkClass}>Oglasi</Link>
                 <Link href="/checkout/vehicle-category" onClick={closeMenus} className={mobileLinkClass}>Objavi oglas</Link>
                 <CompareLink className={mobileLinkClass} onClick={closeMenus} />

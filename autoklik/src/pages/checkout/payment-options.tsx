@@ -273,7 +273,8 @@ export default function PaymentOptionsPage() {
               <p className="text-sm text-gray-600">Objava oglasa je besplatna.</p>
             </div>
 
-            <div className="flex justify-between items-center pt-4">
+            <div className="flex flex-col gap-3 pt-4
+              sm:flex-row sm:items-center sm:justify-between">
               <button
                 type="button"
                 onClick={goToDetails}

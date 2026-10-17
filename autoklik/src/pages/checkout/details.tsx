@@ -561,7 +561,9 @@ export default function DetailsPage() {
           <form onSubmit={onSubmit} className="space-y-4">
             <div>
               <h1 className="block text-sm font-medium text-gray-700">Opci podaci</h1>
-              <div className="grid grid-cols-1 gap-x-5 gap-y-6 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid grid-cols-1 gap-x-5 gap-y-6
+                sm:grid-cols-2
+                lg:grid-cols-4">
                 <FilterBrands title="Marka" selectedVehicle_type="cars" mode="single" value={adFormModel.brand ? [adFormModel.brand] : []} onChange={value => updateField('brand', value[0] ?? '')} />
                 <FilterModels title="Model" selectedVehicle_type="cars" selectedBrands={adFormModel.brand ? [adFormModel.brand] : []} mode="single" value={adFormModel.model ? [adFormModel.model] : []} onChange={value => updateField('model', value[0] ?? '')} />
                 <FilterNumeric filterType="enginePower" mode="single" value={adFormModel.enginePower} onChange={value => updateField('enginePower', value)} />
@@ -624,7 +626,9 @@ export default function DetailsPage() {
                   <>
                     <h1 className="mb-3 font-medium">Fotografije pridruzene uz oglas</h1>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 gap-4
+                      sm:grid-cols-2
+                      lg:grid-cols-4">
                       {previewUrls.map((previewUrl, i) => (
                         <div key={i} className="border rounded-lg overflow-hidden p-2 bg-white shadow-sm">
                           <div className="w-full aspect-[4/3] border rounded-lg overflow-hidden bg-black flex items-center justify-center">
@@ -726,7 +730,8 @@ export default function DetailsPage() {
               />
             </div>
 
-            <div className="flex justify-between items-center pt-4">
+            <div className="flex flex-col gap-3 pt-4
+              sm:flex-row sm:items-center sm:justify-between">
               <button
                 type="button"
                 onClick={goToVehicleCategory}

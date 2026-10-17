@@ -67,8 +67,9 @@ export function AdDraftList() {
       {error && <p role="alert" className="mt-2 text-red-700">{error}</p>}
       <ul className="mt-3 space-y-2">
         {drafts.map(draft => (
-          <li key={draft.id} className="flex items-center justify-between gap-3 border-t border-gray-100 py-2">
-            <span>{draft.details.title || [draft.details.brand, draft.details.model].filter(Boolean).join(' ') || 'Nedovršeni oglas'}<small className="block text-gray-500">{new Date(draft.savedAt).toLocaleString('hr-HR')}</small></span>
+          <li key={draft.id} className="flex flex-col items-start justify-between gap-3 border-t border-gray-100 py-2
+            sm:flex-row sm:items-center">
+            <span className="min-w-0 break-words">{draft.details.title || [draft.details.brand, draft.details.model].filter(Boolean).join(' ') || 'Nedovršeni oglas'}<small className="block text-gray-500">{new Date(draft.savedAt).toLocaleString('hr-HR')}</small></span>
             <div className="flex shrink-0 flex-wrap gap-2">
               <button type="button" disabled={loading} onClick={() => void resume(draft.id)} className="rounded-md bg-[#a4473b] px-4 py-2 text-white disabled:opacity-50">Nastavi unos</button>
               <button type="button" disabled={loading} onClick={() => { setError(''); setPendingDelete(draft); }} className="rounded-md border border-red-300 px-4 py-2 text-red-700 hover:bg-red-50 disabled:opacity-50">Obriši</button>
@@ -76,11 +77,11 @@ export function AdDraftList() {
           </li>
         ))}
       </ul>
-      {pendingDelete && <dialog ref={deleteDialog} aria-labelledby="delete-draft-title" onCancel={event => { event.preventDefault(); if (!deleting.current) setPendingDelete(null); }} className="m-auto w-[calc(100%-2rem)] max-w-md rounded-xl bg-white p-6 shadow-xl backdrop:bg-black/50">
+      {pendingDelete && <dialog ref={deleteDialog} aria-labelledby="delete-draft-title" onCancel={event => { event.preventDefault(); if (!deleting.current) setPendingDelete(null); }} className="m-auto max-h-[90dvh] overflow-y-auto break-words w-[calc(100%-2rem)] max-w-md rounded-xl bg-white p-6 shadow-xl backdrop:bg-black/50">
         <h2 id="delete-draft-title" className="text-xl font-bold text-gray-900">Obrisati skicu?</h2>
         <p className="mt-3 text-gray-600">Skica „{pendingDelete.details.title || 'Nedovršeni oglas'}” bit će trajno obrisana zajedno sa spremljenim fotografijama. Ovu radnju nije moguće poništiti.</p>
         {error && <p role="alert" className="mt-3 text-red-700">{error}</p>}
-        <div className="mt-6 flex justify-end gap-3">
+        <div className="mt-6 flex flex-wrap justify-end gap-3">
           <button type="button" autoFocus disabled={loading} onClick={() => setPendingDelete(null)} className="rounded-md border border-gray-300 px-4 py-2 disabled:opacity-50">Odustani</button>
           <button type="button" disabled={loading} onClick={() => void deleteDraft(pendingDelete.id)} className="rounded-md bg-red-700 px-4 py-2 text-white disabled:opacity-50">{loading ? 'Brisanje…' : 'Obriši skicu'}</button>
         </div>

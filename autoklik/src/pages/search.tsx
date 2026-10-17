@@ -76,7 +76,8 @@ export default function Search() {
         <>
             <header><Navbar /></header>
             <main>
-                <section className="mx-auto mt-5 w-11/12 max-w-6xl rounded-2xl border border-gray-200 bg-gray-100 p-5 md:p-8">
+                <section className="mx-auto mt-5 w-11/12 max-w-6xl rounded-2xl border border-gray-200 bg-gray-100 p-5
+                  md:p-8">
                     <h1 className="text-2xl font-bold">Pretraživanje</h1>
                     <p className="mt-1 text-gray-600">Odaberite filtre i primijenite ih za prikaz oglasa.</p>
                     <hr className="my-6 border-gray-300" />
@@ -95,18 +96,21 @@ export default function Search() {
                 <section className="mx-auto my-10 w-11/12 max-w-6xl" aria-busy={loading}>
                     <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
                         <h2 className="text-2xl font-bold">Oglasi{!loading && !errorMessage && ` (${result.total})`}</h2>
-                        <label className="text-sm">Sortiranje <select value={applied.get('sort') ?? 'newest'} onChange={event => {
+                        <label className="flex w-full flex-col gap-2 text-sm
+                          sm:w-auto sm:flex-row sm:items-center">Sortiranje <select value={applied.get('sort') ?? 'newest'} onChange={event => {
                             const params = new URLSearchParams(applied); params.set('sort', event.target.value); params.delete('page'); navigate(params);
                         }} className="rounded-md border border-gray-300 bg-white px-3 py-2">{sortOptions.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
                     </div>
                     {chips.length > 0 && <div className="mb-5 flex flex-wrap gap-2" aria-label="Primijenjeni filtri">
-                        {chips.map(chip => <button key={chip.key + chip.value} type="button" aria-label={`Ukloni ${chip.label}`} onClick={() => navigate(removeSearchFilter(applied, chip.key, chip.value))} className="rounded-full border border-gray-300 bg-gray-100 px-3 py-1 text-sm">{chip.label} ×</button>)}
+                        {chips.map(chip => <button key={chip.key + chip.value} type="button" aria-label={`Ukloni ${chip.label}`} onClick={() => navigate(removeSearchFilter(applied, chip.key, chip.value))} className="max-w-full break-words rounded-full border border-gray-300 bg-gray-100 px-3 py-1 text-sm">{chip.label} ×</button>)}
                         <button type="button" onClick={() => navigate(new URLSearchParams())} className="px-3 py-1 text-sm text-blue-700 underline">Ukloni sve filtre</button>
                     </div>}
                     {loading && <p role="status">Učitavanje oglasa...</p>}
                     {errorMessage && <p role="alert" className="mb-4 text-sm text-red-700">{errorMessage}</p>}
                     {!loading && !errorMessage && ads.length === 0 && <p>Nema oglasa za odabrane filtre{result.total > 0 ? '. Odaberite prethodnu stranicu.' : '.'}</p>}
-                    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                    <div className="grid grid-cols-1 gap-5
+                      sm:grid-cols-2
+                      lg:grid-cols-4">
                         {ads.map(ad => <AdCard key={ad.id} currentUserId={currentUserId} ad={ad} href={getAdPath(ad)} />)}
                     </div>
                     {!loading && !errorMessage && result.totalPages > 0 && <nav aria-label="Stranice rezultata" className="mt-6 flex flex-wrap items-center justify-center gap-4">
