@@ -19,7 +19,7 @@ export default function CheckoutStepper({ currentStep, clickableSteps, onStepSel
   const isStepDisabled = (step: number) => {
     return !clickableSteps.includes(step);
   };
-  console.log(`Current Step: ${currentStep}, Clickable Steps: ${clickableSteps.join(', ')}`);
+
 
 
   const onStepClick = (step: number) => {

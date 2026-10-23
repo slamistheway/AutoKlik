@@ -1,4 +1,5 @@
 'use client';
+import { API_BASE_URL } from '@/shared/api-url';
 
 import Link from 'next/link';
 import {BellIcon, MessageSquareTextIcon, SearchIcon, TrendingDownIcon} from 'lucide-react';
@@ -10,7 +11,7 @@ type UnreadConversation = {id: number; username: string; unreadCount: number};
 
 type PriceDrop = {id: number; adId: number; title: string | null; oldPrice: string; newPrice: string; readAt: string | null};
 type SearchAlert = {id: number; adId: number; title: string | null; searchName: string; readAt: string | null};
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
+
 const priceLabel = (value: string) => new Intl.NumberFormat('hr-HR', {style: 'currency', currency: 'EUR'}).format(Number(value));
 
 export function MessageNotifications({dark = false}: {dark?: boolean} = {}) {
@@ -76,7 +77,7 @@ export function MessageNotifications({dark = false}: {dark?: boolean} = {}) {
       }
       pending = true;
       try {
-        const response = await fetch('http://localhost:3001/users/getConversations', {
+        const response = await fetch(`${API_BASE_URL}/users/getConversations`, {
           headers: {Authorization: `Bearer ${token}`}, signal: controller.signal,
         });
         if (!response.ok) throw new Error('Notifications unavailable');
@@ -114,7 +115,7 @@ export function MessageNotifications({dark = false}: {dark?: boolean} = {}) {
       if (!token) { setPriceDrops([]); setPriceUnread(0); return; }
       pending = true;
       try {
-        const response = await fetch('http://localhost:3001/ads/price-drop-notifications', {
+        const response = await fetch(`${API_BASE_URL}/ads/price-drop-notifications`, {
           headers: {Authorization: `Bearer ${token}`}, signal: controller.signal,
         });
         if (!response.ok) throw new Error('Notifications unavailable');
@@ -141,7 +142,7 @@ export function MessageNotifications({dark = false}: {dark?: boolean} = {}) {
     const token = sessionCookie.getSessionToken();
     if (!token) return;
     try {
-      const response = await fetch(`http://localhost:3001/ads/price-drop-notifications/${notification.id}/read`, {
+      const response = await fetch(`${API_BASE_URL}/ads/price-drop-notifications/${notification.id}/read`, {
         method: 'PATCH', headers: {Authorization: `Bearer ${token}`}, keepalive: true,
       });
       if (!response.ok) throw new Error('Read failed');

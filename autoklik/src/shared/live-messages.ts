@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '@/shared/api-url';
 import {sessionCookie} from '@/components/cookies/cookies';
 
 const listeners = new Set<() => void>();
@@ -15,7 +16,7 @@ async function connect() {
     const controller = new AbortController();
     connection = controller;
     try {
-        const response = await fetch('http://localhost:3001/users/message-events', {
+        const response = await fetch(`${API_BASE_URL}/users/message-events`, {
             headers: {Authorization: `Bearer ${token}`}, signal: controller.signal,
         });
         if (!response.ok || !response.body) throw new Error('Live messages unavailable');

@@ -1,4 +1,6 @@
 'use client';
+import { authGuard } from '@/app/auth/auth-guards';
+import { API_BASE_URL } from '@/shared/api-url';
 
 import { ReportButton } from '@/components/report-button';
 
@@ -27,7 +29,7 @@ type Conversation = { id: number; otherUserId: number; username: string; pfp: st
 type Message = { id: number; senderId: number; body: string; createdAt: string; readAt: string | null; hasImage: boolean };
 
 async function request<T>(path: string, token: string, body?: object, signal?: AbortSignal): Promise<T> {
-    const response = await fetch(`http://localhost:3001/users/${path}`, {
+    const response = await fetch(`${API_BASE_URL}/users/${path}`, {
         method: body ? 'POST' : 'GET',
         headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`},
         body: body ? JSON.stringify(body) : undefined,
@@ -40,7 +42,7 @@ async function request<T>(path: string, token: string, body?: object, signal?: A
     return payload;
 }
 
-export default function MyMessages() {
+function MyMessages() {
     const router = useRouter();
     const [user, setUser] = useState<CurrentUser | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -92,7 +94,7 @@ export default function MyMessages() {
                 formData.append('conversationId', String(activeConversation));
                 formData.append('body', body);
                 formData.append('image', selectedImage);
-                const response = await fetch('http://localhost:3001/users/sendMessageImage', {
+                const response = await fetch(`${API_BASE_URL}/users/sendMessageImage`, {
                     method: 'POST', headers: {Authorization: `Bearer ${token}`}, body: formData,
                 });
                 const payload = await response.json();
@@ -148,9 +150,9 @@ export default function MyMessages() {
                 const apiUser = await request<CurrentUser>('me', token, undefined, controller.signal);
                 if (controller.signal.aborted) return;
                 setUser(apiUser);
-                console.log("Sender user id:", apiUser.id);
-                console.log("Reciever user id:", localStorage.getItem('goToMessageUserID'));
-                
+
+
+
                 const incomingId = localStorage.getItem('goToMessageUserID');
                 let newConversation: { id: number } | null = null;
                 if (incomingId && Number(incomingId) !== Number(apiUser.id)) {
@@ -499,3 +501,5 @@ export default function MyMessages() {
         </>
     );
 }
+
+export default authGuard(MyMessages);

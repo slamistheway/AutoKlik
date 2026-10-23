@@ -1,4 +1,3 @@
-import {useState} from "react";
 import { API_BASE_URL } from "@/pages/myProfile/account-api";
 
 
@@ -29,7 +28,7 @@ export const addSaveToList = async (
     setErrorMessage: (msg: string) => void
     ) => {
     try {
-        const res = await fetch(`http://localhost:3001/scrapper/addSaveToList`, {
+        const res = await fetch(`${API_BASE_URL}/scrapper/addSaveToList`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({arg_ListID, arg_SaveID, arg_postType }),
@@ -40,10 +39,10 @@ export const addSaveToList = async (
             throw new Error(errBody?.message ?? 'Dodavanje sačuvanog sadržaja u listu nije uspjelo.');
         }
 
-        const data: { message: string } = await res.json();
-        console.log(data.message);
-    } catch (err: any) {
-        setErrorMessage(err?.message ?? 'Spremanje u listu nije uspjelo.');
+        await res.json();
+
+    } catch (err: unknown) {
+        setErrorMessage(err instanceof Error ? err.message : 'Spremanje u listu nije uspjelo.');
     }
 };
 
@@ -54,7 +53,7 @@ export const removeSaveFromList = async (
     setErrorMessage: (msg: string) => void
 ) => {
     try {
-        const res = await fetch(`http://localhost:3001/scrapper/removeSaveFromList`, {
+        const res = await fetch(`${API_BASE_URL}/scrapper/removeSaveFromList`, {
             method: 'DELETE',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({arg_ListID, arg_SaveID, arg_postType }),
@@ -65,10 +64,10 @@ export const removeSaveFromList = async (
             throw new Error(errBody?.message ?? 'Uklanjanje sačuvanog sadržaja iz liste nije uspjelo.');
         }
 
-        const data: { message: string } = await res.json();
-        console.log(data.message);
-    } catch (err: any) {
-        setErrorMessage(err?.message ?? 'Uklanjanje sačuvanog sadržaja iz liste nije uspjelo.');
+        await res.json();
+
+    } catch (err: unknown) {
+        setErrorMessage(err instanceof Error ? err.message : 'Uklanjanje sačuvanog sadržaja iz liste nije uspjelo.');
     }
 }
 

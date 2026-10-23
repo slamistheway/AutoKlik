@@ -162,6 +162,20 @@
       "when": 1792270560209,
       "tag": "0022_flawless_prowler",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1792742400000,
+      "tag": "0023_vehicle_equipment",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1792755760649,
+      "tag": "0024_brief_famine",
+      "breakpoints": true
     }
   ]
 }

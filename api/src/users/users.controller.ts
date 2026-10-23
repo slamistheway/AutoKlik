@@ -15,9 +15,7 @@ import { UsersService } from './users.service';
 import { BetterAuthService } from '../auth/better-auth.service';
 import { SessionAuthGuard } from '../auth/session-auth.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
-import { mkdirSync } from 'fs';
+import { imageUploadOptions, ImageUploadCleanupInterceptor } from '../image-upload';
 import * as messageImage from "./message-image";
 import type { Response, Request as ExpressRequest } from 'express';
 import { RegistrationAttemptsService } from './registration-attempts.service';
@@ -97,29 +95,7 @@ export class UsersController {
 
     @UseGuards(SessionAuthGuard)
     @Post('me/upload-pfp')
-    @UseInterceptors(
-        FileInterceptor('file', {
-            storage: diskStorage({
-                destination: (_req, _file, cb) => {
-                    const uploadDir = './public/pfp';
-                    mkdirSync(uploadDir, {recursive: true});
-                    cb(null, uploadDir);
-                },
-                filename: (_req, file, cb) => {
-                    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-                    cb(null, `pfp-${uniqueSuffix}${extname(file.originalname)}`);
-                },
-            }),
-            limits: {fileSize: 5 * 1024 * 1024},
-            fileFilter: (_req, file, cb) => {
-                if (!file.mimetype.startsWith('image/')) {
-                    cb(new BadRequestException('Dozvoljene su samo slikovne datoteke.'), false);
-                    return;
-                }
-                cb(null, true);
-            },
-        }),
-    )
+    @UseInterceptors(ImageUploadCleanupInterceptor, FileInterceptor('file', imageUploadOptions('pfp', 1)))
 
     updatePfp(@Request() req: any, @UploadedFile() file: Express.Multer.File) {
         if (!file) {

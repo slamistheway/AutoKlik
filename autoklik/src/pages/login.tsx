@@ -1,4 +1,5 @@
 'use client';
+import { API_BASE_URL } from '@/shared/api-url';
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -7,6 +8,7 @@ import { Footer } from '@/components/footer';
 import { Navbar } from '@/components/navbar';
 import { guestOnlyAuthGuard } from '@/app/auth/auth-guards';
 import {sessionCookie} from '@/components/cookies/cookies';
+import { safeReturnUrl } from '@/shared/safe-redirect';
 
 type ApiResponse = { message?: string; token?: string };
 
@@ -47,7 +49,7 @@ function LoginPage() {
     setSuccessMessage('');
 
     try {
-      const response = await fetch(`http://localhost:3001/users/login`, {
+      const response = await fetch(`${API_BASE_URL}/users/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ identifier: trimmedIdentifier, password }),
@@ -64,10 +66,7 @@ function LoginPage() {
 
       if (payload.token) {
         sessionCookie.setSessionToken(payload.token);
-        const returnUrl = router.query.returnUrl;
-        const destination = typeof returnUrl === 'string' && returnUrl.startsWith('/') && !returnUrl.startsWith('//')
-          ? returnUrl
-          : '/';
+        const destination = safeReturnUrl(router.query.returnUrl);
         await router.replace(destination);
 
         setErrorMessage('');

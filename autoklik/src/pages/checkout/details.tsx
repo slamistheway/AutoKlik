@@ -8,6 +8,7 @@ import { Footer } from '@/components/footer';
 import CheckoutStepper from '@/pages/checkout/components/checkoutStepper';
 
 import {getCategoryLabel, getSubcategoryLabel,} from './lib/checkout-data';
+import { getDetailFields } from '@/shared/detail-fields';
 import * as checkoutState from './lib/checkout-state';
 import { VehicleExtraFields } from '@/components/vehicle-extra-fields';
 import FilterChoose from "@/components/filters/filter-choose";
@@ -43,6 +44,16 @@ function parsePositiveNumber(value: string): number | null {
 
 
 interface AdFormData {
+  bodyType: string;
+  airConditioning: string;
+  airbags: string;
+  carRadio: string;
+  seatCount: string;
+  tireWidth: string;
+  tireHeight: string;
+  tireDiameter: string;
+  emissionClass: string;
+  vin: string;
   brand: string;
   model: string;
   price: string;
@@ -88,6 +99,16 @@ export default function DetailsPage() {
   const categoryStateVal = checkoutState.getCategoryState();
 
   const [adFormModel, setAdFormModel] = useState<AdFormData>({
+    bodyType: savedDetails.bodyType ?? '',
+    airConditioning: savedDetails.airConditioning ?? '',
+    airbags: inputValue(savedDetails.airbags),
+    carRadio: savedDetails.carRadio ?? '',
+    seatCount: inputValue(savedDetails.seatCount),
+    tireWidth: inputValue(savedDetails.tireWidth),
+    tireHeight: inputValue(savedDetails.tireHeight),
+    tireDiameter: inputValue(savedDetails.tireDiameter),
+    emissionClass: savedDetails.emissionClass ?? '',
+    vin: savedDetails.vin ?? '',
     brand: savedDetails.brand,
     model: savedDetails.model,
     price: inputValue(savedDetails.price),
@@ -127,6 +148,7 @@ export default function DetailsPage() {
 
 
   const selectedVehicleType = categoryStateVal.category;
+  const visibleFields = getDetailFields(selectedVehicleType, categoryStateVal.subcategory);
 
 
   useEffect(() => {
@@ -140,6 +162,16 @@ export default function DetailsPage() {
       checkoutState.hydrate();
       const restoredDetails = checkoutState.getDetailsState();
       setAdFormModel({
+        bodyType: restoredDetails.bodyType ?? '',
+        airConditioning: restoredDetails.airConditioning ?? '',
+        airbags: inputValue(restoredDetails.airbags),
+        carRadio: restoredDetails.carRadio ?? '',
+        seatCount: inputValue(restoredDetails.seatCount),
+        tireWidth: inputValue(restoredDetails.tireWidth),
+        tireHeight: inputValue(restoredDetails.tireHeight),
+        tireDiameter: inputValue(restoredDetails.tireDiameter),
+        emissionClass: restoredDetails.emissionClass ?? '',
+        vin: restoredDetails.vin ?? '',
         brand: restoredDetails.brand,
         model: restoredDetails.model,
         price: inputValue(restoredDetails.price),
@@ -182,8 +214,8 @@ export default function DetailsPage() {
       setIsHydrated(true);
     }
 
-    console.log(localStorage.getItem('checkout.categoryState'));
-    console.log(localStorage.getItem('checkout.subcategory'));
+
+
 
     initialization();
   }, []);
@@ -301,6 +333,12 @@ export default function DetailsPage() {
   if (!isHydrated) return null;
 
   const syncDetailsDraft = (model: AdFormData, images: File[]) => {
+    model = { ...model };
+    for (const field of Object.keys(model) as (keyof AdFormData)[]) {
+      if (field !== 'images' && field !== 'title' && field !== 'description' && !visibleFields.has(field)) {
+        model[field] = '';
+      }
+    }
     checkoutState.setDetailsState({
       brand: model.brand,
       model: model.model,
@@ -314,6 +352,16 @@ export default function DetailsPage() {
       county: model.county,
       sellerType: model.sellerType,
       buyOrLease: model.buyOrLease,
+      bodyType: model.bodyType || null,
+      airConditioning: model.airConditioning || null,
+      airbags: model.airbags === '' ? null : Number(model.airbags),
+      carRadio: model.carRadio || null,
+      seatCount: model.seatCount === '' ? null : Number(model.seatCount),
+      tireWidth: model.tireWidth === '' ? null : Number(model.tireWidth),
+      tireHeight: model.tireHeight === '' ? null : Number(model.tireHeight),
+      tireDiameter: model.tireDiameter === '' ? null : Number(model.tireDiameter),
+      emissionClass: model.emissionClass || null,
+      vin: model.vin || null,
       driveType: model.driveType || null,
       gearCount: model.gearCount === '' ? null : Number(model.gearCount),
       fuelConsumption: model.fuelConsumption === '' ? null : Number(model.fuelConsumption),
@@ -346,7 +394,7 @@ export default function DetailsPage() {
   };
 
   const isMissingRequired = (field: string): boolean => {
-    if (!submitAttempted) return false;
+    if (!submitAttempted || (!visibleFields.has(field) && !['title', 'description', 'images'].includes(field))) return false;
 
     switch (field) {
       case 'brand':
@@ -381,10 +429,10 @@ export default function DetailsPage() {
     return Boolean(
       adFormModel.brand &&
         adFormModel.model &&
-        adFormModel.enginePower &&
+        (!visibleFields.has('enginePower') || adFormModel.enginePower) &&
         parsePositiveNumber(adFormModel.price) !== null &&
         adFormModel.year &&
-        parsePositiveNumber(adFormModel.kilometrage) !== null &&
+        (!visibleFields.has('kilometrage') || parsePositiveNumber(adFormModel.kilometrage) !== null) &&
         adFormModel.condition &&
         adFormModel.title.trim() &&
         adFormModel.description.trim() &&
@@ -409,7 +457,7 @@ export default function DetailsPage() {
         event.target.value = '';
       });
 
-    console.log('Selected images:', nextImages);
+
   };
 
   const moveImageLeft = (index: number) => {
@@ -480,10 +528,7 @@ export default function DetailsPage() {
     setSubmitAttempted(true);
 
     if (!hasAllRequiredDetails()) {
-      console.log('Missing required details:', {
-        adFormModel,
-        selectedImages
-      });
+
       return;
     }
 
@@ -519,7 +564,7 @@ export default function DetailsPage() {
     setSelectedImages([imageFile]);
     syncDetailsDraft(nextModel, [imageFile]);
 
-    
+
 
     setPreviewUrls([previewUrl]);
     setSubmitAttempted(false);
@@ -529,7 +574,7 @@ export default function DetailsPage() {
 
 
   }
-  
+
 
 
 
@@ -564,31 +609,54 @@ export default function DetailsPage() {
               <div className="grid grid-cols-1 gap-x-5 gap-y-6
                 sm:grid-cols-2
                 lg:grid-cols-4">
-                <FilterBrands title="Marka" selectedVehicle_type="cars" mode="single" value={adFormModel.brand ? [adFormModel.brand] : []} onChange={value => updateField('brand', value[0] ?? '')} />
-                <FilterModels title="Model" selectedVehicle_type="cars" selectedBrands={adFormModel.brand ? [adFormModel.brand] : []} mode="single" value={adFormModel.model ? [adFormModel.model] : []} onChange={value => updateField('model', value[0] ?? '')} />
-                <FilterNumeric filterType="enginePower" mode="single" value={adFormModel.enginePower} onChange={value => updateField('enginePower', value)} />
-                <FilterNumeric filterType="engineSize" mode="single" value={adFormModel.engineSize} onChange={value => updateField('engineSize', value)} />
+                {selectedVehicleType === 'other' ? (
+                  <>
+                    {(['brand', 'model'] as const).map(field => (
+                      <label key={field} className="block text-sm font-medium text-gray-700">{field === 'brand' ? 'Marka' : 'Model'}
+                        <input required value={adFormModel[field]} onChange={event => updateField(field, event.target.value)} className="mt-2 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:border-red-600 focus:outline-none" />
+                      </label>
+                    ))}
+                  </>
+                ) : (
+                  <>
+                <FilterBrands title="Marka" selectedVehicle_type={selectedVehicleType} mode="single" value={adFormModel.brand ? [adFormModel.brand] : []} onChange={value => { updateField('brand', value[0] ?? ''); updateField('model', ''); }} />
+                <FilterModels title="Model" selectedVehicle_type={selectedVehicleType} selectedBrands={adFormModel.brand ? [adFormModel.brand] : []} mode="single" value={adFormModel.model ? [adFormModel.model] : []} onChange={value => updateField('model', value[0] ?? '')} />
+                  </>
+                )}
+                {visibleFields.has('enginePower') && <FilterNumeric filterType="enginePower" mode="single" value={adFormModel.enginePower} onChange={value => updateField('enginePower', value)} />}
+                {visibleFields.has('engineSize') && <FilterNumeric filterType="engineSize" mode="single" value={adFormModel.engineSize} onChange={value => updateField('engineSize', value)} />}
                 <FilterNumeric filterType="price" mode="single" value={adFormModel.price} onChange={value => updateField('price', value)} />
                 <FilterNumeric filterType="year" mode="single" value={adFormModel.year} onChange={value => updateField('year', value)} />
-                <FilterNumeric filterType="kilometrage" mode="single" value={adFormModel.kilometrage} onChange={value => updateField('kilometrage', value)} />
+                {visibleFields.has('kilometrage') && <FilterNumeric filterType="kilometrage" mode="single" value={adFormModel.kilometrage} onChange={value => updateField('kilometrage', value)} />}
                 <FilterChoose filterType="condition" value={adFormModel.condition} onChange={value => updateField('condition', String(value))} />
                 <FilterCounty mode="single" value={adFormModel.county ? [adFormModel.county] : []} onChange={value => updateField('county', value[0] ?? '')} />
-                <VehicleExtraFields values={adFormModel} onChange={updateField} />
-                <FilterChoose filterType="gear" value={adFormModel.gearType} onChange={value => updateField('gearType', String(value))} />
+                <VehicleExtraFields visibleFields={visibleFields} values={adFormModel} onChange={updateField} />
+                <label className="block text-sm font-medium text-gray-700">Broj šasije (VIN)
+                  <input value={adFormModel.vin} onChange={event => updateField('vin', event.target.value.toUpperCase())} maxLength={17} pattern="[A-HJ-NPR-Za-hj-npr-z0-9]{17}" placeholder="17 znakova (neobavezno)" className="mt-2 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:border-red-600 focus:outline-none" />
+                </label>
+                {visibleFields.has('gearType') && <FilterChoose filterType="gear" value={adFormModel.gearType} onChange={value => updateField('gearType', String(value))} />}
                 <FilterChoose filterType="sellerType" value={adFormModel.sellerType} onChange={value => updateField('sellerType', String(value))} />
-                <FilterChoose filterType="fuel" value={adFormModel.fuel} onChange={value => updateField('fuel', String(value))} />
+                {visibleFields.has('fuel') && <FilterChoose filterType="fuel" value={adFormModel.fuel} onChange={value => updateField('fuel', String(value))} />}
 
-                
-                {/*     <FilterChoose filterType="buyOrLease" value={buyOrLease} onChange={value => setBuyOrLease(String(value))} />
-                <FilterChoose filterType="sellerType" value={sellerType} onChange={value => setSellerType(String(value))} />
-                <FilterNumeric filterType="engineSize" mode="range" value={engineSize} onChange={value => setEngineSize(value as RangeValue)} />
-                <FilterChoose filterType="fuel" value={gasType} onChange={value => setGasType(String(value))} />
-                <FilterChoose filterType="gear" value={gearType} onChange={value => setGearType(String(value))} />
-                <FilterColor mode="multi" value={colors} onChange={value => setColors(Array.isArray(value) ? value : [])} />
-                <FilterChoose filterType="doorNumber" value={doorNumber} onChange={value => setDoorNumber(String(value))} />*/}
+
+                <FilterColor mode="single" value={adFormModel.color ? [adFormModel.color] : []} onChange={value => updateField('color', Array.isArray(value) ? value[0] ?? '' : value)} />
+                {visibleFields.has('doorNumber') && <FilterChoose filterType="doorNumber" value={adFormModel.doorNumber} onChange={value => updateField('doorNumber', String(value))} />}
+                {visibleFields.has('drivingLicence') && (
+                  <label className="block text-sm font-medium text-gray-700">Vozačka dozvola
+                    <select value={adFormModel.drivingLicence} onChange={event => updateField('drivingLicence', event.target.value)} className="mt-2 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:border-red-600 focus:outline-none">
+                      <option value="">Odaberite (neobavezno)</option>
+                      {['AM', 'A1', 'A2', 'A', 'B'].map(value => <option key={value} value={value}>{value}</option>)}
+                    </select>
+                  </label>
+                )}
+                {(['weight', 'payload', 'volume'] as const).filter(field => visibleFields.has(field)).map(field => (
+                  <label key={field} className="block text-sm font-medium text-gray-700">{{ weight: 'Masa (kg)', payload: 'Nosivost (kg)', volume: 'Volumen (m³)' }[field]}
+                    <input type="number" min="0" step="any" value={adFormModel[field]} onChange={event => updateField(field, event.target.value)} className="mt-2 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:border-red-600 focus:outline-none" />
+                  </label>
+                ))}
               </div>
             </div>
-            
+
             {/* IMG */}
             <div className="flex flex-col gap-4">
               <button

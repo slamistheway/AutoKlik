@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import type { Activity, Ad, AdList, Dashboard, Detail } from './admin-types';
-import { API, ApiError, request } from './admin-client';
+import { API, ADMIN_SESSION, ApiError, request, sessionEnded } from './admin-client';
 import { UserManagement } from './user-management';
 import { ReportsSafety } from './reports-safety';
 
@@ -122,21 +122,61 @@ export default function AdminPage() {
   const detailSequence = useRef(0);
   const [detailLoading, setDetailLoading] = useState(false);
 
+  const clearSession = useCallback(() => {
+    setToken(''); setRole(''); setSelected(null); setDashboard(null); setList(null); setActivity([]);
+    setCheckedIds([]); setFocusedUser(undefined); setReason(''); setNotice(''); setMobileMenu(false);
+    ++detailSequence.current;
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
+    // Remove legacy browser-readable tokens without importing them into the new session.
+    try { sessionStorage.removeItem('autoklik-admin-token'); } catch {}
     async function resume() {
-      const saved = sessionStorage.getItem('autoklik-admin-token');
-      if (saved) {
-        try {
-          const me = await request<{ role: string }>(saved, '/admin/me');
-          if (!cancelled) { setToken(saved); setRole(me.role); }
-        } catch { sessionStorage.removeItem('autoklik-admin-token'); }
-      }
-      if (!cancelled) setReady(true);
+      try {
+        const response = await fetch('/api/session', { cache: 'no-store', credentials: 'same-origin', redirect: 'error' });
+        const me = await response.json() as { role?: string };
+        if (!cancelled && response.ok && ['admin', 'moderator'].includes(me.role ?? '')) {
+          setToken(ADMIN_SESSION); setRole(me.role!);
+        }
+      } catch { if (!cancelled) setError('Provjera pristupa nije dostupna.'); }
+      finally { if (!cancelled) setReady(true); }
     }
+    window.addEventListener('admin-session-ended', clearSession);
     void resume();
-    return () => { cancelled = true; };
-  }, []);
+    return () => { cancelled = true; window.removeEventListener('admin-session-ended', clearSession); };
+  }, [clearSession]);
+
+  useEffect(() => {
+    if (!token) return;
+    const controller = new AbortController();
+    let lastActivity = Date.now();
+    let expiring = false;
+    const activity = () => { lastActivity = Date.now(); };
+    const events = ['pointerdown', 'keydown', 'touchstart', 'wheel'] as const;
+    events.forEach(event => window.addEventListener(event, activity, { passive: true }));
+    async function verify() {
+      if (expiring) return;
+      if (Date.now() - lastActivity >= 15 * 60 * 1000) {
+        expiring = true;
+        setBusy(true); clearSession();
+        await fetch('/api/session', { method: 'DELETE', credentials: 'same-origin', redirect: 'error', signal: AbortSignal.timeout(15000) }).catch(() => undefined);
+        setBusy(false);
+        return;
+      }
+      try {
+        const response = await fetch('/api/session', { cache: 'no-store', credentials: 'same-origin', redirect: 'error', signal: controller.signal });
+        const me = await response.json() as { role?: string };
+        if (controller.signal.aborted) return;
+        if ([401, 403].includes(response.status)) sessionEnded();
+        else if (response.ok && ['admin', 'moderator'].includes(me.role ?? '')) setRole(me.role!);
+      } catch {}
+    }
+    const timer = window.setInterval(() => { void verify(); }, 30000);
+    const visible = () => { if (document.visibilityState === 'visible') void verify(); };
+    document.addEventListener('visibilitychange', visible);
+    return () => { controller.abort(); clearInterval(timer); document.removeEventListener('visibilitychange', visible); events.forEach(event => window.removeEventListener(event, activity)); };
+  }, [token, clearSession]);
 
   useEffect(() => {
     if (!token) return;
@@ -157,7 +197,7 @@ export default function AdminPage() {
         if (!controller.signal.aborted) {
           setError(cause instanceof Error ? cause.message : 'Dohvat nije uspio.');
           if (cause instanceof ApiError && [401, 403].includes(cause.status)) {
-            sessionStorage.removeItem('autoklik-admin-token'); setToken(''); setSelected(null); setDashboard(null); setList(null); setActivity([]); ++detailSequence.current;
+            clearSession();
           }
         }
       } finally { if (!controller.signal.aborted) setLoading(false); }
@@ -165,7 +205,7 @@ export default function AdminPage() {
     const timer = setTimeout(() => void load(), 200);
     const refresh = setInterval(() => void load(), 60000);
     return () => { clearTimeout(timer); clearInterval(refresh); controller.abort(); };
-  }, [token, section, filters, page, period, reportType, reportStatus, revision]);
+  }, [token, section, filters, page, period, reportType, reportStatus, revision, clearSession]);
 
   useEffect(() => { if (selected) dialog.current?.showModal(); }, [selected]);
 
@@ -204,16 +244,11 @@ export default function AdminPage() {
   async function login(form: HTMLFormElement) {
     const values = new FormData(form);
     await mutate(async () => {
-      const response = await fetch(`${API}/users/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ identifier: values.get('identifier'), password: values.get('password') }) });
-      const result = await response.json();
+      const response = await fetch('/api/session', { method: 'POST', credentials: 'same-origin', redirect: 'error', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ identifier: values.get('identifier'), password: values.get('password') }) });
+      const result = await response.json() as { role?: string; message?: string };
       if (!response.ok) throw new Error(result.message ?? 'Prijava nije uspjela.');
-      try {
-        const me = await request<{ role: string }>(result.token, '/admin/me');
-        sessionStorage.setItem('autoklik-admin-token', result.token); setRole(me.role); setToken(result.token);
-      } catch (cause) {
-        await request(result.token, '/users/logout', { method: 'POST' }).catch(() => undefined);
-        throw cause;
-      }
+      if (!['admin', 'moderator'].includes(result.role ?? '')) throw new Error('Potreban je pristup osoblja.');
+      form.reset(); setRole(result.role!); setToken(ADMIN_SESSION);
     }, 'Prijavljeni ste.');
   }
 
@@ -308,12 +343,7 @@ export default function AdminPage() {
             onClick={() =>
               void mutate(async () => {
                 await request(token, '/users/logout', { method: 'POST' });
-                sessionStorage.removeItem('autoklik-admin-token');
-                closeAd();
-                setToken('');
-                setDashboard(null);
-                setList(null);
-                setActivity([]);
+                clearSession();
               }, 'Odjavljeni ste.')
             }
           >

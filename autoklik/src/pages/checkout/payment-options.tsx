@@ -47,17 +47,17 @@ export default function PaymentOptionsPage() {
     }
 
 
-    console.log(localStorage.getItem('checkout.categoryState'));
-    console.log(localStorage.getItem('checkout.subcategory'));
-    console.log(localStorage.getItem('checkout.brand'));
-    console.log(localStorage);
+
+
+
+
 
     initialization();
   }, []);
 
 
 
-  
+
   const goToDetails = () => {
     checkoutState.setCurrentStep(2);
     router.push('/checkout/details');
@@ -202,6 +202,16 @@ export default function PaymentOptionsPage() {
       body.append('county', details.county);
       body.append('sellerType', details.sellerType);
       body.append('buyOrLease', details.buyOrLease);
+      body.append('bodyType', String(details.bodyType ?? ''));
+      body.append('airConditioning', String(details.airConditioning ?? ''));
+      body.append('airbags', String(details.airbags ?? ''));
+      body.append('carRadio', String(details.carRadio ?? ''));
+      body.append('seatCount', String(details.seatCount ?? ''));
+      body.append('tireWidth', String(details.tireWidth ?? ''));
+      body.append('tireHeight', String(details.tireHeight ?? ''));
+      body.append('tireDiameter', String(details.tireDiameter ?? ''));
+      body.append('emissionClass', String(details.emissionClass ?? ''));
+      body.append('vin', String(details.vin ?? ''));
       body.append('driveType', details.driveType ?? '');
       body.append('gearCount', String(details.gearCount ?? ''));
       body.append('fuelConsumption', String(details.fuelConsumption ?? ''));

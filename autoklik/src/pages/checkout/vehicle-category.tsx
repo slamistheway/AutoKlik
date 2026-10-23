@@ -77,7 +77,7 @@ export default function VehicleCategoryPage() {
       localStorage.clear();
     };
 */
-    console.log(localStorage)
+
 
     initialization();
   }, []);

@@ -17,6 +17,8 @@ import { InputValidationPipe } from '../input-validation';
 import { AdsController } from '../ads/ads.controller';
 import { AdsService } from '../ads/ads.service';
 import { AdFetchRateLimitGuard } from '../ads/ad-fetch-rate-limit.guard';
+import { SavedSearchesService } from '../ads/saved-searches.service';
+import { MessageEventsService } from './message-events.service';
 
 describe('Server logout and audit events', () => {
   let app: INestApplication;
@@ -62,6 +64,8 @@ describe('Server logout and audit events', () => {
     const module = await Test.createTestingModule({
       controllers: [UsersController, AdsController],
       providers: [
+        { provide: SavedSearchesService, useValue: {} },
+        { provide: MessageEventsService, useValue: {} },
         { provide: BetterAuthService, useValue: sessions },
         { provide: AuditService, useValue: audit },
         { provide: AdsService, useValue: ads },
@@ -213,7 +217,7 @@ describe('Server logout and audit events', () => {
       .set('Authorization', `Bearer ${token}`)
       .send({ title: 'Updated' })
       .expect(200);
-    expect(ads.update).toHaveBeenCalledWith(5, 7, { title: 'Updated' }, []);
+    expect(ads.update).toHaveBeenCalledWith(5, 7, { title: 'Updated' }, [], expect.any(Function));
     expect(audit.record).toHaveBeenCalledWith(
       'ad_update',
       '/ads/5',

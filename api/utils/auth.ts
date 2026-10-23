@@ -6,6 +6,7 @@ import * as schema from '../src/db/schema';
 import bcrypt from 'bcrypt';
 import { sendPasswordResetEmail } from '../src/auth/password-reset-email';
 import { and, eq } from 'drizzle-orm';
+import { allowedOrigins } from '../src/http-security';
 
 if (!process.env.BETTER_AUTH_SECRET || process.env.BETTER_AUTH_SECRET.length < 32) {
     throw new Error('BETTER_AUTH_SECRET must be configured with at least 32 characters');
@@ -14,7 +15,7 @@ if (!process.env.BETTER_AUTH_SECRET || process.env.BETTER_AUTH_SECRET.length < 3
 export const auth = betterAuth({
     secret: process.env.BETTER_AUTH_SECRET,
     baseURL: process.env.BETTER_AUTH_URL ?? 'http://localhost:3001',
-    trustedOrigins: [process.env.FRONTEND_URL ?? 'http://localhost:3000', 'http://localhost:4200', process.env.ADMIN_URL ?? 'http://localhost:3003'],
+    trustedOrigins: allowedOrigins(),
     plugins: [bearer()],
     emailAndPassword: {
         enabled: true,

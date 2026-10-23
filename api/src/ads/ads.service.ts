@@ -69,6 +69,15 @@ export class AdsService {
       county: ad.county,
       seller_type: ad.sellerType,
       buy_or_lease: ad.buyOrLease,
+      body_type: ad.bodyType,
+      air_conditioning: ad.airConditioning,
+      airbags: ad.airbags,
+      car_radio: ad.carRadio,
+      seat_count: ad.seatCount,
+      tire_width: ad.tireWidth,
+      tire_height: ad.tireHeight,
+      tire_diameter: ad.tireDiameter,
+      emission_class: ad.emissionClass,
       drive_type: ad.driveType,
       gear_count: ad.gearCount,
       fuel_consumption: ad.fuelConsumption,
@@ -213,7 +222,7 @@ export class AdsService {
 
 
 
-  async create(createAdDto: CreateAdDto, imageUrls: string[] = []) {
+  async create(createAdDto: CreateAdDto, imageUrls: string[] = [], onPersisted?: () => void) {
     const {
       user_id,
       category,
@@ -251,6 +260,15 @@ export class AdsService {
           county: createAdDto.county || null,
           sellerType: createAdDto.sellerType || null,
           buyOrLease: createAdDto.buyOrLease || null,
+          bodyType: createAdDto.bodyType,
+          airConditioning: createAdDto.airConditioning,
+          airbags: createAdDto.airbags,
+          carRadio: createAdDto.carRadio,
+          seatCount: createAdDto.seatCount,
+          tireWidth: createAdDto.tireWidth,
+          tireHeight: createAdDto.tireHeight,
+          tireDiameter: createAdDto.tireDiameter,
+          emissionClass: createAdDto.emissionClass,
           driveType: createAdDto.driveType,
           gearCount: createAdDto.gearCount,
           fuelConsumption: createAdDto.fuelConsumption == null ? null : String(createAdDto.fuelConsumption),
@@ -286,6 +304,7 @@ export class AdsService {
       return [ad];
     });
 
+    onPersisted?.();
     const adRows = await this.getAdsWithRelations(eq(ads.id, createdAd.id));
     const [mappedAd] = this.mapJoinedAds(adRows);
 
@@ -623,7 +642,7 @@ export class AdsService {
     return this.findOne(id, userId);
   }
 
-  async update(id: number, userId: number, dto: UpdateAdDto, uploadedImages: string[] = []) {
+  async update(id: number, userId: number, dto: UpdateAdDto, uploadedImages: string[] = [], onPersisted?: () => void) {
     if (!Number.isSafeInteger(id) || id <= 0 || !Number.isSafeInteger(userId) || userId <= 0) {
       throw new BadRequestException('Neispravan oglas ili korisnik.');
     }
@@ -682,6 +701,7 @@ export class AdsService {
         if (images.length) await tx.insert(adImages).values(await Promise.all(images.map(async imageUrl => ({ adId: id, imageUrl, sha256: await imageDigest(imageUrl) }))));
       }
     });
+    onPersisted?.();
     return this.findOne(id, userId);
   }
 

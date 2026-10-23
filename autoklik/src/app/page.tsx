@@ -1,6 +1,7 @@
 'use client';
 
 import Link from "next/link";
+import {SavedSearchSuggestions} from '@/components/saved-search-suggestions';
 import { RecentlyViewedAds } from '@/components/recently-viewed-ads';
 import { Footer } from "@/components/footer";
 import { Navbar } from "@/components/navbar";
@@ -42,7 +43,6 @@ type SearchFilters = {
 
 const emptyFilters: SearchFilters = { brand: '', model: '', yearMin: '', yearMax: '' };
 
-// Tailwind groups: base/mobile first, then one line per breakpoint in ascending order.
 const sectionClass = `mx-auto min-w-0 max-w-7xl px-4 pt-6
   sm:px-6 sm:pt-10
   lg:px-8 lg:pt-12`;
@@ -59,9 +59,11 @@ export default function Home() {
   const [featuredError, setFeaturedError] = useState('');
   const [recommendedError, setRecommendedError] = useState('');
   const [search, setSearch] = useState('');
+  const [showSavedSearches, setShowSavedSearches] = useState(false);
   const [filters, setFilters] = useState<SearchFilters>(emptyFilters);
   const [filterError, setFilterError] = useState('');
   const [advancedFilters, setAdvancedFilters] = useState<Record<string, string> | null>(null);
+
 
 
   const startCategories = [
@@ -153,14 +155,7 @@ export default function Home() {
     };
   }, []);
 
-  useEffect(() => {
-    sessionCookie.logCookies();
-    console.log(localStorage);
-  }, []);
-
-
-
-  useEffect(() => {
+useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     // Restore URL filters after mount to keep initial server/client output consistent.
     Promise.resolve().then(() => {
@@ -204,7 +199,7 @@ export default function Home() {
     return `/search${query ? `?${query}` : ''}`;
   };
 
-  
+
 
 
   return (
@@ -215,8 +210,10 @@ export default function Home() {
 
         <div className="relative isolate w-full min-w-0 bg-slate-950 bg-[url(/banner.jpg)] bg-cover bg-center bg-no-repeat px-4 py-8
           sm:px-6 sm:py-10
-          lg:px-8 lg:py-14">
+          lg:px-8 lg:py-14"
+        >
           <div aria-hidden="true" className="absolute inset-0 -z-10 bg-linear-to-r from-slate-950/95 via-slate-950/75 to-slate-950/35" />
+
           <div className="mx-auto grid w-full min-w-0 max-w-7xl items-center gap-6
             lg:grid-cols-[minmax(0,1fr)_minmax(0,480px)] lg:gap-12">
             <div className="min-w-0 text-white">
@@ -245,9 +242,15 @@ export default function Home() {
               </div>
 
               <form onSubmit={submitFilters} className="mt-4 space-y-4">
+                <div className="relative" onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) setShowSavedSearches(false); }}>
                 <label className="block text-sm font-medium text-gray-700">Pretraži oglase
-                  <input type="search" maxLength={200} value={search} onChange={event => setSearch(event.target.value)} placeholder="Npr. Volkswagen Golf" className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-gray-900 outline-none transition focus:border-red-800 focus:bg-white focus:ring-2 focus:ring-red-800/10" />
+                  <input type="search" maxLength={200} value={search} onChange={event => setSearch(event.target.value)} autoComplete="off" onFocus={() => setShowSavedSearches(true)} placeholder="Npr. Volkswagen Golf" className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-gray-900 outline-none transition focus:border-red-800 focus:bg-white focus:ring-2 focus:ring-red-800/10" />
                 </label>
+                {showSavedSearches && <SavedSearchSuggestions returnUrl={getCarsUrl()} onClose={() => setShowSavedSearches(false)} onSelect={params => {
+                  const url = '/search?' + params.toString();
+                  if (canNavigate(url)) window.location.assign(new URL(url, window.location.origin).toString());
+                }} />}
+                </div>
                 <div className="grid min-w-0 grid-cols-1 gap-3 [&_h2]:text-left [&_h2]:text-xs [&_h2]:font-medium [&_h2]:text-slate-500 [&_button]:min-h-11 [&_button]:rounded-xl [&_button]:border-slate-200
                   sm:grid-cols-2">
                   <FilterBrands title="Marka" selectedVehicle_type="cars" mode="multi" value={filters.brand.split(',').filter(Boolean)} onChange={brands => setFilters(current => ({ ...current, brand: brands.join(','), model: '' }))} />

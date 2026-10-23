@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '@/shared/api-url';
 import type { AdFullData } from '@/types/types';
 
 export function getAdPath(ad: {id: number; title: string}) {
@@ -8,7 +9,7 @@ export function getAdPath(ad: {id: number; title: string}) {
 
 function absoluteImage(path: string, siteUrl: string) {
   try {
-    const base = path.replace(/^\/+/, '') === 'default_ad_img.png' ? siteUrl : (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001').replace(/\/+$/, '') + '/';
+    const base = path.replace(/^\/+/, '') === 'default_ad_img.png' ? siteUrl : API_BASE_URL.replace(/\/+$/, '') + '/';
     const url = new URL(path, base);
     return ['http:', 'https:'].includes(url.protocol) ? url.href : undefined;
   } catch { return undefined; }

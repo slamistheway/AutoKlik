@@ -11,7 +11,7 @@ import { Navbar } from '@/components/navbar';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useEffect, useMemo, useState } from 'react';
-import { fetchCurrentUser } from '@/app/auth/auth-guards';
+import { authGuard, fetchCurrentUser } from '@/app/auth/auth-guards';
 import type { AdCardData, CurrentUser } from '@/types/types';
 import { API_BASE_URL, getResponseMessage } from './myProfile/account-api';
 import {sessionCookie} from '@/components/cookies/cookies';
@@ -56,7 +56,7 @@ function formatDate(date: string | Date | null) {
   return Number.isNaN(parsed.getTime()) ? '—' : new Intl.DateTimeFormat('hr-HR').format(parsed);
 }
 
-export default function MySavedAds() {
+function MySavedAds() {
   const router = useAccountRouter();
 
   const [page, setPage] = useState(1);
@@ -249,3 +249,5 @@ export default function MySavedAds() {
 
   );
 }
+
+export default authGuard(MySavedAds);

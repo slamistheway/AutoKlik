@@ -1,6 +1,9 @@
 'use client';
+import { API_BASE_URL } from '@/shared/api-url';
 
 import Link from 'next/link';
+import { SavedSearchSuggestions } from '@/components/saved-search-suggestions';
+import {filterKeys} from '@/shared/search-state';
 import { CompareLink } from '@/components/compare-controls';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
@@ -19,13 +22,13 @@ import {
 } from 'lucide-react';
 import { MessageNotifications } from '@/components/message-notifications';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
+const API_URL = API_BASE_URL;
 
 // Debug button is visible everywhere except production builds.
 // Set to `true` if you want it always visible.
 const SHOW_DEBUG_BUTTON = process.env.NODE_ENV !== 'production';
 
-const FILTER_KEYS = ['brands', 'models', 'yearMin', 'yearMax'] as const;
+const FILTER_KEYS = filterKeys;
 
 // ---- Shared class strings (full strings so Tailwind can detect them) ----
 const focusLight = 'focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-rose-200';
@@ -51,6 +54,7 @@ export function Navbar({homepage = false}: {homepage?: boolean} = {}) {
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [search, setSearch] = useState('');
+  const [showSavedSearches, setShowSavedSearches] = useState(false);
   const navLinkClass = desktopLinkClass;
 
   const profileRef = useRef<HTMLDivElement>(null);
@@ -129,6 +133,7 @@ export function Navbar({homepage = false}: {homepage?: boolean} = {}) {
 
   const submitSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setShowSavedSearches(false);
     const url = getCarsUrl(true);
     const navigate = () => {
       closeMenus();
@@ -247,13 +252,15 @@ export function Navbar({homepage = false}: {homepage?: boolean} = {}) {
           <div className="mx-auto grid min-h-14 max-w-7xl grid-cols-1 items-center gap-2 py-2
             sm:flex sm:justify-between sm:gap-4">
             <div className="flex min-w-0 flex-1 items-center gap-2">
-              <form onSubmit={submitSearch} role="search" className="flex min-w-0 flex-1 items-center
+              <form onSubmit={submitSearch} onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) setShowSavedSearches(false); }} role="search" className="relative flex min-w-0 flex-1 items-center
                 md:max-w-3xl">
                 <input
                     type="search"
                     maxLength={200}
                     aria-label="Pretraži oglase"
                     placeholder="Pretraži oglase..."
+                    autoComplete="off"
+                    onFocus={() => setShowSavedSearches(true)}
                     value={search}
                     onChange={event => setSearch(event.currentTarget.value)}
                     className="h-10 min-w-0 flex-1 rounded-l-md border border-slate-300 bg-white px-3 text-slate-900 placeholder:text-slate-400 outline-none transition-shadow focus:border-rose-700 focus:ring-2 focus:ring-rose-700/20"
@@ -267,6 +274,11 @@ export function Navbar({homepage = false}: {homepage?: boolean} = {}) {
                   <span className="hidden
                     sm:inline">Pretraži</span>
                 </button>
+                {showSavedSearches && <SavedSearchSuggestions returnUrl={getCarsUrl(true)} onClose={() => setShowSavedSearches(false)} onSelect={params => {
+                  const url = `/search?${params}`;
+                  const navigate = () => { closeMenus(); router.push(url); };
+                  if (canNavigate(url, navigate)) navigate();
+                }} />}
               </form>
 
               {SHOW_DEBUG_BUTTON && !homepage && (

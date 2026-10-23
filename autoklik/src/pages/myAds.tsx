@@ -1,4 +1,5 @@
 'use client';
+import { authGuard } from '@/app/auth/auth-guards';
 
 import { getAdPath } from '@/shared/ad-seo';
 
@@ -14,7 +15,7 @@ import { adStatusLabels, getAdStatus } from '@/shared/ad-status';
 import { API_BASE_URL, getResponseMessage } from './myProfile/account-api';
 import { sessionCookie } from '@/components/cookies/cookies';
 
-export default function MyAdsPage() {
+function MyAdsPage() {
   const router = useRouter();
   const [ads, setAds] = useState<AdCardData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -73,3 +74,5 @@ export default function MyAdsPage() {
     </>
   );
 }
+
+export default authGuard(MyAdsPage);

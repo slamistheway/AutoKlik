@@ -1,6 +1,15 @@
 import type { AdFullData, AdCardData } from '@/types/types';
 
 type ApiAdData = {
+  body_type?: string | null;
+  air_conditioning?: string | null;
+  airbags?: number | null;
+  car_radio?: string | null;
+  seat_count?: number | null;
+  tire_width?: number | null;
+  tire_height?: number | null;
+  tire_diameter?: number | null;
+  emission_class?: string | null;
   vin?: string | null;
   moderation_status?: string | null;
   moderation_reason?: string | null;
@@ -88,5 +97,15 @@ export function toAdCardData(data: unknown): AdCardData {
 
 export function toAdFullData(data: unknown): AdFullData {
   const ad = data as ApiAdData;
-  return { ...toAdCardData(ad), engineSize: ad.engine_size ?? null, vin: ad.vin ?? null, moderationStatus: ad.moderation_status ?? null, moderationReason: ad.moderation_reason ?? null, enginePower: ad.engine_power ?? null, images: ad.images ?? [] };
+  return {
+    bodyType: ad.body_type ?? null,
+    airConditioning: ad.air_conditioning ?? null,
+    airbags: ad.airbags ?? null,
+    carRadio: ad.car_radio ?? null,
+    seatCount: ad.seat_count ?? null,
+    tireWidth: ad.tire_width ?? null,
+    tireHeight: ad.tire_height ?? null,
+    tireDiameter: ad.tire_diameter ?? null,
+    emissionClass: ad.emission_class ?? null,
+    ...toAdCardData(ad), engineSize: ad.engine_size ?? null, vin: ad.vin ?? null, moderationStatus: ad.moderation_status ?? null, moderationReason: ad.moderation_reason ?? null, enginePower: ad.engine_power ?? null, images: ad.images ?? [] };
 }

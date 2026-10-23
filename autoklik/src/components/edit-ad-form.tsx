@@ -14,6 +14,15 @@ import { sessionCookie } from '@/components/cookies/cookies';
 import { API_BASE_URL, getResponseMessage } from '@/pages/myProfile/account-api';
 
 const fields = [
+  ['bodyType', 'Oblik karoserije', 'text'],
+  ['airConditioning', 'Klimatizacija', 'text'],
+  ['airbags', 'Broj zračnih jastuka', 'number'],
+  ['carRadio', 'Autoradio', 'text'],
+  ['seatCount', 'Broj sjedala', 'number'],
+  ['tireWidth', 'Širina gume (mm)', 'number'],
+  ['tireHeight', 'Visina / profil gume (%)', 'number'],
+  ['tireDiameter', 'Promjer gume (inči)', 'number'],
+  ['emissionClass', 'Ekološka kategorija vozila', 'text'],
   ['engineSize', 'Obujam motora (cc)', 'number'],
   ['vin', 'VIN', 'text'],
   ['title', 'Naslov', 'text'], ['brand', 'Marka', 'text'], ['model', 'Model', 'text'],
@@ -59,7 +68,7 @@ export default function EditAdForm({ ad, onSaved, onCancel }: {
       const body = new FormData();
       for (const [key, , type] of fields) {
         if (type === 'number' && !values[key]) {
-          if (['engineSize', 'doorNumber', 'weight', 'payload', 'volume', 'gearCount', 'fuelConsumption'].includes(key)) body.append(key, '');
+          if (['airbags', 'seatCount', 'tireWidth', 'tireHeight', 'tireDiameter', 'engineSize', 'doorNumber', 'weight', 'payload', 'volume', 'gearCount', 'fuelConsumption'].includes(key)) body.append(key, '');
           continue;
         }
         body.append(key, values[key]);

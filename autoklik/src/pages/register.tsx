@@ -1,4 +1,5 @@
 'use client';
+import { API_BASE_URL } from '@/shared/api-url';
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -56,12 +57,16 @@ function RegisterPage() {
       setErrorMessage('Unesite ispravnu email adresu.');
       return;
     }
+    if (password.length < 8 || new TextEncoder().encode(password).length > 72) {
+      setErrorMessage('Lozinka mora imati najmanje 8 znakova i najviše 72 bajta.');
+      return;
+    }
     setIsSubmitting(true);
     setErrorMessage('');
     setSuccessMessage('');
 
     try {
-      const response = await fetch(`http://localhost:3001/users/register`, {
+      const response = await fetch(`${API_BASE_URL}/users/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -72,7 +77,7 @@ function RegisterPage() {
       });
       const payload: ApiResponse = await response.json().catch(() => ({}));
 
-      console.log('Register response payload:', payload);
+
 
       if (!response.ok) {
         if (response.status === 429) {
@@ -124,7 +129,7 @@ function RegisterPage() {
               </div>
               <div>
                 <label htmlFor="password" className="mb-1 block text-sm font-medium">Lozinka</label> {/*dodaj minLength={8} maxLength={72} u input field*/}
-                <input id="password" name="password" type="password" value={password} onChange={event => setPassword(event.target.value)} autoComplete="new-password" required className={inputClass} placeholder="Unesi lozinku" />
+                <input id="password" name="password" type="password" minLength={8} maxLength={72} value={password} onChange={event => setPassword(event.target.value)} autoComplete="new-password" required className={inputClass} placeholder="Unesi lozinku" />
               </div>
             </div>
 

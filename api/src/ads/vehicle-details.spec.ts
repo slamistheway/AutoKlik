@@ -19,3 +19,12 @@ describe('Optional vehicle details', () => {
     expect(() => validateInput(fields, 'UpdateAdDto')).toThrow();
   });
 });
+
+it('validates equipment and tire dimensions and permits clearing them', () => {
+  expect(validateInput({ bodyType: 'SUV', airConditioning: 'Automatska', airbags: '0', carRadio: 'Radio/CD', seatCount: '5', tireWidth: '205', tireHeight: '55', tireDiameter: '16', emissionClass: 'Euro 6' }, 'UpdateAdDto')).toEqual({ bodyType: 'SUV', airConditioning: 'Automatska', airbags: 0, carRadio: 'Radio/CD', seatCount: 5, tireWidth: 205, tireHeight: 55, tireDiameter: 16, emissionClass: 'Euro 6' });
+  expect(validateInput({ bodyType: '', tireWidth: '', vin: '' }, 'UpdateAdDto')).toEqual({ bodyType: null, tireWidth: null, vin: null });
+});
+
+it.each([{ bodyType: 'invalid' }, { airConditioning: 'invalid' }, { airbags: -1 }, { seatCount: 0 }, { tireWidth: 0 }, { tireHeight: 101 }, { tireDiameter: 1.5 }, { emissionClass: 'invalid' }, { vin: 'short' }])('rejects invalid equipment: %j', input => {
+  expect(() => validateInput(input, 'UpdateAdDto')).toThrow();
+});

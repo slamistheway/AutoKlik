@@ -18,7 +18,7 @@ export default function PasswordRecoveryForm({ reset = false }: { reset?: boolea
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const token = typeof router.query.token === 'string' ? router.query.token : '';
-  const invalidLink = reset && router.isReady && (!token || Boolean(router.query.error));
+  const invalidLink = reset && !message && router.isReady && (!token || Boolean(router.query.error));
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -42,7 +42,10 @@ export default function PasswordRecoveryForm({ reset = false }: { reset?: boolea
       }
       const result = await response.json() as { message: string };
       setMessage(result.message);
-      if (reset) { sessionCookie.removeSessionToken(); setPassword(''); setConfirmation(''); }
+      if (reset) {
+        sessionCookie.removeSessionToken(); setPassword(''); setConfirmation('');
+        void router.replace('/reset-password', undefined, {shallow: true});
+      }
     } catch (error) { setError(error instanceof Error ? error.message : 'Zahtjev nije uspio.'); }
     finally { setPending(false); }
   };

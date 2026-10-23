@@ -1,10 +1,11 @@
 'use client';
+import { API_BASE_URL } from '@/shared/api-url';
 
 import { useEffect, useState, type MouseEvent } from 'react';
 import { Heart, Star } from 'lucide-react';
 import {sessionCookie} from '@/components/cookies/cookies';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
+
 
 
 async function getResponseMessage(response: Response, fallback: string) {

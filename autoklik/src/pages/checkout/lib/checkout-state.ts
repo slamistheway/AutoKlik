@@ -1,6 +1,16 @@
 export interface CheckoutCategoryState { category: string; subcategory: string }
 
 export interface CheckoutDetailsState {
+  bodyType: string | null;
+  airConditioning: string | null;
+  airbags: number | null;
+  carRadio: string | null;
+  seatCount: number | null;
+  tireWidth: number | null;
+  tireHeight: number | null;
+  tireDiameter: number | null;
+  emissionClass: string | null;
+  vin: string | null;
   brand: string;
   model: string;
   enginePower: string;
@@ -57,6 +67,16 @@ const DESCRIPTION_KEY = 'checkout.description';
 const IMAGES_KEY = 'checkout.images';
 
 const detailKeys = {
+  bodyType: 'checkout.bodyType',
+  airConditioning: 'checkout.airConditioning',
+  airbags: 'checkout.airbags',
+  carRadio: 'checkout.carRadio',
+  seatCount: 'checkout.seatCount',
+  tireWidth: 'checkout.tireWidth',
+  tireHeight: 'checkout.tireHeight',
+  tireDiameter: 'checkout.tireDiameter',
+  emissionClass: 'checkout.emissionClass',
+  vin: 'checkout.vin',
   engineSize: 'checkout.engineSize',
   driveType: 'checkout.driveType', gearCount: 'checkout.gearCount', fuelConsumption: 'checkout.fuelConsumption', warranty: 'checkout.warranty',
   brand: BRANDS_KEY, model: MODEL_KEY, enginePower: ENGINEPOWER_KEY, year: YEAR_KEY, price: PRICE_KEY,
@@ -83,7 +103,7 @@ function readDetails(): CheckoutDetailsState {
   const details = emptyDetails();
   for (const field of Object.keys(detailKeys) as (keyof typeof detailKeys)[]) {
     const value = readStoredValue(detailKeys[field]);
-    const numeric = ['year', 'price', 'kilometrage', 'doorNumber', 'weight', 'payload', 'volume', 'gearCount', 'fuelConsumption'].includes(field);
+    const numeric = ['airbags', 'seatCount', 'tireWidth', 'tireHeight', 'tireDiameter', 'year', 'price', 'kilometrage', 'doorNumber', 'weight', 'payload', 'volume', 'gearCount', 'fuelConsumption'].includes(field);
     if (numeric ? typeof value === 'number' && Number.isFinite(value) : typeof value === 'string') {
       Object.assign(details, { [field]: value });
     }
@@ -104,6 +124,16 @@ function readDetails(): CheckoutDetailsState {
 
 const emptyCategory = (): CheckoutCategoryState => ({ category: '', subcategory: '' });
 const emptyDetails = (): CheckoutDetailsState => ({
+  bodyType: null,
+  airConditioning: null,
+  airbags: null,
+  carRadio: null,
+  seatCount: null,
+  tireWidth: null,
+  tireHeight: null,
+  tireDiameter: null,
+  emissionClass: null,
+  vin: null,
   engineSize: '',
   driveType: null, gearCount: null, fuelConsumption: null, warranty: null,
   brand: '', model: '', enginePower: '', year: null, price: null, kilometrage: null, fuel: '', condition: '', county: '',
@@ -196,6 +226,16 @@ export function hasDetailsState() {
 export function hasDraftContent() {
   initialize();
   return Boolean(
+    detailsState.bodyType != null && detailsState.bodyType !== '' ||
+    detailsState.airConditioning != null && detailsState.airConditioning !== '' ||
+    detailsState.airbags != null ||
+    detailsState.carRadio != null && detailsState.carRadio !== '' ||
+    detailsState.seatCount != null ||
+    detailsState.tireWidth != null ||
+    detailsState.tireHeight != null ||
+    detailsState.tireDiameter != null ||
+    detailsState.emissionClass != null && detailsState.emissionClass !== '' ||
+    detailsState.vin != null && detailsState.vin !== '' ||
     detailsState.driveType || detailsState.gearCount !== null || detailsState.fuelConsumption !== null || detailsState.warranty ||
     detailsState.brand || detailsState.model || detailsState.enginePower || detailsState.engineSize || detailsState.year !== null || detailsState.price !== null ||
     detailsState.kilometrage !== null || detailsState.fuel || detailsState.condition || detailsState.county ||

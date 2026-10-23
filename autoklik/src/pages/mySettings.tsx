@@ -5,7 +5,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import type { ReactNode } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/router';
-import { clearSessionToken, fetchCurrentUser } from '@/app/auth/auth-guards';
+import { authGuard, clearSessionToken, fetchCurrentUser } from '@/app/auth/auth-guards';
 import type { CurrentUser } from '@/types/types';
 import { Footer } from '@/components/footer';
 import { Navbar } from '@/components/navbar';
@@ -41,7 +41,7 @@ const accountNavigation = [
 ];
 
 
-export default function MySettings() {
+function MySettings() {
   const shellRouter = useRouter();
   const router = useRouter();
   const fileInput = useRef<HTMLInputElement>(null);
@@ -251,3 +251,5 @@ export default function MySettings() {
 
   );
 }
+
+export default authGuard(MySettings);

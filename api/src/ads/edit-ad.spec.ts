@@ -68,6 +68,17 @@ describe('Published ad editing', () => {
     expect(sql.params).toEqual([5, 7]);
   });
 
+  it('marks committed images before response queries and never marks rejected changes', async () => {
+    const { service } = setup();
+    const committed = jest.fn();
+    jest.spyOn(service, 'findOne').mockRejectedValueOnce(new Error('Read failed'));
+    await expect(service.update(5, 7, { title: 'Updated' }, [], committed)).rejects.toThrow('Read failed');
+    expect(committed).toHaveBeenCalledTimes(1);
+    const rejected = jest.fn();
+    await expect(setup(false).service.update(5, 8, { title: 'Updated' }, [], rejected)).rejects.toMatchObject({ status: 404 });
+    expect(rejected).not.toHaveBeenCalled();
+  });
+
   it('rejects edits to another user’s ad before any mutation', async () => {
     const { service, set, remove } = setup(false);
     await expect(

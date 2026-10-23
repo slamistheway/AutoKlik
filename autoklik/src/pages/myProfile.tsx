@@ -29,7 +29,7 @@ const profileNavigation = [
 ];
 
 
-export default function MyProfilePage() {
+function MyProfilePage() {
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [error, setError] = useState('');
   const [adsCount, setAdsCount] = useState<number | null>(null);
@@ -129,3 +129,5 @@ export default function MyProfilePage() {
 }
 
 export const MyProfile = authGuard(MyProfilePage);
+
+export default MyProfile;

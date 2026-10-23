@@ -1,11 +1,12 @@
 'use client';
+import { API_BASE_URL } from '@/shared/api-url';
 
 import { useEffect, useState, type ComponentType } from 'react';
 import { useRouter } from 'next/router';
 import {CurrentUser} from "@/types/types";
 import {sessionCookie} from '@/components/cookies/cookies';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
+
 
 
 
@@ -25,9 +26,11 @@ export async function fetchCurrentUser(): Promise<CurrentUser> {
 
   const response = await fetch(`${API_BASE_URL}/users/me`, {
     headers: { Authorization: `Bearer ${token}` },
+    cache: 'no-store',
+    redirect: 'error',
   });
   if (!response.ok) {
-    if (response.status === 401 || response.status === 403) clearSessionToken();
+    if ((response.status === 401 || response.status === 403) && sessionCookie.getSessionToken() === token) clearSessionToken();
     throw new Error('Nije moguće dohvatiti korisnički profil.');
   }
 
@@ -56,13 +59,16 @@ export function authGuard<P extends object>(Page: ComponentType<P>) {
 
     useEffect(() => {
       if (!router.isReady) return;
-      if (isAuthenticated()) {
-        setAuthorized(true);
-        return;
-      }
-
-      const returnUrl = encodeURIComponent(router.asPath);
-      void router.replace(`/login?returnUrl=${returnUrl}`);
+      let active = true;
+      void fetchCurrentUser().then(() => {
+        if (active) setAuthorized(true);
+      }).catch(() => {
+        if (!active) return;
+        setAuthorized(false);
+        const returnUrl = encodeURIComponent(router.asPath);
+        void router.replace(`/login?returnUrl=${returnUrl}`);
+      });
+      return () => { active = false; };
     }, [router, router.isReady, router.asPath]);
 
     return authorized ? <Page {...props} /> : null;
@@ -79,12 +85,13 @@ export function guestOnlyAuthGuard<P extends object>(Page: ComponentType<P>) {
 
     useEffect(() => {
       if (!router.isReady) return;
-      if (!isAuthenticated()) {
-        setIsGuest(true);
-        return;
-      }
-
-      void router.replace('/');
+      let active = true;
+      void fetchCurrentUser().then(() => {
+        if (active) void router.replace('/');
+      }).catch(() => {
+        if (active) setIsGuest(true);
+      });
+      return () => { active = false; };
     }, [router, router.isReady]);
 
     return isGuest ? <Page {...props} /> : null;

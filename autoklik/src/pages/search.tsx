@@ -1,4 +1,5 @@
 'use client';
+import { API_BASE_URL } from '@/shared/api-url';
 
 import {useEffect, useState} from 'react';
 import {useRouter} from 'next/router';
@@ -15,7 +16,7 @@ import {sessionCookie} from '@/components/cookies/cookies';
 import {getAdPath} from '@/shared/ad-seo';
 import {removeSearchFilter, searchChips, searchParams, sortOptions} from '@/shared/search-state';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
+
 type Results = {items: unknown[]; total: number; page: number; pageSize: number; totalPages: number};
 
 export default function Search() {
@@ -80,6 +81,7 @@ export default function Search() {
                   md:p-8">
                     <h1 className="text-2xl font-bold">Pretraživanje</h1>
                     <p className="mt-1 text-gray-600">Odaberite filtre i primijenite ih za prikaz oglasa.</p>
+                    <SavedSearches filters={appliedFilters} signedIn={currentUserId !== null} />
                     <hr className="my-6 border-gray-300" />
                     <form onSubmit={event => {
                         event.preventDefault();
@@ -91,7 +93,6 @@ export default function Search() {
                         <SearchFilterFields draft={draft} setDraft={setDraft} />
                         <button type="submit" className="mt-6 rounded-md bg-blue-700 px-5 py-2 font-semibold text-white">Primijeni filtre</button>
                     </form>
-                    <SavedSearches filters={appliedFilters} signedIn={currentUserId !== null} />
                 </section>
                 <section className="mx-auto my-10 w-11/12 max-w-6xl" aria-busy={loading}>
                     <div className="mb-5 flex flex-wrap items-center justify-between gap-3">

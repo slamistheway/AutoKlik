@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '@/shared/api-url';
 import { ReportButton } from '@/components/report-button';
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
@@ -21,7 +22,7 @@ import {sessionCookie} from '@/components/cookies/cookies';
 import {resolve_api_ad_img} from "@/shared/functions";
 import {fetchCurrentUser} from "@/app/auth/auth-guards";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
+
 
 function formatPrice(price?: number | string | null) {
   if (price === null || price === undefined || price === '') return 'Cijena na upit';
@@ -107,7 +108,7 @@ function AdPageContent({initialAd, siteUrl, initialError}: AdPageProps) {
       return;
     }
 
-    fetch(`http://localhost:3001/ads/delete/${adId}`, {
+    fetch(`${API_BASE_URL}/ads/delete/${adId}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` },
       body: JSON.stringify({ arg_adID: adId }),
@@ -127,8 +128,8 @@ function AdPageContent({initialAd, siteUrl, initialError}: AdPageProps) {
   function goToMessageUser(id: CurrentUser['id'] | undefined, username: string | undefined) {
     if (id === undefined || username === undefined) return;
 
-    console.log(`Going to message user: ${id}, ${username}`);
-    
+
+
     if (Number(id) !== Number(currentUser?.id)) {
       localStorage.setItem('goToMessageUserID', id.toString());
       localStorage.setItem('goToMessageUserUsername', username);
@@ -287,6 +288,15 @@ function AdPageContent({initialAd, siteUrl, initialError}: AdPageProps) {
                       ['Vrsta pogona', ad.driveType],
                       ['Broj brzina', ad.gearCount],
                       ['Potrošnja goriva', ad.fuelConsumption == null ? null : `${ad.fuelConsumption} L/100 km`],
+                      ['Oblik karoserije', ad.bodyType],
+                      ['Klimatizacija', ad.airConditioning],
+                      ['Broj zračnih jastuka', ad.airbags],
+                      ['Autoradio', ad.carRadio],
+                      ['Broj sjedala', ad.seatCount],
+                      ['Širina gume (mm)', ad.tireWidth],
+                      ['Visina / profil gume (%)', ad.tireHeight],
+                      ['Promjer gume (inči)', ad.tireDiameter],
+                      ['Ekološka kategorija vozila', ad.emissionClass],
                       ['Jamstvo', ad.warranty],
                       /*['Mjenjač', ad.gearType],*/
                       ['Prodavač', ad.sellerType]

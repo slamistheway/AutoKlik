@@ -57,11 +57,6 @@ export class UsersService {
     const country = dto.country?.trim() || null;
     await assertNotBlocked(this.db, { email, phone }, ip);
 
-    this.logger.debug(
-        `Received register request: username="${username}", email="${email}"`,
-    );
-
-
     const hashedPassword = await passwordHasher.hash(password, 10);
     const pfp = 'default-pfp.jpg';
 
@@ -222,15 +217,11 @@ export class UsersService {
 
   async getUser(userId: number) {
     const [user] = await this.db
-        .select()
-        .from(users)
-        .where(eq(users.id, userId));
-
-    if (!user) {
-      throw new NotFoundException('Korisnik nije pronađen.');
-    }
-
-    return this.mapUserEntity(user);
+      .select({ id: users.id, username: users.username, pfp: users.pfp, city: users.city, country: users.country, sellerVerified: users.sellerVerified, badges: users.badges, dealerStatus: users.dealerStatus })
+      .from(users)
+      .where(and(eq(users.id, userId), eq(users.accountStatus, 'active')));
+    if (!user) throw new NotFoundException('Korisnik nije pronađen.');
+    return user;
   }
 
   async updatePfp(userId: number, pfpPath: string) {

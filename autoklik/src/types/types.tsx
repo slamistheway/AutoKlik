@@ -69,6 +69,15 @@ export type PublicSeller = {
 };
 
 export type AdFullData = AdCardData & {
+    bodyType?: string | null;
+    airConditioning?: string | null;
+    airbags?: number | null;
+    carRadio?: string | null;
+    seatCount?: number | null;
+    tireWidth?: number | null;
+    tireHeight?: number | null;
+    tireDiameter?: number | null;
+    emissionClass?: string | null;
     engineSize?: number | null;
     vin?: string | null;
     moderationStatus?: string | null;

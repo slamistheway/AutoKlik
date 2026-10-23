@@ -1,4 +1,5 @@
 'use client';
+import { API_BASE_URL } from '@/shared/api-url';
 
 import Image from 'next/image';
 import {useEffect, useState} from 'react';
@@ -15,7 +16,7 @@ export function ChatImage({messageId, onLoad}: {messageId: number; onLoad?: () =
       try {
         const token = sessionCookie.getSessionToken();
         if (!token) throw new Error('Missing session');
-        const response = await fetch(`http://localhost:3001/users/messages/${messageId}/image`, {
+        const response = await fetch(`${API_BASE_URL}/users/messages/${messageId}/image`, {
           headers: {Authorization: `Bearer ${token}`}, signal: controller.signal,
         });
         if (!response.ok) throw new Error('Image unavailable');

@@ -17,30 +17,11 @@ import { AdsService } from './ads.service';
 import { SessionAuthGuard } from '../auth/session-auth.guard';
 import { OptionalSessionAuthGuard } from '../auth/session-auth.guard';
 import { FilesInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { mkdirSync } from 'fs';
-import { extname, join } from 'path';
+import { imageUploadOptions, ImageUploadCleanupInterceptor, retainImageUploads } from '../image-upload';
 import {AdStatusDto, AdsQueryDto, CreateAdDto, UpdateAdDto} from "../dtos/ad.dtos";
 import { SkipThrottle } from '@nestjs/throttler';
 import { AdFetchRateLimitGuard } from './ad-fetch-rate-limit.guard';
 import { SavedSearchesService } from './saved-searches.service';
-
-const adImageUploadPath = join(process.cwd(), 'public', 'ad-images');
-
-
-const adImageStorage = diskStorage({
-  destination: (_req, _file, cb) => {
-    mkdirSync(adImageUploadPath, { recursive: true });
-    cb(null, adImageUploadPath);
-  },
-  filename: (_req, file, cb) => {
-    const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${extname(file.originalname)}`;
-    cb(null, uniqueName);
-  },
-});
-
-
-
 
 @Controller('ads')
 export class AdsController {
@@ -78,7 +59,7 @@ export class AdsController {
   /*-------------------------------------------CREATE---------------------------------------------*/
   /*-------------------------------------------CREATE---------------------------------------------*/
   @UseGuards(SessionAuthGuard)
-  @UseInterceptors(FilesInterceptor('images', 10, { storage: adImageStorage }))
+  @UseInterceptors(ImageUploadCleanupInterceptor, FilesInterceptor('images', 10, imageUploadOptions('ad-images', 10)))
   @Post()
   create(
     @Req() req: any,
@@ -117,6 +98,7 @@ export class AdsController {
         color: createAdDto.color || null,
       },
       images,
+      () => retainImageUploads(req),
     );
   }
 
@@ -262,20 +244,10 @@ export class AdsController {
   }
 
   @UseGuards(SessionAuthGuard)
-  @UseInterceptors(FilesInterceptor('images', 10, {
-    storage: adImageStorage,
-    limits: { fileSize: 5 * 1024 * 1024 },
-    fileFilter: (_req, file, callback) => {
-      if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype) ||
-        !['.jpg', '.jpeg', '.png', '.webp'].includes(extname(file.originalname).toLowerCase())) {
-        return callback(new BadRequestException('Dozvoljene su JPEG, PNG i WebP slike.'), false);
-      }
-      callback(null, true);
-    },
-  }))
+  @UseInterceptors(ImageUploadCleanupInterceptor, FilesInterceptor('images', 10, imageUploadOptions('ad-images', 10)))
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateAdDto: UpdateAdDto, @Req() req: any, @UploadedFiles() files: Express.Multer.File[] = []) {
-    return this.adService.update(+id, Number(req.user?.id), updateAdDto, files.map(file => `ad-images/${file.filename}`));
+    return this.adService.update(+id, Number(req.user?.id), updateAdDto, files.map(file => `ad-images/${file.filename}`), () => retainImageUploads(req));
   }
 
   @UseGuards(SessionAuthGuard)
