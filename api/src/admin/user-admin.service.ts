@@ -5,8 +5,7 @@ import * as schema from '../db/schema';
 import { dateInput, note, object, positiveId } from './admin-validation';
 import { randomBytes } from 'crypto';
 import { normalizeBlockValue } from '../auth/account-access';
-import { lstat, unlink } from 'fs/promises';
-import { join } from 'path';
+import { deleteImage } from '../object-storage';
 
 const { users, adminActions: actions, moderationReports: reports } = schema;
 export type AdminTransaction = Parameters<Parameters<NodePgDatabase<typeof schema>['transaction']>[0]>[0];
@@ -227,10 +226,7 @@ export class UserAdminService {
       const [sharedAvatar] = await this.db.select({ id: users.id }).from(users).where(eq(users.pfp, file.path)).limit(1);
       try {
         if (!sharedPhoto && !sharedAvatar) {
-          const path = join(process.cwd(), 'public', file.path);
-          const info = await lstat(path);
-          if (!info.isFile() || info.isSymbolicLink()) continue;
-          await unlink(path); removed++;
+          await deleteImage(file.path); removed++;
         }
         await this.db.delete(schema.erasureFiles).where(eq(schema.erasureFiles.path, file.path));
       } catch (cause) {
@@ -238,7 +234,7 @@ export class UserAdminService {
       }
     }
     const [pending] = await this.db.select({ total: sql<number>`count(*)::int` }).from(schema.erasureFiles);
-    await this.db.insert(actions).values({ actorId, action: 'erasure_file_cleanup', reason: 'Brisanje neiskorištenih lokalnih datoteka nakon brisanja računa', after: { removed, pending: pending.total } });
+    await this.db.insert(actions).values({ actorId, action: 'erasure_file_cleanup', reason: 'Brisanje neiskorištenih slika nakon brisanja računa', after: { removed, pending: pending.total } });
     return { removed, pending: pending.total };
   }
 }

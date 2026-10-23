@@ -1,17 +1,11 @@
 import { createHash } from 'crypto';
-import { createReadStream } from 'fs';
-import { lstat } from 'fs/promises';
-import { join } from 'path';
+import { downloadImage } from '../object-storage';
 
-// Hash local uploads only. Never fetch seller-provided URLs or traverse directories.
+// Read only validated object keys from our configured bucket.
 export async function imageDigest(url: string): Promise<string | null> {
   if (!/^ad-images\/[a-zA-Z0-9_.-]+$/.test(url) || url.includes('..')) return null;
   try {
-    const path = join(process.cwd(), 'public', url);
-    const file = await lstat(path);
-    if (!file.isFile() || file.isSymbolicLink() || file.size > 20 * 1024 * 1024) return null;
-    const digest = createHash('sha256');
-    for await (const chunk of createReadStream(path)) digest.update(chunk);
-    return digest.digest('hex');
+    const data = await downloadImage(url);
+    return createHash('sha256').update(data).digest('hex');
   } catch { return null; }
 }

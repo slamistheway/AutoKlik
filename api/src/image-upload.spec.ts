@@ -12,9 +12,7 @@ import {
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { mkdtemp, readFile, readdir, rm } from 'fs/promises';
-import { join } from 'path';
-import { tmpdir } from 'os';
+import { deleteImage, uploadImage } from './object-storage';
 import request from 'supertest';
 import {
   ImageStorage,
@@ -23,17 +21,27 @@ import {
 } from './image-upload';
 import { InputValidationPipe } from './input-validation';
 import { CreateAdDto } from './dtos/ad.dtos';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+import { downloadImage } from './object-storage';
+
+jest.mock('./object-storage', () => ({ uploadImage: jest.fn(), deleteImage: jest.fn(), downloadImage: jest.fn() }));
 
 describe('public image upload security', () => {
   let app: INestApplication;
-  let directory: string;
+  const stored = new Map<string, Buffer>();
+  const readdir = async (_directory: string) => [...stored.keys()];
+  const directory = 'ad-images';
   const png = Buffer.from(
     'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j7RkAAAAASUVORK5CYII=',
     'base64',
   );
 
   beforeEach(async () => {
-    directory = await mkdtemp(join(tmpdir(), 'autoklik-image-test-'));
+    stored.clear();
+    jest.clearAllMocks();
+    (uploadImage as jest.Mock).mockImplementation(async (path: string, data: Buffer) => { stored.set(path, data); });
+    (deleteImage as jest.Mock).mockImplementation(async (path: string) => { stored.delete(path); });
     @Controller('upload')
     class UploadController {
       @Post()
@@ -58,7 +66,8 @@ describe('public image upload security', () => {
       }
     }
     const module = await Test.createTestingModule({
-      controllers: [UploadController],
+      controllers: [UploadController, AppController],
+      providers: [AppService],
     }).compile();
     app = module.createNestApplication();
     app.useGlobalPipes(new InputValidationPipe());
@@ -67,7 +76,6 @@ describe('public image upload security', () => {
 
   afterEach(async () => {
     await app?.close();
-    await rm(directory, { recursive: true, force: true });
   });
 
   const upload = (
@@ -93,6 +101,22 @@ describe('public image upload security', () => {
     expect(await readdir(directory)).toEqual([]);
   });
 
+  it('serves stored images at the existing ad and avatar URLs', async () => {
+    (downloadImage as jest.Mock).mockResolvedValue(png);
+    for (const folder of ['ad-images', 'pfp']) {
+      const result = await request(app.getHttpServer() as Server).get(`/${folder}/fixture.png`).expect(200);
+      expect(downloadImage).toHaveBeenLastCalledWith(`${folder}/fixture.png`);
+      expect(result.headers['content-type']).toBe('image/png');
+      expect(result.headers['x-content-type-options']).toBe('nosniff');
+      expect(result.body).toEqual(png);
+    }
+  });
+
+  it('rejects stored content that is not a supported image', async () => {
+    (downloadImage as jest.Mock).mockResolvedValue(Buffer.from('<svg onload="alert(1)"/>'));
+    await request(app.getHttpServer() as Server).get('/ad-images/fixture.png').expect(400);
+  });
+
   it('uses a random canonical extension from the bytes, never the supplied name', async () => {
     const result = await upload(app, png, 'payload.html').expect(201);
     const body = result.body as { filename: string; mimeType: string };
@@ -100,7 +124,7 @@ describe('public image upload security', () => {
       filename: expect.stringMatching(/^[\da-f-]{36}\.png$/) as string,
       mimeType: 'image/png',
     });
-    expect(await readFile(join(directory, body.filename))).toEqual(png);
+    expect(stored.get(`${directory}/${body.filename}`)).toEqual(png);
   });
 
   it('removes files when body validation or the handler rejects the request', async () => {

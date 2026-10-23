@@ -1,3 +1,4 @@
+// Access goes through NestJS/Better Auth. No direct Supabase client policies.
 import { sql, relations } from "drizzle-orm";
 import {
     bigint,
@@ -15,7 +16,6 @@ import {
     uniqueIndex,
     varchar,
 } from "drizzle-orm/pg-core";
-
 
 export const users = pgTable(
     "users", {
@@ -48,7 +48,7 @@ export const users = pgTable(
       check('users_dealer_check', sql`${table.dealerStatus} in ('none', 'pending', 'approved', 'rejected')`),
       index('users_registered_idx').on(table.dateCreated),
     ],
-);
+).enableRLS();
 
 export const ads = pgTable("ads", {
     id: serial("id").primaryKey(),
@@ -105,7 +105,7 @@ export const ads = pgTable("ads", {
 
     dateCreated: timestamp("date_created", { withTimezone: false }).defaultNow(),
     dateLastUpdated: timestamp("date_last_updated", { withTimezone: false }).defaultNow(),
-}, table => [index('ads_vin_idx').on(table.vin), index('ads_moderation_idx').on(table.moderationStatus), index('ads_created_idx').on(table.dateCreated), check('ads_moderation_check', sql`${table.moderationStatus} is null or ${table.moderationStatus} in ('pending', 'approved', 'rejected', 'changes', 'removed')`)]);
+}, table => [index('ads_vin_idx').on(table.vin), index('ads_moderation_idx').on(table.moderationStatus), index('ads_created_idx').on(table.dateCreated), check('ads_moderation_check', sql`${table.moderationStatus} is null or ${table.moderationStatus} in ('pending', 'approved', 'rejected', 'changes', 'removed')`)]).enableRLS();
 
 export const savedSearches = pgTable('saved_searches', {
     id: serial('id').primaryKey(),
@@ -114,7 +114,7 @@ export const savedSearches = pgTable('saved_searches', {
     filters: jsonb('filters').$type<Record<string, string>>().notNull(),
     alertsEnabled: boolean('alerts_enabled').notNull().default(true),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-}, table => [index('saved_searches_user_idx').on(table.userId)]);
+}, table => [index('saved_searches_user_idx').on(table.userId)]).enableRLS();
 
 export const searchAlerts = pgTable('search_alerts', {
     id: serial('id').primaryKey(),
@@ -122,7 +122,7 @@ export const searchAlerts = pgTable('search_alerts', {
     adId: integer('ad_id').notNull().references(() => ads.id, { onDelete: 'cascade' }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     readAt: timestamp('read_at', { withTimezone: true }),
-}, table => [unique('search_alerts_search_ad_key').on(table.savedSearchId, table.adId)]);
+}, table => [unique('search_alerts_search_ad_key').on(table.savedSearchId, table.adId)]).enableRLS();
 
 export const adViews = pgTable(
     "ad_views", {
@@ -131,7 +131,7 @@ export const adViews = pgTable(
       firstViewedAt: timestamp("first_viewed_at", { withTimezone: true }).notNull().defaultNow(),
     },
     (table) => [primaryKey({ columns: [table.adId, table.viewerId], name: "ad_views_pkey" }), index("ad_views_viewer_idx").on(table.viewerId)],
-);
+).enableRLS();
 
 export const adImages = pgTable(
     "ad_images", {
@@ -144,7 +144,7 @@ export const adImages = pgTable(
       createdAt: timestamp("created_at", { withTimezone: false }).defaultNow(),
     },
     (table) => [index("idx_ad_images_ad_id").on(table.adId), index('ad_images_sha256_idx').on(table.sha256)],
-);
+).enableRLS();
 
 export const savedAds = pgTable(
     "saved_ads", {
@@ -157,7 +157,7 @@ export const savedAds = pgTable(
       dateSaved: timestamp("date_saved", { withTimezone: true }).defaultNow(),
     },
     (table) => [primaryKey({ columns: [table.userId, table.adId], name: "saved_ads_pkey" })],
-);
+).enableRLS();
 
 export const usersAdDrafts = pgTable("users_ad_drafts", {
   id: serial("id").primaryKey(),
@@ -174,7 +174,7 @@ export const usersAdDrafts = pgTable("users_ad_drafts", {
   price: numeric("price"),
   createdAt: timestamp("created_at", { withTimezone: false }).defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: false }).defaultNow(),
-});
+}).enableRLS();
 
 
 
@@ -183,7 +183,7 @@ export const userBlocks = pgTable('user_blocks', {
     blockerId: bigint('blocker_id', { mode: 'number' }).notNull().references(() => users.id, { onDelete: 'cascade' }),
     blockedId: bigint('blocked_id', { mode: 'number' }).notNull().references(() => users.id, { onDelete: 'cascade' }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-}, table => [primaryKey({ columns: [table.blockerId, table.blockedId] }), check('user_blocks_not_self', sql`${table.blockerId} <> ${table.blockedId}`), index('user_blocks_blocked_idx').on(table.blockedId)]);
+}, table => [primaryKey({ columns: [table.blockerId, table.blockedId] }), check('user_blocks_not_self', sql`${table.blockerId} <> ${table.blockedId}`), index('user_blocks_blocked_idx').on(table.blockedId)]).enableRLS();
 
 export const conversations = pgTable(
     "conversations",
@@ -205,7 +205,7 @@ export const conversations = pgTable(
         check("conversations_user_order", sql`${table.userAid} < ${table.userBid}`),
         index("conversations_user_b_idx").on(table.userBid),
     ],
-);
+).enableRLS();
 
 export const messages = pgTable(
     "messages",
@@ -236,7 +236,7 @@ export const messages = pgTable(
         ),
         check("messages_body_not_empty", sql`length(trim(${table.body})) > 0`),
     ],
-);
+).enableRLS();
 
 export const messageImages = pgTable(
     "message_images",
@@ -249,7 +249,7 @@ export const messageImages = pgTable(
     (table) => [
         check("message_images_size", sql`${table.size} > 0 and ${table.size} <= 5242880`),
     ],
-);
+).enableRLS();
 
 
 export const audit = pgTable(
@@ -265,12 +265,12 @@ export const audit = pgTable(
     (table) => [
         index("audit_user_created_idx").on(table.userId, table.createdAt),
     ],
-  );
+  ).enableRLS();
 
 export const revokedTokens = pgTable('revoked_tokens', {
   tokenHash: text('token_hash').primaryKey(),
   expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
-});
+}).enableRLS();
 
 export const moderationReports = pgTable('moderation_reports', {
     id: serial('id').primaryKey(),
@@ -286,7 +286,7 @@ export const moderationReports = pgTable('moderation_reports', {
     resolutionNote: text('resolution_note'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     resolvedAt: timestamp('resolved_at', { withTimezone: true }),
-}, table => [index('moderation_reports_target_idx').on(table.targetType, table.targetId), index('moderation_reports_queue_idx').on(table.status, table.createdAt)]);
+}, table => [index('moderation_reports_target_idx').on(table.targetType, table.targetId), index('moderation_reports_queue_idx').on(table.status, table.createdAt)]).enableRLS();
 
 export const adminActions = pgTable('admin_actions', {
     id: serial('id').primaryKey(),
@@ -298,7 +298,7 @@ export const adminActions = pgTable('admin_actions', {
     before: jsonb('before'),
     after: jsonb('after'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-}, table => [index('admin_actions_created_idx').on(table.createdAt), index('admin_actions_ad_idx').on(table.adId)]);
+}, table => [index('admin_actions_created_idx').on(table.createdAt), index('admin_actions_ad_idx').on(table.adId)]).enableRLS();
 
 export const safetyBlocklist = pgTable('safety_blocklist', {
     id: serial('id').primaryKey(),
@@ -308,7 +308,7 @@ export const safetyBlocklist = pgTable('safety_blocklist', {
     active: boolean('active').notNull().default(true),
     createdBy: bigint('created_by', { mode: 'number' }).references(() => users.id, { onDelete: 'set null' }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-}, table => [unique('safety_blocklist_value_key').on(table.kind, table.value)]);
+}, table => [unique('safety_blocklist_value_key').on(table.kind, table.value)]).enableRLS();
 
 export const safetyAppeals = pgTable('safety_appeals', {
     id: serial('id').primaryKey(),
@@ -318,12 +318,12 @@ export const safetyAppeals = pgTable('safety_appeals', {
     resolutionNote: text('resolution_note'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     resolvedAt: timestamp('resolved_at', { withTimezone: true }),
-}, table => [uniqueIndex('safety_appeals_open_user_idx').on(table.userId).where(sql`${table.status} = 'open'`)]);
+}, table => [uniqueIndex('safety_appeals_open_user_idx').on(table.userId).where(sql`${table.status} = 'open'`)]).enableRLS();
 
 export const erasureFiles = pgTable('erasure_files', {
     path: text('path').primaryKey(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-});
+}).enableRLS();
 
 
 
@@ -338,7 +338,7 @@ export const user = pgTable("user", {
         .defaultNow()
         .$onUpdate(() => /* @__PURE__ */ new Date())
         .notNull(),
-});
+}).enableRLS();
 
 export const session = pgTable(
     "session",
@@ -357,7 +357,7 @@ export const session = pgTable(
             .references(() => user.id, { onDelete: "cascade" }),
     },
     (table) => [index("session_userId_idx").on(table.userId)],
-);
+).enableRLS();
 
 export const account = pgTable(
     "account",
@@ -381,7 +381,7 @@ export const account = pgTable(
             .notNull(),
     },
     (table) => [index("account_userId_idx").on(table.userId)],
-);
+).enableRLS();
 
 export const verification = pgTable(
     "verification",
@@ -397,7 +397,7 @@ export const verification = pgTable(
             .notNull(),
     },
     (table) => [index("verification_identifier_idx").on(table.identifier)],
-);
+).enableRLS();
 
 export const userRelations = relations(user, ({ many }) => ({
     sessions: many(session),
@@ -426,4 +426,4 @@ export const priceDropNotifications = pgTable("price_drop_notifications", {
     newPrice: numeric("new_price").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     readAt: timestamp("read_at", { withTimezone: true }),
-}, table => [index("price_drop_notifications_user_idx").on(table.userId, table.createdAt)]);
+}, table => [index("price_drop_notifications_user_idx").on(table.userId, table.createdAt)]).enableRLS();

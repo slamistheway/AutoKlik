@@ -176,6 +176,13 @@
       "when": 1792755760649,
       "tag": "0024_brief_famine",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1792767928654,
+      "tag": "0025_heavy_hulk",
+      "breakpoints": true
     }
   ]
 }

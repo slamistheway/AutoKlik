@@ -1,0 +1,24 @@
+ALTER TABLE "account" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+ALTER TABLE "ad_images" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+ALTER TABLE "ad_views" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+ALTER TABLE "admin_actions" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+ALTER TABLE "ads" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+ALTER TABLE "audit" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+ALTER TABLE "conversations" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+ALTER TABLE "erasure_files" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+ALTER TABLE "message_images" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+ALTER TABLE "messages" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+ALTER TABLE "moderation_reports" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+ALTER TABLE "price_drop_notifications" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+ALTER TABLE "revoked_tokens" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+ALTER TABLE "safety_appeals" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+ALTER TABLE "safety_blocklist" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+ALTER TABLE "saved_ads" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+ALTER TABLE "saved_searches" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+ALTER TABLE "search_alerts" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+ALTER TABLE "session" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+ALTER TABLE "user" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+ALTER TABLE "user_blocks" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+ALTER TABLE "users" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+ALTER TABLE "users_ad_drafts" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+ALTER TABLE "verification" ENABLE ROW LEVEL SECURITY;

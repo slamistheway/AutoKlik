@@ -12,19 +12,7 @@ import type { MulterOptions } from '@nestjs/platform-express/multer/interfaces/m
 import type { Request } from 'express';
 import type { StorageEngine } from 'multer';
 import { randomUUID } from 'crypto';
-import { createWriteStream } from 'fs';
-import {
-  constants,
-  copyFile,
-  mkdir,
-  mkdtemp,
-  open,
-  rm,
-  unlink,
-} from 'fs/promises';
-import { join } from 'path';
-import { tmpdir } from 'os';
-import { pipeline } from 'stream/promises';
+import { deleteImage, uploadImage, type ImageFolder } from './object-storage';
 import { catchError } from 'rxjs';
 import {
   MAX_MESSAGE_IMAGE_SIZE,
@@ -39,7 +27,7 @@ export function retainImageUploads(request: Request) {
 }
 
 export class ImageStorage implements StorageEngine {
-  constructor(private readonly directory: string) {}
+  constructor(private readonly directory: ImageFolder) {}
 
   _handleFile(
     _request: Request,
@@ -55,53 +43,31 @@ export class ImageStorage implements StorageEngine {
   }
 
   private async store(file: Express.Multer.File) {
-    const temporary = await mkdtemp(join(tmpdir(), 'autoklik-upload-'));
-    const staged = join(temporary, 'image');
-    try {
-      let truncated = false;
-      file.stream.once('limit', () => {
-        truncated = true;
-      });
-      await pipeline(
-        file.stream,
-        createWriteStream(staged, { flags: 'wx', mode: 0o600 }),
-      );
-      const handle = await open(staged, 'r');
-      let mimeType: string;
-      let size: number;
-      try {
-        size = (await handle.stat()).size;
-        if (truncated || size > MAX_MESSAGE_IMAGE_SIZE)
-          throw new PayloadTooLargeException('Slika mora biti manja od 5 MB.');
-        const header = Buffer.alloc(12);
-        const { bytesRead } = await handle.read(header, 0, header.length, 0);
-        mimeType = validateMessageImage({
-          buffer: header.subarray(0, bytesRead),
-          size,
-        });
-      } finally {
-        await handle.close();
-      }
-      const extension = {
-        'image/jpeg': '.jpg',
-        'image/png': '.png',
-        'image/webp': '.webp',
-      }[mimeType];
-      if (!extension) throw new BadRequestException('Nepodržana slika.');
-      const filename = `${randomUUID()}${extension}`;
-      await mkdir(this.directory, { recursive: true });
-      const path = join(this.directory, filename);
-      await copyFile(staged, path, constants.COPYFILE_EXCL);
-      return {
-        destination: this.directory,
-        filename,
-        path,
-        size,
-        mimetype: mimeType,
-      };
-    } finally {
-      await rm(temporary, { recursive: true, force: true });
+    let truncated = false;
+    file.stream.once('limit', () => {
+      truncated = true;
+    });
+    const chunks: Buffer[] = [];
+    let size = 0;
+    for await (const chunk of file.stream) {
+      size += chunk.length;
+      if (size > MAX_MESSAGE_IMAGE_SIZE) throw new PayloadTooLargeException('Slika mora biti manja od 5 MB.');
+      chunks.push(Buffer.from(chunk));
     }
+    if (truncated || size > MAX_MESSAGE_IMAGE_SIZE)
+      throw new PayloadTooLargeException('Slika mora biti manja od 5 MB.');
+    const data = Buffer.concat(chunks);
+    const mimeType = validateMessageImage({ buffer: data, size });
+    const extension = {
+      'image/jpeg': '.jpg',
+      'image/png': '.png',
+      'image/webp': '.webp',
+    }[mimeType];
+    if (!extension) throw new BadRequestException('Nepodržana slika.');
+    const filename = `${randomUUID()}${extension}`;
+    const path = `${this.directory}/${filename}`;
+    await uploadImage(path, data, mimeType);
+    return { destination: this.directory, filename, path, size, mimetype: mimeType };
   }
 
   _removeFile(
@@ -109,7 +75,7 @@ export class ImageStorage implements StorageEngine {
     file: Express.Multer.File,
     callback: (error: Error | null) => void,
   ) {
-    void unlink(file.path).then(
+    void deleteImage(file.path).then(
       () => callback(null),
       (error: NodeJS.ErrnoException) =>
         callback(error.code === 'ENOENT' ? null : error),
@@ -122,7 +88,7 @@ export function imageUploadOptions(
   files: number,
 ): MulterOptions {
   return {
-    storage: new ImageStorage(join(process.cwd(), 'public', folder)),
+    storage: new ImageStorage(folder),
     limits: {
       fileSize: MAX_MESSAGE_IMAGE_SIZE,
       files,
@@ -141,7 +107,7 @@ export class ImageUploadCleanupInterceptor implements NestInterceptor {
       catchError(async (error) => {
         await Promise.all(
           [...(uploadedPaths.get(request) ?? [])].map((path) =>
-            unlink(path).catch(() => undefined),
+            deleteImage(path).catch(() => undefined),
           ),
         );
         throw error;
