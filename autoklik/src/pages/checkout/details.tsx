@@ -5,7 +5,7 @@ import { useRouter } from 'next/router';
 import { useCheckoutLeaveModal } from '@/components/checkout-leave-modal';
 import { Navbar } from '@/components/navbar';
 import { Footer } from '@/components/footer';
-import CheckoutStepper from '@/pages/checkout/components/checkoutStepper';
+import CheckoutStepper from '@/components/checkoutStepper';
 
 import {getCategoryLabel, getSubcategoryLabel,} from '@/lib/checkout-data';
 import { getDetailFields } from '@/shared/detail-fields';
