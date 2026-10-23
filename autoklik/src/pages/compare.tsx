@@ -13,7 +13,7 @@ import type { AdCardData } from '@/types/types';
 import { toAdCardData } from '@/shared/ad-data';
 import { resolve_api_ad_img } from '@/shared/functions';
 import { adStatusLabels, getAdStatus } from '@/shared/ad-status';
-import { API_BASE_URL } from './myProfile/account-api';
+import { API_BASE_URL } from '@/lib/account-api';
 
 const valueLabels: Record<string, string> = {
   diesel: 'Dizel', petrol: 'Benzin', electric: 'Električni', hybrid: 'Hibrid', lpg: 'LPG',

@@ -12,7 +12,7 @@ import { fetchCurrentUser } from '@/app/auth/auth-guards';
 import { sessionCookie } from '@/components/cookies/cookies';
 import { toAdFullData } from '@/shared/ad-data';
 import type { AdFullData } from '@/types/types';
-import { API_BASE_URL, getResponseMessage } from '@/pages/myProfile/account-api';
+import { API_BASE_URL, getResponseMessage } from '@/lib/account-api';
 
 export default function EditPage() {
     const router = useRouter();

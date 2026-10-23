@@ -1,7 +1,7 @@
 'use client';
 
 import type {Dispatch, SetStateAction} from 'react';
-import {CATEGORIES, SUBCATEGORIES} from '@/pages/checkout/lib/checkout-data';
+import {CATEGORIES, SUBCATEGORIES} from '@/lib/checkout-data';
 import FilterChoose from '@/components/filters/filter-choose';
 import FilterNumeric from '@/components/filters/filter-numeric';
 import FilterBrands from '@/components/filters/filter-brands';

@@ -11,7 +11,7 @@ import Link from 'next/link';
 import { authGuard, fetchCurrentUser } from '@/app/auth/auth-guards';
 import type { CurrentUser } from '@/types/types';
 
-import { API_BASE_URL, getResponseMessage } from './myProfile/account-api';
+import { API_BASE_URL, getResponseMessage } from '@/lib/account-api';
 import {sessionCookie} from '@/components/cookies/cookies';
 import { usePathname } from 'next/navigation'
 

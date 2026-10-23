@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { AdCardData } from '@/types/types';
-import { API_BASE_URL, getResponseMessage } from '@/pages/myProfile/account-api';
+import { API_BASE_URL, getResponseMessage } from '@/lib/account-api';
 import { sessionCookie } from '@/components/cookies/cookies';
 import { toAdCardData } from '@/shared/ad-data';
 import { getAdStatus } from '@/shared/ad-status';

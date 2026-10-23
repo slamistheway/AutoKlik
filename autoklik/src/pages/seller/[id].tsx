@@ -14,7 +14,7 @@ import type { AdCardData, PublicSeller } from '@/types/types';
 import { toAdCardData } from '@/shared/ad-data';
 import { resolve_api_ad_img, resolve_api_pfp_img } from '@/shared/functions';
 import { sessionCookie } from '@/components/cookies/cookies';
-import { API_BASE_URL, getResponseMessage } from '@/pages/myProfile/account-api';
+import { API_BASE_URL, getResponseMessage } from '@/lib/account-api';
 
 type Summary = { total: number; active: number; sold: number; expired: number };
 type Profile = { seller: PublicSeller; summary: Summary; total: number; pageSize: number; listings: AdCardData[] };

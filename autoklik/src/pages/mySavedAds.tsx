@@ -13,7 +13,7 @@ import Image from 'next/image';
 import { useEffect, useMemo, useState } from 'react';
 import { authGuard, fetchCurrentUser } from '@/app/auth/auth-guards';
 import type { AdCardData, CurrentUser } from '@/types/types';
-import { API_BASE_URL, getResponseMessage } from './myProfile/account-api';
+import { API_BASE_URL, getResponseMessage } from '@/lib/account-api';
 import {sessionCookie} from '@/components/cookies/cookies';
 import { adStatusLabels, getAdStatus } from '@/shared/ad-status';
 import {resolve_api_ad_img} from "@/shared/functions";

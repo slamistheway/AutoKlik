@@ -9,7 +9,7 @@ import { authGuard, clearSessionToken, fetchCurrentUser } from '@/app/auth/auth-
 import type { CurrentUser } from '@/types/types';
 import { Footer } from '@/components/footer';
 import { Navbar } from '@/components/navbar';
-import { API_BASE_URL, getResponseMessage } from './myProfile/account-api';
+import { API_BASE_URL, getResponseMessage } from '@/lib/account-api';
 import {sessionCookie} from '@/components/cookies/cookies';
 import {resolve_api_pfp_img} from "@/shared/functions";
 

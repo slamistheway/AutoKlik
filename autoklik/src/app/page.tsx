@@ -20,7 +20,7 @@ import {
 } from 'lucide-react'
 import './globals.css';
 import {type FormEvent, useEffect, useState} from "react";
-import { API_BASE_URL } from "@/pages/myProfile/account-api";
+import { API_BASE_URL } from "@/lib/account-api";
 import {sessionCookie} from '@/components/cookies/cookies';
 import type {AdCardData} from "@/types/types";
 import {toAdCardData} from '@/shared/ad-data';

@@ -11,7 +11,7 @@ import type { AdFullData } from '@/types/types';
 import { toAdFullData } from '@/shared/ad-data';
 import { resolve_api_ad_img } from '@/shared/functions';
 import { sessionCookie } from '@/components/cookies/cookies';
-import { API_BASE_URL, getResponseMessage } from '@/pages/myProfile/account-api';
+import { API_BASE_URL, getResponseMessage } from '@/lib/account-api';
 
 const fields = [
   ['bodyType', 'Oblik karoserije', 'text'],

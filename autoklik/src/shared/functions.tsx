@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "@/pages/myProfile/account-api";
+import { API_BASE_URL } from "@/lib/account-api";
 
 
 export function resolve_api_pfp_img(path?: string | null) {

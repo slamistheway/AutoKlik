@@ -10,7 +10,7 @@ import type { AdCardData } from '@/types/types';
 import { getRecentlyViewedIds, clearRecentlyViewed } from '@/lib/recently-viewed';
 import { toAdCardData } from '@/shared/ad-data';
 import { resolve_api_ad_img } from '@/shared/functions';
-import { API_BASE_URL } from './myProfile/account-api';
+import { API_BASE_URL } from '@/lib/account-api';
 
 const PAGE_SIZE = 20;
 

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { API_BASE_URL, getResponseMessage } from './myProfile/account-api';
+import { API_BASE_URL, getResponseMessage } from '@/lib/account-api';
 import { Navbar } from '@/components/navbar';
 import { Footer } from '@/components/footer';
 

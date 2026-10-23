@@ -7,8 +7,8 @@ import { Navbar } from '@/components/navbar';
 import { AdDraftList } from '@/components/ad-draft-list';
 import { Footer } from '@/components/footer';
 import CheckoutStepper from '@/pages/checkout/components/checkoutStepper';
-import * as checkoutState from './lib/checkout-state';
-import { CATEGORIES, SUBCATEGORIES } from './lib/checkout-data';
+import * as checkoutState from '@/lib/checkout-state';
+import { CATEGORIES, SUBCATEGORIES } from '@/lib/checkout-data';
 
 import {sessionCookie} from '@/components/cookies/cookies';
 

@@ -6,9 +6,9 @@ import { useCheckoutLeaveModal } from '@/components/checkout-leave-modal';
 import { Navbar } from '@/components/navbar';
 import { Footer } from '@/components/footer';
 import CheckoutStepper from '@/pages/checkout/components/checkoutStepper';
-import { getCategoryLabel, getSubcategoryLabel } from './lib/checkout-data';
-import * as checkoutState from './lib/checkout-state';
-import { API_BASE_URL, getResponseMessage } from '../myProfile/account-api';
+import { getCategoryLabel, getSubcategoryLabel } from '@/lib/checkout-data';
+import * as checkoutState from '@/lib/checkout-state';
+import { API_BASE_URL, getResponseMessage } from '@/lib/account-api';
 import {sessionCookie} from '@/components/cookies/cookies';
 import { fetchCurrentUser } from '@/app/auth/auth-guards';
 

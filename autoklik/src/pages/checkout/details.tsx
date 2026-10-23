@@ -7,9 +7,9 @@ import { Navbar } from '@/components/navbar';
 import { Footer } from '@/components/footer';
 import CheckoutStepper from '@/pages/checkout/components/checkoutStepper';
 
-import {getCategoryLabel, getSubcategoryLabel,} from './lib/checkout-data';
+import {getCategoryLabel, getSubcategoryLabel,} from '@/lib/checkout-data';
 import { getDetailFields } from '@/shared/detail-fields';
-import * as checkoutState from './lib/checkout-state';
+import * as checkoutState from '@/lib/checkout-state';
 import { VehicleExtraFields } from '@/components/vehicle-extra-fields';
 import FilterChoose from "@/components/filters/filter-choose";
 import FilterNumeric from "@/components/filters/filter-numeric";

@@ -6,7 +6,7 @@ import Link from 'next/link';
 import Head from 'next/head';
 import { Navbar } from '@/components/navbar';
 import { Footer } from '@/components/footer';
-import { API_BASE_URL, getResponseMessage } from '@/pages/myProfile/account-api';
+import { API_BASE_URL, getResponseMessage } from '@/lib/account-api';
 import { sessionCookie } from '@/components/cookies/cookies';
 
 export default function PasswordRecoveryForm({ reset = false }: { reset?: boolean }) {

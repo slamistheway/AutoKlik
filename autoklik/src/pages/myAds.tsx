@@ -12,7 +12,7 @@ import { AdStatusControls } from '@/components/ad-status-controls';
 import type { AdCardData } from '@/types/types';
 import { toAdCardData } from '@/shared/ad-data';
 import { adStatusLabels, getAdStatus } from '@/shared/ad-status';
-import { API_BASE_URL, getResponseMessage } from './myProfile/account-api';
+import { API_BASE_URL, getResponseMessage } from '@/lib/account-api';
 import { sessionCookie } from '@/components/cookies/cookies';
 
 function MyAdsPage() {

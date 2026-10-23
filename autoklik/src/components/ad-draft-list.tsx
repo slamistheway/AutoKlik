@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
 import { deleteAdDraft, getAdDrafts, type AdDraft } from '@/lib/ad-drafts';
-import * as checkoutState from '@/pages/checkout/lib/checkout-state';
+import * as checkoutState from '@/lib/checkout-state';
 
 export function AdDraftList() {
   const router = useRouter();

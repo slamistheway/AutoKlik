@@ -7,7 +7,7 @@ import type { AdCardData } from '@/types/types';
 import { getRecentlyViewedIds } from '@/lib/recently-viewed';
 import { toAdCardData } from '@/shared/ad-data';
 import { resolve_api_ad_img } from '@/shared/functions';
-import { API_BASE_URL } from '@/pages/myProfile/account-api';
+import { API_BASE_URL } from '@/lib/account-api';
 
 export function RecentlyViewedAds() {
   const [ads, setAds] = useState<AdCardData[]>([]);

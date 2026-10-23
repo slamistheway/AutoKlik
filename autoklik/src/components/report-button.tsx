@@ -3,7 +3,7 @@
 import { useRef, useState } from 'react';
 import { useRouter } from 'next/router';
 import { sessionCookie } from '@/components/cookies/cookies';
-import { API_BASE_URL, getResponseMessage } from '@/pages/myProfile/account-api';
+import { API_BASE_URL, getResponseMessage } from '@/lib/account-api';
 
 export function ReportButton({ targetType, targetId }: { targetType: 'ad' | 'user' | 'message'; targetId: number }) {
   const router = useRouter();

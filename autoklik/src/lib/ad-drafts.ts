@@ -1,4 +1,4 @@
-import * as checkoutState from '@/pages/checkout/lib/checkout-state';
+import * as checkoutState from '@/lib/checkout-state';
 import { fetchCurrentUser } from '@/app/auth/auth-guards';
 
 export interface AdDraft {

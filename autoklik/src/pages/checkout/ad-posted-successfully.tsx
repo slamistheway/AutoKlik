@@ -4,7 +4,7 @@ import { useRouter } from 'next/router';
 import { Navbar } from '@/components/navbar';
 import { Footer } from '@/components/footer';
 import {useEffect} from "react";
-import * as checkoutState from './lib/checkout-state';
+import * as checkoutState from '@/lib/checkout-state';
 
 import {sessionCookie} from '@/components/cookies/cookies';
 
