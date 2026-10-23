@@ -12,6 +12,7 @@ async function bootstrap() {
     logger: process.env.NODE_ENV === 'production' ? ['log', 'error', 'warn'] : ['log', 'error', 'warn', 'debug', 'verbose'],
   });
   configureHttpSecurity(app);
-  await app.listen(process.env.PORT ?? 3001);
+  await app.listen(Number(process.env.PORT ?? 3001), '0.0.0.0');
+  // await app.listen(Number(process.env.PORT ?? 3001));
 }
 bootstrap();
